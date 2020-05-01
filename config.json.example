@@ -1,0 +1,5 @@
+{
+  "api_key": "KEY",
+  "symbol": "GOOGL",
+  "db_conn": "mongo_connection_string"
+}
