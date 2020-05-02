@@ -9,18 +9,21 @@ ts = TimeSeries(key=settings.API_KEY)
 
 def get_alpha_vantage() -> list:
     data, meta_data = ts.get_intraday(settings.SYMBOL, interval='1min')
+    return transform_av_response_to_candles(data,meta_data)
 
-    df_data = pd.DataFrame.from_dict(data, orient='index')
+
+def transform_av_response_to_candles(av_data, av_meta_data) -> list:
+    df_data = pd.DataFrame.from_dict(av_data, orient='index')
     df_data.columns = ['open', 'high', 'low', 'close', 'volume']
-    df_data['symbol'] = 'ANX.PA'
-    df_data['interval'] = meta_data['4. Interval']
+    df_data['symbol'] = settings.SYMBOL
+    df_data['interval'] = av_meta_data['4. Interval']
     df_data.index = pd.to_datetime(df_data.index)
-    df_data.index = df_data.index.tz_localize(meta_data['6. Time Zone']).tz_convert('Europe/Paris')
+    df_data.index = df_data.index.tz_localize(av_meta_data['6. Time Zone']).tz_convert('Europe/Paris')
     df_data.index = df_data.index.rename('timestamp')
     df_data = df_data.reset_index()
     df_data = df_data[['timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume']]
-    data = list(df_data.T.to_dict().values())
-    return data
+    print(list(df_data.T.to_dict().values()))
+    return list(df_data.T.to_dict().values())
 
 
 def insert_candles_to_db(l_candle):
