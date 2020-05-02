@@ -10,7 +10,7 @@ LOG = logger.get_root_logger(
 sched = BlockingScheduler()
 
 
-@sched.scheduled_job('interval', seconds=30)
+@sched.scheduled_job('interval', minutes=1)
 def timed_job():
     candles = get_alpha_vantage()
     new_candles = insert_candles_to_db(candles)
