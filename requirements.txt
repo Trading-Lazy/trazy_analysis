@@ -1,5 +1,6 @@
 aiohttp==3.6.2
 alpha-vantage==2.2.0
+APScheduler==3.6.3
 async-timeout==3.0.1
 atomicwrites==1.4.0
 attrs==19.3.0
@@ -15,6 +16,7 @@ multidict==4.7.5
 numpy==1.18.3
 packaging==20.3
 pandas==1.0.3
+pika==1.1.0
 pluggy==0.13.1
 py==1.8.1
 pymongo==3.10.1
@@ -25,6 +27,7 @@ pytz==2020.1
 requests==2.23.0
 six==1.14.0
 typing-extensions==3.7.4.2
+tzlocal==2.0.0
 urllib3==1.25.9
 wcwidth==0.1.9
 yarl==1.4.2

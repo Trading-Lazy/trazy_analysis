@@ -1,11 +1,20 @@
 from alpha_vantage.timeseries import TimeSeries
-import settings
 from pymongo import MongoClient
+
 import pandas as pd
+import pika
+import logger
+import os
+from apscheduler.schedulers.blocking import BlockingScheduler
+
+import settings
+
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, 'output.log'))
 
 m_client = MongoClient(settings.DB_CONN)
 ts = TimeSeries(key=settings.API_KEY)
-
+sched = BlockingScheduler()
 
 def get_alpha_vantage() -> list:
     data, meta_data = ts.get_intraday(settings.SYMBOL, interval='1min')
@@ -22,18 +31,48 @@ def transform_av_response_to_candles(av_data, av_meta_data) -> list:
     df_data.index = df_data.index.rename('timestamp')
     df_data = df_data.reset_index()
     df_data = df_data[['timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume']]
-    print(list(df_data.T.to_dict().values()))
     return list(df_data.T.to_dict().values())
 
 
-def insert_candles_to_db(l_candle):
+def insert_candles_to_db(l_candle) -> list:
     db = m_client['djongo_connection']
+    l_new_candle = []
     for candle in l_candle:
         key = {'timestamp': candle['timestamp'],
                'symbol': candle['symbol'],
                'interval': candle['interval']}
-        db['candles'].update(key, candle, upsert=True)
+        res = db['candles'].update(key, candle, upsert=True)
+        if not res['updatedExisting']:
+            l_new_candle.append(candle)
 
-if __name__ == "__main__":
+    return l_new_candle
+
+
+def push_latest_candle_to_rabbit(candle):
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
+    channel.queue_declare(queue='candles')
+    channel.basic_publish(exchange='',
+                          routing_key='candles',
+                          body=candle)
+    LOG.info("Sent new candle!")
+    connection.close()
+
+
+def get_latest_candle_json(l_candles) -> str:
+    df_new_candles = pd.DataFrame(l_candles)
+    return df_new_candles.iloc[df_new_candles['timestamp'].idxmax()].to_json()
+
+
+@sched.scheduled_job('interval', minutes=1)
+def timed_job():
     candles = get_alpha_vantage()
-    insert_candles_to_db(candles)
+    new_candles = insert_candles_to_db(candles)
+    if len(new_candles) > 0:
+        json_latest_candle = get_latest_candle_json(new_candles)
+        push_latest_candle_to_rabbit(json_latest_candle)
+    else:
+        LOG.info("No new candle")
+
+sched.start()
+

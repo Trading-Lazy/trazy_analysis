@@ -17,3 +17,4 @@ DB_CONN = os.environ.get('TRAZY_CONN')
 if DB_CONN is None:
     raise Exception('TRAZY_CONN is not defined')
 
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
