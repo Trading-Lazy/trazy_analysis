@@ -1,0 +1,30 @@
+version: 2.1
+
+orbs:
+  heroku: circleci/heroku@1.0.1 # Invoke the Heroku orb
+
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.10
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
+      - run:
+          command: |
+            python3.6 -m venv venv
+            . venv/bin/activate
+            pip3.6 install -r requirements.txt
+      - save_cache:
+          key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - "venv"
+      - run:
+          name: Running tests
+          command: |
+            . venv/bin/activate
+            mkdir backend-test-reports
+            pytest &> backend-test-reports/tests.log
+      - store_artifacts:
+          path: /home/circleci/project/backend-test-reports

@@ -3,12 +3,12 @@ import settings
 from pymongo import MongoClient
 import pandas as pd
 
-m_client = MongoClient(settings.CONFIG['db_conn'])
-ts = TimeSeries(key=settings.CONFIG['api_key'])
+m_client = MongoClient(settings.DB_CONN)
+ts = TimeSeries(key=settings.API_KEY)
 
 
 def get_alpha_vantage() -> list:
-    data, meta_data = ts.get_intraday(settings.CONFIG['symbol'], interval='1min')
+    data, meta_data = ts.get_intraday(settings.SYMBOL, interval='1min')
 
     df_data = pd.DataFrame.from_dict(data, orient='index')
     df_data.columns = ['open', 'high', 'low', 'close', 'volume']
