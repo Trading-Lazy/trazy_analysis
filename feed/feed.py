@@ -5,7 +5,6 @@ import pandas as pd
 import pika
 import logger
 import os
-from apscheduler.schedulers.blocking import BlockingScheduler
 
 import settings
 
@@ -14,7 +13,7 @@ LOG = logger.get_root_logger(
 
 m_client = MongoClient(settings.DB_CONN)
 ts = TimeSeries(key=settings.API_KEY)
-sched = BlockingScheduler()
+
 
 def get_alpha_vantage() -> list:
     data, meta_data = ts.get_intraday(settings.SYMBOL, interval='1min')
@@ -64,15 +63,4 @@ def get_latest_candle_json(l_candles) -> str:
     return df_new_candles.iloc[df_new_candles['timestamp'].idxmax()].to_json()
 
 
-@sched.scheduled_job('interval', minutes=1)
-def timed_job():
-    candles = get_alpha_vantage()
-    new_candles = insert_candles_to_db(candles)
-    if len(new_candles) > 0:
-        json_latest_candle = get_latest_candle_json(new_candles)
-        push_latest_candle_to_rabbit(json_latest_candle)
-    else:
-        LOG.info("No new candle")
-
-sched.start()
 
