@@ -48,7 +48,7 @@ def insert_candles_to_db(l_candle) -> list:
 
 
 def push_latest_candle_to_rabbit(candle):
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    connection = pika.BlockingConnection(pika.URLParameters(settings.CLOUDAMQP_URL))
     channel = connection.channel()
     channel.queue_declare(queue='candles')
     channel.basic_publish(exchange='',
