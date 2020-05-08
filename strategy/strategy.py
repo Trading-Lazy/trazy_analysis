@@ -1,15 +1,17 @@
-from action import Action
+import abc
+
+from .action import Action
+
 
 class Strategy:
-    def __init__(self):
+    def __init__(self, name: str):
         self.is_opened = False
+        self.name = name
 
+    @abc.abstractmethod
     def compute_action(self, candle) -> Action:
-        pass
-
-    def store_action(self, a: Action):
-        pass
+        raise NotImplementedError
 
     def process_candle(self, candle):
-        a = self.compute_action(candle)
-        self.store_action(a)
+        action = self.compute_action(candle)
+        action.save()
