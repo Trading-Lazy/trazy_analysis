@@ -1,6 +1,11 @@
 import abc
+from enum import Enum, auto
+from .action import Action, PositionType, ActionType
+from common.candle import *
 
-from .action import Action
+
+class StrategyName(Enum):
+    SMA_CROSSOVER = auto()
 
 
 class Strategy:
@@ -12,6 +17,23 @@ class Strategy:
     def compute_action(self, candle) -> Action:
         raise NotImplementedError
 
-    def process_candle(self, candle):
+    def process_candle(self, candle: Candle):
         action = self.compute_action(candle)
         action.save()
+
+
+class SmaCrossoverStrategy(Strategy):
+    def __init__(self):
+        super().__init__(StrategyName.SMA_CROSSOVER.name)
+
+    def compute_action(self, candle: Candle) -> Action:
+        computed_position = PositionType.NONE
+        computed_action = ActionType.WAIT
+
+        action = Action(self.name,
+                        candle.symbol,
+                        0.0,
+                        computed_action,
+                        computed_position)
+        return action
+
