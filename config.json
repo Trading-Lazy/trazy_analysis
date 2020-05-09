@@ -1,3 +1,4 @@
 {
-  "symbol": "ANX.PA"
+  "symbol": "ANX.PA",
+  "strategies": ["SMA_CROSSOVER"]
 }
