@@ -14,25 +14,25 @@ m_client = MongoClient(settings.DB_CONN)
 class ActionType(Enum):
     BUY = auto()
     SELL = auto()
-    WAIT = auto()
 
 
 class PositionType(Enum):
     LONG = auto()
     SHORT = auto()
-    NONE = auto()
 
 
 class Action:
     def __init__(self,
                  strategy: str,
                  symbol: str,
+                 market_price: float,
                  confidence_level: float,
                  action_type: ActionType = ActionType.WAIT,
                  position_type: PositionType = PositionType.NONE,
                  timestamp: datetime = datetime.now()):
         self.strategy = strategy
         self.symbol = symbol
+        self.market_price = market_price
         self.confidence_level = confidence_level
         self.action_type = action_type
         self.position_type = position_type
