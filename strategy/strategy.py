@@ -1,11 +1,13 @@
 import abc
 from enum import Enum, auto
-from .action import Action, PositionType, ActionType
-from common.candle import *
+from actionsapi.models import PositionType, ActionType
+from actionsapi.models import Action, Candle
 
 
 class StrategyName(Enum):
     SMA_CROSSOVER = auto()
+    DUMB_LONG_STRATEGY = auto()
+    DUMB_SHORT_STRATEGY = auto()
 
 
 class Strategy:
