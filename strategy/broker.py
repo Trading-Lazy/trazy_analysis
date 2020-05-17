@@ -5,12 +5,18 @@ import os
 import json
 import multiprocessing as mp
 
+from strategy.strategies.DumbLongStrategy import DumbLongStrategy
+from strategy.strategies.DumbShortStrategy import DumbShortStrategy
 from .strategy import *
 
 list_strategies = []
 for s in settings.CONFIG['strategies']:
     if s == StrategyName.SMA_CROSSOVER.name:
         list_strategies.append(SmaCrossoverStrategy())
+    if s == StrategyName.DUMB_LONG_STRATEGY.name:
+        list_strategies.append(DumbLongStrategy())
+    if s == StrategyName.DUMB_SHORT_STRATEGY.name:
+        list_strategies.append(DumbShortStrategy())
 
 
 LOG = logger.get_root_logger(

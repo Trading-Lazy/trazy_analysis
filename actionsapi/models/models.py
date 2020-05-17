@@ -1,3 +1,5 @@
+from enum import Enum, auto
+
 from django.utils import timezone
 from djongo import models
 from django.db.models import UniqueConstraint
@@ -43,36 +45,33 @@ class Candle(models.Model):
         ]
 
 
-def make_enum(choices, default):
+def make_enum(enum, default):
     max_length = 0
-    for choice in choices:
-        value = choice[0]
-        max_length = max(max_length, len(value))
+    for tag in enum:
+        max_length = max(max_length, len(tag.name))
     return models.CharField(
         max_length=max_length,
-        choices=choices,
+        choices=[(tag, tag.name) for tag in enum],
         default=default
     )
 
 
-class Action(models.Model):
-    # action type
-    BUY = 'BUY'
-    SELL = 'SELL'
-    ACTION_TYPE_CHOICES = [
-        (BUY, 'Buy'),
-        (SELL, 'Sell')
-    ]
-    action_type = make_enum(ACTION_TYPE_CHOICES, BUY)
+class ActionType(Enum):
+    BUY = "BUY",
+    SELL = "SELL"
 
-    # position type
-    LONG = 'LONG'
-    SHORT = 'SHORT'
-    POSITION_TYPE_CHOICES = [
-        (LONG, 'Long'),
-        (SHORT, 'Short')
-    ]
-    position_type = make_enum(POSITION_TYPE_CHOICES, LONG)
+
+class PositionType(Enum):
+    LONG = "LONG",
+    SHORT = "SHORT"
+
+
+class Action(models.Model):
+    action_type = make_enum(ActionType, ActionType.BUY)
+
+    position_type = make_enum(PositionType, PositionType.LONG)
+
+    amount = models.IntegerField(default=1)
 
     CONFIDENCE_LEVEL_DECIMAL_PLACES = 3
     CONFIDENCE_LEVEL_INTEGER_PLACES = 1
