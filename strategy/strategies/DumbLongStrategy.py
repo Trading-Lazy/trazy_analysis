@@ -28,3 +28,6 @@ class DumbLongStrategy(Strategy):
             parameters = {}
         )
         return action
+
+    def init_default_parameters(self):
+        pass

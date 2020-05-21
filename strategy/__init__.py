@@ -15,21 +15,23 @@ def get_env_variable(name):
     except KeyError:
         raise ImproperlyConfigured(
                     'Environment variable “%s” not found.' % name)
-settings.configure(
-DATABASES={
-    'default': {
-        'ENGINE': get_env_variable('DATABASE_ENGINE'),
-        'ENFORCE_SCHEMA': True,
-        'NAME': get_env_variable('DATABASE_CONNECTION_NAME'),
-        'CLIENT': {
-            'host': get_env_variable('DATABASE_URL'),
-            'username': get_env_variable('DATABASE_USERNAME'),
-            'password': get_env_variable('DATABASE_PASSWORD'),
-            'authMechanism': get_env_variable('DATABASE_AUTH_MECANISM')
+
+if not settings.configured:
+    settings.configure(
+    DATABASES={
+        'default': {
+            'ENGINE': get_env_variable('DATABASE_ENGINE'),
+            'ENFORCE_SCHEMA': True,
+            'NAME': get_env_variable('DATABASE_CONNECTION_NAME'),
+            'CLIENT': {
+                'host': get_env_variable('DATABASE_URL'),
+                'username': get_env_variable('DATABASE_USERNAME'),
+                'password': get_env_variable('DATABASE_PASSWORD'),
+                'authMechanism': get_env_variable('DATABASE_AUTH_MECANISM')
+            }
         }
-    }
-},
-INSTALLED_APPS = [
-    'actionsapi.apps.ActionsApiConfig',
-])
-django.setup()
+    },
+    INSTALLED_APPS = [
+        'actionsapi.apps.ActionsApiConfig',
+    ])
+    django.setup()

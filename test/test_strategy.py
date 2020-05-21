@@ -1,10 +1,9 @@
 from strategy.strategy import SmaCrossoverStrategy, StrategyName
-from strategy.action import Action, PositionType, ActionType
-from common.candle import Candle
+from actionsapi.models import Action, Candle
+from actionsapi.models import PositionType, ActionType
 import pandas as pd
 from datetime import datetime
 from pytz import timezone
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from strategy.constants import DATE_FORMAT
 import math
 import numpy as np

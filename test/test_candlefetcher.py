@@ -24,7 +24,7 @@ def test_resample_candle_data_interval_5_minute():
     }
     business_cal = euronext_cal.schedule(start_date="2020-05-08", end_date="2020-05-08")
     df = pd.DataFrame(candles,
-                      columns=['_id', 'timestamp', 'symbol', '__interval', 'open', 'high', 'low', 'close', 'volume'])
+                      columns=['_id', 'timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume'])
     df = CandleFetcher.resample_candle_data(df, pd.offsets.Minute(5), business_cal)
 
     expected_df_candles = {
@@ -59,7 +59,7 @@ def test_simple_resample_candle_data_interval_1_day():
     }
     business_cal = euronext_cal.schedule(start_date="2020-05-08", end_date="2020-05-08")
     df = pd.DataFrame(candles,
-                      columns=['_id', 'timestamp', 'symbol', '__interval', 'open', 'high', 'low', 'close', 'volume'])
+                      columns=['_id', 'timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume'])
     df = CandleFetcher.resample_candle_data(df, pd.offsets.Day(1), business_cal)
 
     expected_df_candles = {
@@ -94,7 +94,7 @@ def test_simple_resample_candle_data_interval_1_day_data_spread_over_2_days():
     }
     business_cal = euronext_cal.schedule(start_date="2020-05-08", end_date="2020-05-11")
     df = pd.DataFrame(candles,
-                      columns=['_id', 'timestamp', 'symbol', '__interval', 'open', 'high', 'low', 'close', 'volume'])
+                      columns=['_id', 'timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume'])
     df = CandleFetcher.resample_candle_data(df, pd.offsets.Day(1), business_cal)
 
     expected_df_candles = {
