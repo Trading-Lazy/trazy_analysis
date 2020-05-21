@@ -11,7 +11,7 @@ sched = BlockingScheduler()
 
 
 # @sched.scheduled_job('cron', minute='*', day_of_week='mon-fri', hour='9-17')
-@sched.scheduled_job('interval', minutes=20)
+@sched.scheduled_job('__interval', minutes=20)
 def timed_job():
     candles = get_alpha_vantage()
     new_candles = insert_candles_to_db(candles)

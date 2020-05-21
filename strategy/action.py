@@ -51,9 +51,12 @@ class Action:
 
     def save(self):
         db = m_client['djongo_connection']
-        new_id = int(db['actions_gen_action'].find_one(sort=[("id", -1)])['id']) + 1
+        last_action = db['actionsapi_action'].find_one(sort=[("id", -1)])
+        new_id = 1
+        if not last_action is None:
+            new_id = (last_action['id']) + 1
         key = {'timestamp': self.timestamp,
                'symbol': self.symbol,
                'strategy': self.strategy}
-        db['actions_gen_action'].update(key, self.serialize_to_save(new_id), upsert=True)
+        db['actionsapi_action'].update(key, self.serialize_to_save(new_id), upsert=True)
         LOG.info("New action has been saved!")
