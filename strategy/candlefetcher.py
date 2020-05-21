@@ -1,7 +1,6 @@
 from datetime import datetime
 from pandas import DataFrame
 from pymongo import MongoClient
-from pymongo.collection import Collection
 from pymongo import ASCENDING
 
 import pandas as pd
@@ -9,6 +8,7 @@ from pandasql import sqldf
 import numpy as np
 import settings
 from strategy.constants import DATE_FORMAT
+from common.utils import validate_dataframe_columns
 from pandas_market_calendars import MarketCalendar
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 
@@ -36,11 +36,8 @@ class CandleFetcher:
     @staticmethod
     def resample_candle_data(df: DataFrame, timeframe: pd.offsets.DateOffset, business_cal: DataFrame) -> DataFrame:
 
-        required_columns = ['_id', 'timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume'].sort()
-        sorted_columns = list(df.columns).sort()
-        if sorted_columns != required_columns:
-            raise Exception(
-                'The input dataframe is malformed. It must contain only columns: {}'.format(required_columns))
+        required_columns = ['_id', 'timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume']
+        validate_dataframe_columns(df, required_columns)
         df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
         df = df.drop(['_id', 'interval'], axis=1)
 
