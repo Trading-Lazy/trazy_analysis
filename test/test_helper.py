@@ -1,4 +1,4 @@
-from common.helper import TimeInterval, round_time, find_start_business_minute, find_start_business_day
+from common.helper import TimeInterval, round_time, find_start_interval_business_minute, find_start_interval_business_date
 from datetime import datetime, timedelta
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from pytz import timezone
@@ -28,12 +28,12 @@ def test_round_time():
 def test_find_start_business_minute():
     business_cal = EuronextExchangeCalendar()
     input = datetime(2020, 5, 17, 23, 36, tzinfo=timezone('UTC'))
-    x = find_start_business_minute(input, business_cal, TimeInterval.process_interval('30 minute'), 2)
+    x = find_start_interval_business_minute(input, business_cal, TimeInterval.process_interval('30 minute'), 2)
     assert (x == datetime(2020, 5, 15, 14, 30, tzinfo=timezone('UTC')))
 
 
 def test_find_start_business_day():
     business_cal = EuronextExchangeCalendar()
     input = datetime(2020, 5, 17, 23, 36, tzinfo=timezone('UTC'))
-    x = find_start_business_day(input, business_cal, TimeInterval.process_interval('1 day'), 2)
+    x = find_start_interval_business_date(input, business_cal, TimeInterval.process_interval('1 day'), 2)
     assert (x == datetime(2020, 5, 14, 0, 0, tzinfo=timezone('UTC')))

@@ -1,4 +1,5 @@
-from strategy.strategy import SmaCrossoverStrategy, StrategyName
+from strategy.strategy import StrategyName
+from strategy.strategies.SmaCrossoverStrategy import SmaCrossoverStrategy
 from actionsapi.models import Action, Candle
 from actionsapi.models import PositionType, ActionType
 import pandas as pd
