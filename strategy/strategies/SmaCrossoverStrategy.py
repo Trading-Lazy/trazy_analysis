@@ -121,6 +121,7 @@ class SmaCrossoverStrategy(Strategy):
         if action is not None:
             return Action(strategy=StrategyName.SMA_CROSSOVER.name,
                           symbol=candle.symbol,
+                          candle_id=candle.pk,
                           confidence_level=1,
                           action_type=action,
                           position_type=position)
@@ -130,7 +131,7 @@ class SmaCrossoverStrategy(Strategy):
     def calc_strategy(self, candle: Candle, history_candles: pd.DataFrame) -> Action:
         df_sma = self.get_candles_with_signals_positions(history_candles)
         computed_action, computed_position = SmaCrossoverStrategy.conclude_action_position(df_sma)
-        return SmaCrossoverStrategy.build_action(candle,computed_action,computed_position)
+        return SmaCrossoverStrategy.build_action(candle, computed_action, computed_position)
 
     def compute_action(self, candle: Candle) -> Action:
         # fetch action
@@ -150,6 +151,7 @@ class SmaCrossoverStrategy(Strategy):
             action = self.calc_strategy(candle, df_hist)
             if last_action['action_type'] == action.action_type.name:
                 return None
+
             return action
         else:
             LOG.info("No history candles can be used to calculate the strategy")
