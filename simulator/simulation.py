@@ -4,6 +4,9 @@ import time
 from decimal import Decimal
 from typing import List
 
+from bson import ObjectId
+from pymongo import MongoClient
+
 import settings
 from strategy.strategy import Strategy
 from actionsapi.models import PositionType, ActionType, Candle, Action
@@ -16,10 +19,16 @@ class Simulation:
         simulation_name = "{}_{}_{}".format(
             self.strategy.name, self.symbol, epoch_time_now
         )
-        self.logger = logger.get_root_logger(
-            simulation_name,
-            filename=os.path.join(settings.ROOT_PATH, "{}.log".format(simulation_name)),
-        ) if self.log else logging
+        self.logger = (
+            logger.get_root_logger(
+                simulation_name,
+                filename=os.path.join(
+                    settings.ROOT_PATH, "{}.log".format(simulation_name)
+                ),
+            )
+            if self.log
+            else logging
+        )
         self.candles = None
         self.cash = Decimal("0")
         self.commission = Decimal("0")
@@ -46,7 +55,7 @@ class Simulation:
         cash: Decimal = Decimal("0"),
         commission: Decimal = Decimal("0"),
         symbol: str = "symbol",
-        log: bool = True
+        log: bool = True,
     ):
         epoch_time_now = int(time.time())
         self.symbol = symbol
@@ -55,10 +64,16 @@ class Simulation:
             self.strategy.name, self.symbol, epoch_time_now
         )
         self.log = log
-        self.logger = logger.get_root_logger(
-            simulation_name,
-            filename=os.path.join(settings.ROOT_PATH, "{}.log".format(simulation_name)),
-        ) if self.log else logging
+        self.logger = (
+            logger.get_root_logger(
+                simulation_name,
+                filename=os.path.join(
+                    settings.ROOT_PATH, "{}.log".format(simulation_name)
+                ),
+            )
+            if self.log
+            else logging
+        )
         self.candles = candles
         self.cash = cash
         self.commission = commission
@@ -98,13 +113,9 @@ class Simulation:
             and action_type == ActionType.BUY
         )
 
-    def validate_transaction(
+    def validate_shares_amounts(
         self, position_type: PositionType, action_type: ActionType, amount: int
     ):
-        to_be_checked = {
-            ActionType.BUY: {PositionType.SHORT: True, PositionType.LONG: False},
-            ActionType.SELL: {PositionType.SHORT: False, PositionType.LONG: True},
-        }
         exception_str = "For a {} position, you cannot {} more than you {}".format(
             position_type.name,
             action_type.name,
@@ -118,10 +129,27 @@ class Simulation:
         ):
             raise Exception(exception_str)
 
+    def validate_cash(self, action_type: ActionType, total_cost_estimate):
+        if action_type == ActionType.BUY and self.cash < total_cost_estimate:
+            raise Exception(
+                "Cannot update cash, cash has to be greater than or equal to the cost estimate. Cash: {}, "
+                "Cost estimate "
+                "with commissions added: {}".format(self.cash, total_cost_estimate)
+            )
+
+    def validate_transaction(
+        self,
+        position_type: PositionType,
+        action_type: ActionType,
+        amount: int,
+        total_cost_estimate: int,
+    ):
+        self.validate_shares_amounts(position_type, action_type, amount)
+        self.validate_cash(action_type, total_cost_estimate)
+
     def update_shares_amounts(
         self, position_type: PositionType, action_type: ActionType, amount: int
     ):
-        self.validate_transaction(position_type, action_type, amount)
         if action_type == ActionType.BUY:
             self.shares_amounts[position_type] += amount
         else:
@@ -132,16 +160,13 @@ class Simulation:
     ):
         self.portfolio_value = self.shares_amounts[position_type] * unit_cost_estimate
 
-    def update_cash(self, action_type: ActionType, cost_estimate: Decimal):
-        commission_amount = cost_estimate * self.commission
-        total_cost_estimate = cost_estimate + commission_amount
+    def update_cash(
+        self,
+        action_type: ActionType,
+        cost_estimate: Decimal,
+        commission_amount: Decimal,
+    ):
         if action_type == ActionType.BUY:
-            if self.cash < total_cost_estimate:
-                raise Exception(
-                    "Cannot update cash, cash has to be greater than or equal to the cost estimate. Cash: {}, "
-                    "Cost_estimate "
-                    "with costs added: {}".format(self.cash, total_cost_estimate)
-                )
             self.cash -= cost_estimate
         else:
             self.cash += cost_estimate
@@ -164,16 +189,23 @@ class Simulation:
         position_type: PositionType,
         action_type: ActionType,
         unit_cost_estimate: Decimal,
-        amount: int):
+        amount: int,
+    ):
         cost_estimate = unit_cost_estimate * amount
+        commission_amount = cost_estimate * self.commission
+        total_cost_estimate = cost_estimate + commission_amount
 
-        self.last_transaction_price[position_type][action_type] = cost_estimate
+        self.last_transaction_price[position_type][action_type] = total_cost_estimate
+
+        self.validate_transaction(
+            position_type, action_type, amount, total_cost_estimate
+        )
 
         self.update_shares_amounts(position_type, action_type, amount)
 
         self.update_portfolio_value(position_type, unit_cost_estimate)
 
-        self.update_cash(action_type, cost_estimate)
+        self.update_cash(action_type, cost_estimate, commission_amount)
 
         action_str = "{} {} {} shares at unit cost {}, total: {}, commission: {}".format(
             action_type.name,
@@ -181,7 +213,7 @@ class Simulation:
             amount,
             unit_cost_estimate,
             cost_estimate,
-            cost_estimate * self.commission
+            cost_estimate * self.commission,
         )
         self.logger.info(action_str)
 
@@ -196,7 +228,7 @@ class Simulation:
         self.logger.info("Starting funds: {}".format(self.cash))
         actions = self.get_actions()
         for action in actions:
-            candle = Candle.objects.get(id=int(action.candle_id))
+            candle = Candle.objects.get(_id=action.candle_id)
             unit_cost_estimate = Decimal(candle.close)
             self.position(
                 action.position_type,

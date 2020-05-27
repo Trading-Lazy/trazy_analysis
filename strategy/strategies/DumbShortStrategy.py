@@ -18,13 +18,13 @@ class DumbShortStrategy(Strategy):
         computed_action = ActionType.SELL if sell else ActionType.BUY
 
         action = Action(
-            action_type = computed_action,
-            position_type = computed_position,
-            amount = 1,
-            confidence_level = 1,
-            strategy = self.name,
-            symbol = candle.symbol,
-            candle_id = candle.id,
-            parameters = {}
+            action_type=computed_action,
+            position_type=computed_position,
+            amount=1,
+            confidence_level=1,
+            strategy=self.name,
+            symbol=candle.symbol,
+            candle_id=candle._id,
+            parameters={},
         )
         return action

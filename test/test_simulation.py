@@ -1,18 +1,17 @@
-import logging
-from datetime import datetime
 from decimal import Decimal
-from typing import List
 from unittest.mock import patch, call, Mock
 
 import pytest
+from bson import ObjectId
 
 from simulator.simulation import Simulation
 from actionsapi.models import PositionType, ActionType, Candle, Action
-from strategy.constants import DATE_FORMAT
 from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
 from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 
 # disable logging into a file
+from tools.tools import compare_actions_list
+
 SIMULATION = Simulation(DumbLongStrategy(), log=False)
 SYMBOL = "ANX.PA"
 
@@ -31,10 +30,13 @@ COMMISSION = Decimal("0.001")
 COST_ESTIMATE_BUY_OK = Decimal("300")
 COST_ESTIMATE_SELL = Decimal("400")
 COST_ESTIMATE_BUY_KO = Decimal("1500")
+TOTAL_COST_ESTIMATE_OK = Decimal("800")
+TOTAL_COST_ESTIMATE_KO = Decimal("1200")
 
 UNIT_COST_ESTIMATE = Decimal("100")
 
 STRATEGY_NAME = "strategy"
+OBJECT_ID_BASE = "5eae9ddd4d6f4e006f67c9c"
 ACTIONS = [
     Action(
         action_type=ActionType.BUY,
@@ -43,7 +45,7 @@ ACTIONS = [
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=1,
+        candle_id=OBJECT_ID_BASE + "1",
         parameters={},
     ),
     Action(
@@ -53,7 +55,7 @@ ACTIONS = [
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=2,
+        candle_id=OBJECT_ID_BASE + "2",
         parameters={},
     ),
     Action(
@@ -63,7 +65,7 @@ ACTIONS = [
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=3,
+        candle_id=OBJECT_ID_BASE + "3",
         parameters={},
     ),
     Action(
@@ -73,7 +75,7 @@ ACTIONS = [
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=4,
+        candle_id=OBJECT_ID_BASE + "4",
         parameters={},
     ),
     Action(
@@ -83,7 +85,7 @@ ACTIONS = [
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=5,
+        candle_id=OBJECT_ID_BASE + "5",
         parameters={},
     ),
     Action(
@@ -93,14 +95,14 @@ ACTIONS = [
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=6,
+        candle_id=OBJECT_ID_BASE + "6",
         parameters={},
-    )
+    ),
 ]
 
 CANDLES = [
     Candle(
-        id=1,
+        _id=OBJECT_ID_BASE + "1",
         symbol=SYMBOL,
         open=Decimal("94.1200"),
         high=Decimal("94.1500"),
@@ -110,7 +112,7 @@ CANDLES = [
         timestamp="2020-05-08 14:17:00",
     ),
     Candle(
-        id=2,
+        _id=OBJECT_ID_BASE + "2",
         symbol=SYMBOL,
         open=Decimal("94.0700"),
         high=Decimal("94.1000"),
@@ -120,7 +122,7 @@ CANDLES = [
         timestamp="2020-05-08 14:24:00",
     ),
     Candle(
-        id=3,
+        _id=OBJECT_ID_BASE + "3",
         symbol=SYMBOL,
         open=Decimal("94.0700"),
         high=Decimal("94.1000"),
@@ -130,7 +132,7 @@ CANDLES = [
         timestamp="2020-05-08 14:24:56",
     ),
     Candle(
-        id=4,
+        _id=OBJECT_ID_BASE + "4",
         symbol=SYMBOL,
         open=Decimal("94.1700"),
         high=Decimal("94.1800"),
@@ -140,7 +142,7 @@ CANDLES = [
         timestamp="2020-05-08 14:35:00",
     ),
     Candle(
-        id=5,
+        _id=OBJECT_ID_BASE + "5",
         symbol=SYMBOL,
         open=Decimal("94.1900"),
         high=Decimal("94.2200"),
@@ -150,7 +152,7 @@ CANDLES = [
         timestamp="2020-05-08 14:41:00",
     ),
     Candle(
-        id=6,
+        _id=OBJECT_ID_BASE + "6",
         symbol=SYMBOL,
         open=Decimal("94.1900"),
         high=Decimal("94.2200"),
@@ -169,28 +171,43 @@ def simulation_fixture():
 
 def test_reset(simulation_fixture):
     SIMULATION.candles = CANDLES
-    SIMULATION.cash = Decimal('200')
-    SIMULATION.commission = Decimal('0.001')
-    SIMULATION.portfolio_value = Decimal('100')
-    SIMULATION.portfolio_value = Decimal('2000')
-    SIMULATION.last_transaction_price = Decimal('100')
+    SIMULATION.cash = Decimal("200")
+    SIMULATION.commission = Decimal("0.001")
+    SIMULATION.portfolio_value = Decimal("100")
+    SIMULATION.portfolio_value = Decimal("2000")
+    SIMULATION.last_transaction_price = Decimal("100")
     SIMULATION.last_transaction_price = {
-        PositionType.LONG: {ActionType.BUY: Decimal('200'), ActionType.SELL: Decimal('201')},
-        PositionType.SHORT: {ActionType.SELL: Decimal('202'), ActionType.BUY: Decimal('199')},
+        PositionType.LONG: {
+            ActionType.BUY: Decimal("200"),
+            ActionType.SELL: Decimal("201"),
+        },
+        PositionType.SHORT: {
+            ActionType.SELL: Decimal("202"),
+            ActionType.BUY: Decimal("199"),
+        },
     }
     SIMULATION.shares_amounts = {PositionType.LONG: 17, PositionType.SHORT: 13}
 
     SIMULATION.reset()
 
     assert SIMULATION.candles == None
-    assert SIMULATION.cash == Decimal('0')
-    assert SIMULATION.commission == Decimal('0')
-    assert SIMULATION.portfolio_value == Decimal('0')
+    assert SIMULATION.cash == Decimal("0")
+    assert SIMULATION.commission == Decimal("0")
+    assert SIMULATION.portfolio_value == Decimal("0")
     assert SIMULATION.last_transaction_price == {
-        PositionType.LONG: {ActionType.BUY: Decimal('0'), ActionType.SELL: Decimal('0')},
-        PositionType.SHORT: {ActionType.SELL: Decimal('0'), ActionType.BUY: Decimal('0')},
+        PositionType.LONG: {
+            ActionType.BUY: Decimal("0"),
+            ActionType.SELL: Decimal("0"),
+        },
+        PositionType.SHORT: {
+            ActionType.SELL: Decimal("0"),
+            ActionType.BUY: Decimal("0"),
+        },
     }
-    assert SIMULATION.shares_amounts == {PositionType.LONG: Decimal('0'), PositionType.SHORT: Decimal('0')}
+    assert SIMULATION.shares_amounts == {
+        PositionType.LONG: Decimal("0"),
+        PositionType.SHORT: Decimal("0"),
+    }
 
 
 def test_fund(simulation_fixture):
@@ -198,31 +215,6 @@ def test_fund(simulation_fixture):
     assert SIMULATION.cash == 1000
     SIMULATION.fund(1500)
     assert SIMULATION.cash == 2500
-
-
-def compare_action(action1: Action, action2: Action) -> bool:
-    return (
-        action1.action_type == action2.action_type
-        and action1.position_type == action2.position_type
-        and action1.amount == action2.amount
-        and action1.confidence_level == action2.confidence_level
-        and action1.strategy == action2.strategy
-        and action1.symbol == action2.symbol
-        and action1.candle_id == action2.candle_id
-        and action1.parameters == action2.parameters
-    )
-
-
-def compare_actions_list(
-    actions_list1: List[Action], actions_list2: List[Action]
-) -> bool:
-    if len(actions_list1) != len(actions_list2):
-        return False
-    length = len(actions_list1)
-    for i in range(0, length):
-        if not compare_action(actions_list1[i], actions_list2[i]):
-            return False
-    return True
 
 
 def test_get_actions(simulation_fixture):
@@ -246,17 +238,11 @@ def test_get_actions_one_none_action(simulation_fixture):
         ACTIONS[2],
         ACTIONS[3],
         ACTIONS[4],
-        None
+        None,
     ]
     actions = SIMULATION.get_actions()
 
-    expected_actions = [
-        ACTIONS[0],
-        ACTIONS[1],
-        ACTIONS[2],
-        ACTIONS[3],
-        ACTIONS[4]
-    ]
+    expected_actions = [ACTIONS[0], ACTIONS[1], ACTIONS[2], ACTIONS[3], ACTIONS[4]]
     assert compare_actions_list(actions, expected_actions)
 
 
@@ -267,34 +253,136 @@ def test_is_closed_position(simulation_fixture):
     assert SIMULATION.is_closed_position(PositionType.SHORT, ActionType.BUY) == True
 
 
+def test_validate_shares_amounts_buy_long_ok(simulation_fixture):
+    SIMULATION.validate_shares_amounts(
+        PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_OK
+    )
+
+
+def test_validate_shares_amounts_sell_long_ok(simulation_fixture):
+    SIMULATION.shares_amounts[PositionType.LONG] = BUY_LONG_AMOUNT_OK
+    SIMULATION.validate_shares_amounts(
+        PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_OK
+    )
+
+
+def test_validate_shares_amounts_sell_long_ko(simulation_fixture):
+    SIMULATION.shares_amounts[PositionType.LONG] = BUY_LONG_AMOUNT_KO
+    with pytest.raises(Exception):
+        SIMULATION.validate_shares_amounts(
+            PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_KO
+        )
+
+
+def test_validate_shares_amounts_sell_short_ok(simulation_fixture):
+    SIMULATION.validate_shares_amounts(
+        PositionType.SHORT, ActionType.SELL, SELL_SHORT_AMOUNT_OK
+    )
+
+
+def test_validate_shares_amounts_buy_short_ok(simulation_fixture):
+    SIMULATION.shares_amounts[PositionType.SHORT] = SELL_SHORT_AMOUNT_OK
+    SIMULATION.validate_shares_amounts(
+        PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_OK
+    )
+
+
+def test_validate_shares_amounts_buy_short_ko(simulation_fixture):
+    SIMULATION.shares_amounts[PositionType.SHORT] = SELL_SHORT_AMOUNT_KO
+    with pytest.raises(Exception):
+        SIMULATION.validate_shares_amounts(
+            PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_KO
+        )
+
+
+def test_validate_cash_buy_ok(simulation_fixture):
+    SIMULATION.fund(FUND)
+    SIMULATION.validate_cash(ActionType.BUY, TOTAL_COST_ESTIMATE_OK)
+
+
+def test_validate_cash_buy_ko(simulation_fixture):
+    SIMULATION.fund(FUND)
+    with pytest.raises(Exception):
+        SIMULATION.validate_cash(ActionType.BUY, TOTAL_COST_ESTIMATE_KO)
+
+
+def test_validate_cash_sell_ok(simulation_fixture):
+    SIMULATION.fund(FUND)
+    SIMULATION.validate_cash(ActionType.SELL, TOTAL_COST_ESTIMATE_OK)
+
+
 def test_validate_transaction_buy_long_ok(simulation_fixture):
-    SIMULATION.validate_transaction(PositionType.LONG, ActionType.BUY, 5)
+    SIMULATION.fund(FUND)
+    SIMULATION.validate_transaction(
+        PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_OK, TOTAL_COST_ESTIMATE_OK
+    )
+
+
+def test_validate_transaction_buy_long_ko(simulation_fixture):
+    SIMULATION.fund(FUND)
+    with pytest.raises(Exception):
+        SIMULATION.validate_transaction(
+            PositionType.LONG,
+            ActionType.BUY,
+            BUY_LONG_AMOUNT_OK,
+            TOTAL_COST_ESTIMATE_KO,
+        )
 
 
 def test_validate_transaction_sell_long_ok(simulation_fixture):
-    SIMULATION.shares_amounts[PositionType.LONG] = 5
-    SIMULATION.validate_transaction(PositionType.LONG, ActionType.SELL, 5)
+    SIMULATION.shares_amounts[PositionType.LONG] = BUY_LONG_AMOUNT_OK
+    SIMULATION.validate_transaction(
+        PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_OK, TOTAL_COST_ESTIMATE_OK
+    )
 
 
 def test_validate_transaction_sell_long_ko(simulation_fixture):
-    SIMULATION.shares_amounts[PositionType.LONG] = 3
+    SIMULATION.shares_amounts[PositionType.LONG] = BUY_LONG_AMOUNT_KO
     with pytest.raises(Exception):
-        SIMULATION.validate_transaction(PositionType.LONG, ActionType.SELL, 5)
+        SIMULATION.validate_transaction(
+            PositionType.LONG,
+            ActionType.SELL,
+            SELL_LONG_AMOUNT_KO,
+            TOTAL_COST_ESTIMATE_OK,
+        )
 
 
 def test_validate_transaction_sell_short_ok(simulation_fixture):
-    SIMULATION.validate_transaction(PositionType.SHORT, ActionType.SELL, 5)
+    SIMULATION.validate_transaction(
+        PositionType.SHORT,
+        ActionType.SELL,
+        SELL_SHORT_AMOUNT_OK,
+        TOTAL_COST_ESTIMATE_OK,
+    )
+
+
+def test_validate_transaction_sell_short_ko(simulation_fixture):
+    SIMULATION.validate_transaction(
+        PositionType.SHORT,
+        ActionType.SELL,
+        SELL_SHORT_AMOUNT_OK,
+        TOTAL_COST_ESTIMATE_KO,
+    )
 
 
 def test_validate_transaction_buy_short_ok(simulation_fixture):
-    SIMULATION.shares_amounts[PositionType.SHORT] = 5
-    SIMULATION.validate_transaction(PositionType.SHORT, ActionType.BUY, 5)
+    SIMULATION.fund(FUND)
+    SIMULATION.shares_amounts[PositionType.SHORT] = SELL_SHORT_AMOUNT_OK
+    SIMULATION.validate_transaction(
+        PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_OK, TOTAL_COST_ESTIMATE_OK
+    )
 
 
 def test_validate_transaction_buy_short_ko(simulation_fixture):
-    SIMULATION.shares_amounts[PositionType.SHORT] = 3
+    SIMULATION.fund(FUND)
+    SIMULATION.shares_amounts[PositionType.SHORT] = SELL_SHORT_AMOUNT_KO
     with pytest.raises(Exception):
-        SIMULATION.validate_transaction(PositionType.SHORT, ActionType.BUY, 5)
+        SIMULATION.validate_transaction(
+            PositionType.SHORT,
+            ActionType.BUY,
+            BUY_SHORT_AMOUNT_KO,
+            TOTAL_COST_ESTIMATE_OK,
+        )
 
 
 def test_update_shares_ok(simulation_fixture):
@@ -326,30 +414,6 @@ def test_update_shares_ok(simulation_fixture):
     )
 
 
-def test_update_shares_ko(simulation_fixture):
-    SIMULATION.update_shares_amounts(
-        PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_KO
-    )
-    assert SIMULATION.shares_amounts[PositionType.LONG] == BUY_LONG_AMOUNT_KO
-
-    with pytest.raises(Exception):
-        SIMULATION.update_shares_amounts(
-            PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_KO
-        )
-    assert SIMULATION.shares_amounts[PositionType.LONG] == BUY_LONG_AMOUNT_KO
-
-    SIMULATION.update_shares_amounts(
-        PositionType.SHORT, ActionType.SELL, SELL_SHORT_AMOUNT_KO
-    )
-    assert SIMULATION.shares_amounts[PositionType.SHORT] == -SELL_SHORT_AMOUNT_KO
-
-    with pytest.raises(Exception):
-        SIMULATION.update_shares_amounts(
-            PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_KO
-        )
-    assert SIMULATION.shares_amounts[PositionType.SHORT] == -SELL_SHORT_AMOUNT_KO
-
-
 def test_update_portfolio_value(simulation_fixture):
     SIMULATION.update_shares_amounts(
         PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_OK
@@ -359,34 +423,43 @@ def test_update_portfolio_value(simulation_fixture):
     assert SIMULATION.portfolio_value == BUY_LONG_AMOUNT_OK * unit_cost_estimate
 
 
-def test_update_cash_ok(simulation_fixture):
+def test_update_cash_without_commission(simulation_fixture):
     SIMULATION.fund(FUND)
 
-    SIMULATION.update_cash(ActionType.BUY, COST_ESTIMATE_BUY_OK)
+    commission_amount = 0
+    SIMULATION.update_cash(ActionType.BUY, COST_ESTIMATE_BUY_OK, commission_amount)
     assert SIMULATION.cash == FUND - COST_ESTIMATE_BUY_OK
 
-    SIMULATION.update_cash(ActionType.SELL, 400)
+    SIMULATION.update_cash(ActionType.SELL, 400, commission_amount)
     assert SIMULATION.cash == (FUND - COST_ESTIMATE_BUY_OK + COST_ESTIMATE_SELL)
 
 
-def test_update_cash_ko(simulation_fixture):
+def test_update_cash_with_commission(simulation_fixture):
     SIMULATION.fund(FUND)
 
-    with pytest.raises(Exception):
-        SIMULATION.update_cash(ActionType.BUY, COST_ESTIMATE_BUY_KO)
-    assert SIMULATION.cash == FUND
+    commission_amount = COST_ESTIMATE_BUY_OK * COMMISSION
+    SIMULATION.update_cash(ActionType.BUY, COST_ESTIMATE_BUY_OK, commission_amount)
+    assert SIMULATION.cash == FUND - COST_ESTIMATE_BUY_OK - commission_amount
 
-    SIMULATION.update_cash(ActionType.SELL, COST_ESTIMATE_SELL)
-    assert SIMULATION.cash == FUND + COST_ESTIMATE_SELL
+    SIMULATION.update_cash(ActionType.SELL, 400, commission_amount)
+    assert SIMULATION.cash == (
+        FUND - COST_ESTIMATE_BUY_OK + COST_ESTIMATE_SELL - 2 * commission_amount
+    )
 
 
 def test_compute_profit(simulation_fixture):
     SIMULATION.last_transaction_price = {
-        PositionType.LONG: {ActionType.BUY: Decimal('200'), ActionType.SELL: Decimal('201')},
-        PositionType.SHORT: {ActionType.SELL: Decimal('250'), ActionType.BUY: Decimal('150')},
+        PositionType.LONG: {
+            ActionType.BUY: Decimal("200"),
+            ActionType.SELL: Decimal("201"),
+        },
+        PositionType.SHORT: {
+            ActionType.SELL: Decimal("250"),
+            ActionType.BUY: Decimal("150"),
+        },
     }
-    assert SIMULATION.compute_profit(PositionType.LONG) == Decimal('1')
-    assert SIMULATION.compute_profit(PositionType.SHORT) == Decimal('100')
+    assert SIMULATION.compute_profit(PositionType.LONG) == Decimal("1")
+    assert SIMULATION.compute_profit(PositionType.SHORT) == Decimal("100")
 
 
 def test_position_buy_sell_long_ok(simulation_fixture):
@@ -428,7 +501,7 @@ def test_position_buy_sell_long_ko(simulation_fixture):
         == SIMULATION.shares_amounts[PositionType.LONG] * UNIT_COST_ESTIMATE
     )
     assert SIMULATION.cash == FUND - SIMULATION.portfolio_value
-
+    cash_before_call = SIMULATION.cash
     with pytest.raises(Exception):
         SIMULATION.position(
             PositionType.LONG, ActionType.SELL, UNIT_COST_ESTIMATE, SELL_LONG_AMOUNT_KO
@@ -438,7 +511,7 @@ def test_position_buy_sell_long_ko(simulation_fixture):
         SIMULATION.portfolio_value
         == SIMULATION.shares_amounts[PositionType.LONG] * UNIT_COST_ESTIMATE
     )
-    assert SIMULATION.cash == FUND - SIMULATION.portfolio_value
+    assert SIMULATION.cash == cash_before_call
 
 
 def test_position_sell_buy_short_ok(simulation_fixture):
@@ -510,7 +583,14 @@ def test_run_without_commission(candle_objects_mock, simulation_fixture):
         CANDLES[5],
     ]
     SIMULATION.run()
-    calls = [call(id=1), call(id=2), call(id=3), call(id=4), call(id=5), call(id=6)]
+    calls = [
+        call(_id=OBJECT_ID_BASE + "1"),
+        call(_id=OBJECT_ID_BASE + "2"),
+        call(_id=OBJECT_ID_BASE + "3"),
+        call(_id=OBJECT_ID_BASE + "4"),
+        call(_id=OBJECT_ID_BASE + "5"),
+        call(_id=OBJECT_ID_BASE + "6"),
+    ]
     candle_objects_mock.get.assert_has_calls(calls)
 
     expected_cash = FUND
@@ -519,11 +599,8 @@ def test_run_without_commission(candle_objects_mock, simulation_fixture):
     for candle in CANDLES:
         expected_cash += sign * candle.close
         sign *= minus_one
-    if sign == minus_one:
-        assert SIMULATION.shares_amounts[PositionType.LONG] == 0
-    else:
-        assert SIMULATION.shares_amounts[PositionType.LONG] == 1
-    SIMULATION.portfolio_value = (
+    assert SIMULATION.shares_amounts[PositionType.LONG] == 0
+    assert SIMULATION.portfolio_value == (
         SIMULATION.shares_amounts[PositionType.LONG] * CANDLES[-1].close
     )
     assert SIMULATION.cash == expected_cash
@@ -547,7 +624,14 @@ def test_run_with_commission(candle_objects_mock, simulation_fixture):
         CANDLES[5],
     ]
     SIMULATION.run()
-    calls = [call(id=1), call(id=2), call(id=3), call(id=4), call(id=5), call(id=6)]
+    calls = [
+        call(_id=OBJECT_ID_BASE + "1"),
+        call(_id=OBJECT_ID_BASE + "2"),
+        call(_id=OBJECT_ID_BASE + "3"),
+        call(_id=OBJECT_ID_BASE + "4"),
+        call(_id=OBJECT_ID_BASE + "5"),
+        call(_id=OBJECT_ID_BASE + "6"),
+    ]
     candle_objects_mock.get.assert_has_calls(calls)
 
     expected_cash = FUND
@@ -557,11 +641,8 @@ def test_run_with_commission(candle_objects_mock, simulation_fixture):
         expected_cash += sign * candle.close
         expected_cash -= candle.close * SIMULATION.commission
         sign *= minus_one
-    if sign == minus_one:
-        assert SIMULATION.shares_amounts[PositionType.LONG] == 0
-    else:
-        assert SIMULATION.shares_amounts[PositionType.LONG] == 1
-    SIMULATION.portfolio_value = (
+    assert SIMULATION.shares_amounts[PositionType.LONG] == 0
+    assert SIMULATION.portfolio_value == (
         SIMULATION.shares_amounts[PositionType.LONG] * CANDLES[-1].close
     )
     assert SIMULATION.cash == expected_cash

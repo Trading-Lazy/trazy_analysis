@@ -8,6 +8,7 @@ from pandas import DataFrame
 
 import multiprocessing
 from simulator.simulation import Simulation
+from strategy.candlefetcher import CandleFetcher
 from strategy.strategy import Strategy
 from actionsapi.models import Candle
 from strategy.constants import DATE_FORMAT
@@ -30,7 +31,7 @@ class Simulator:
 
     def add_candles_from_dataframe(self, df: DataFrame):
         required_columns = [
-            "id",
+            "_id",
             "symbol",
             "open",
             "high",
@@ -42,11 +43,11 @@ class Simulator:
         validate_dataframe_columns(df, required_columns)
         self.candles = []
         self.symbol = df[["symbol"]].iloc[0]
-        df[["id", "volume"]] = df[["id", "volume"]].astype(int)
+        df[["volume"]] = df[["volume"]].astype(int)
 
         for index, row in df.iterrows():
             candle = Candle(
-                id=row["id"],
+                _id=row["_id"],
                 symbol=row["symbol"],
                 open=Decimal(row["open"]),
                 high=Decimal(row["high"]),
@@ -57,22 +58,17 @@ class Simulator:
             )
             self.candles.append(candle)
 
-    def add_candles_data_from_db(
+    def add_candles_from_db(
         self, symbol: str, start: datetime, end: datetime = datetime.now()
     ):
         self.symbol = symbol
-        db_candles = Candle.objects.all().filter(
-            symbol=symbol, timestamp__gte=start, timestamp__lte=end
-        )
-        candles = []
-        for db_candle in db_candles:
-            candles.append(db_candle)
-        self.set_candles(candles)
+        candles = CandleFetcher.get_candles_from_db(symbol, start, end)
+        self.set_candles(list(candles))
 
-    def add_candles_csv_data(self, csv_file_path, sep=","):
+    def add_candles_from_csv(self, csv_file_path, sep=","):
         self.candles = []
         dtype = {
-            "id": int,
+            "_id": str,
             "symbol": str,
             "open": str,
             "high": str,

@@ -14,13 +14,13 @@ class SellAndBuyShortStrategy(Strategy):
         self.is_opened = not self.is_opened
 
         action = Action(
-            action_type = computed_action,
-            position_type = computed_position,
-            amount = 1,
-            confidence_level = 1,
-            strategy = self.name,
-            symbol = candle.symbol,
-            candle_id = candle.id,
-            parameters = {}
+            action_type=computed_action,
+            position_type=computed_position,
+            amount=1,
+            confidence_level=1,
+            strategy=self.name,
+            symbol=candle.symbol,
+            candle_id=candle._id,
+            parameters={},
         )
         return action

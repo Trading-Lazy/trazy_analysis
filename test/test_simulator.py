@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List
 
 import pandas as pd
 
@@ -11,11 +10,13 @@ from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
 from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 from strategy.strategies.DumbShortStrategy import DumbShortStrategy
 from strategy.strategies.SellAndBuyShortStrategy import SellAndBuyShortStrategy
+from tools.tools import compare_candles_list, clean_candles_in_db
 
 SYMBOL = "ANX.PA"
+OBJECT_ID_BASE = "5eae9ddd4d6f4e006f67c9c"
 CANDLES = [
     Candle(
-        id=1,
+        _id=OBJECT_ID_BASE + "1",
         symbol=SYMBOL,
         open=Decimal("94.1200"),
         high=Decimal("94.1500"),
@@ -25,7 +26,7 @@ CANDLES = [
         timestamp="2020-05-08 14:17:00",
     ),
     Candle(
-        id=2,
+        _id=OBJECT_ID_BASE + "2",
         symbol=SYMBOL,
         open=Decimal("94.0700"),
         high=Decimal("94.1000"),
@@ -35,7 +36,7 @@ CANDLES = [
         timestamp="2020-05-08 14:24:00",
     ),
     Candle(
-        id=3,
+        _id=OBJECT_ID_BASE + "3",
         symbol=SYMBOL,
         open=Decimal("94.0700"),
         high=Decimal("94.1000"),
@@ -45,7 +46,7 @@ CANDLES = [
         timestamp="2020-05-08 14:24:56",
     ),
     Candle(
-        id=4,
+        _id=OBJECT_ID_BASE + "4",
         symbol=SYMBOL,
         open=Decimal("94.1700"),
         high=Decimal("94.1800"),
@@ -55,7 +56,7 @@ CANDLES = [
         timestamp="2020-05-08 14:35:00",
     ),
     Candle(
-        id=5,
+        _id=OBJECT_ID_BASE + "5",
         symbol=SYMBOL,
         open=Decimal("94.1900"),
         high=Decimal("94.2200"),
@@ -65,7 +66,7 @@ CANDLES = [
         timestamp="2020-05-08 14:41:00",
     ),
     Candle(
-        id=6,
+        _id=OBJECT_ID_BASE + "6",
         symbol=SYMBOL,
         open=Decimal("94.1900"),
         high=Decimal("94.2200"),
@@ -86,33 +87,17 @@ def test_add_strategy():
     assert len(simulator.simulations) == 2
 
 
-def compare_candle(candle1: Candle, candle2: Candle) -> bool:
-    return (
-        candle1.symbol == candle2.symbol
-        and Decimal(candle1.open).normalize() == Decimal(candle2.open).normalize()
-        and Decimal(candle1.high).normalize() == Decimal(candle2.high).normalize()
-        and Decimal(candle1.low).normalize() == Decimal(candle2.low).normalize()
-        and Decimal(candle1.close).normalize() == Decimal(candle2.close).normalize()
-        and candle1.volume == candle2.volume
-    )
-
-
-def compare_candles_list(
-    candles_list1: List[Candle], candles_list2: List[Candle]
-) -> bool:
-    if len(candles_list1) != len(candles_list2):
-        return False
-    length = len(candles_list1)
-    for i in range(0, length):
-        if not compare_candle(candles_list1[i], candles_list2[i]):
-            return False
-    return True
-
-
 def test_add_candles_from_dataframe():
     simulator = Simulator()
     columns_values = {
-        "id": [1, 2, 3, 4, 5, 6],
+        "_id": [
+            OBJECT_ID_BASE + "1",
+            OBJECT_ID_BASE + "2",
+            OBJECT_ID_BASE + "3",
+            OBJECT_ID_BASE + "4",
+            OBJECT_ID_BASE + "5",
+            OBJECT_ID_BASE + "6",
+        ],
         "timestamp": [
             "2020-05-08 14:17:00",
             "2020-05-08 14:24:00",
@@ -158,15 +143,19 @@ def test_add_candles_from_dataframe():
     }
     df = pd.DataFrame(
         columns_values,
-        columns=["id", "timestamp", "symbol", "open", "high", "low", "close", "volume"],
+        columns=[
+            "_id",
+            "timestamp",
+            "symbol",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ],
     )
     simulator.add_candles_from_dataframe(df)
     assert compare_candles_list(simulator.candles, CANDLES)
-
-
-def clean_candles_in_db():
-    for candle in Candle.objects.all():
-        candle.delete()
 
 
 def test_add_candles_data_from_db():
@@ -176,14 +165,14 @@ def test_add_candles_data_from_db():
         candle.save()
 
     simulator = Simulator()
-    simulator.add_candles_data_from_db(SYMBOL, CANDLES[0].timestamp, CANDLES[-1].timestamp)
+    simulator.add_candles_from_db(SYMBOL, CANDLES[0].timestamp, CANDLES[-1].timestamp)
     clean_candles_in_db()
     assert compare_candles_list(simulator.candles, CANDLES)
 
 
-def test_add_candles_csv_data():
+def test_add_candles_from_csv():
     simulator = Simulator()
-    simulator.add_candles_csv_data("test/data/candles.csv")
+    simulator.add_candles_from_csv("test/data/candles.csv")
     assert compare_candles_list(simulator.candles, CANDLES)
 
 
@@ -227,7 +216,7 @@ def test_run_simulation_without_commission():
     clean_candles_in_db()
     for candle in CANDLES:
         candle.save()
-    simulator.add_candles_data_from_db("ANX.PA", start, end)
+    simulator.add_candles_from_db("ANX.PA", start, end)
 
     simulator.fund(FUND)
     buyAndSellLongStrategy = BuyAndSellLongStrategy()
@@ -282,7 +271,7 @@ def test_run_simulation_with_commission():
     clean_candles_in_db()
     for candle in CANDLES:
         candle.save()
-    simulator.add_candles_data_from_db("ANX.PA", start, end)
+    simulator.add_candles_from_db("ANX.PA", start, end)
 
     simulator.fund(FUND)
     simulator.set_commission(COMMISSION)
