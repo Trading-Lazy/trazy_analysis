@@ -1,7 +1,20 @@
 import abc
+import os
 from enum import Enum, auto
-from actionsapi.models import PositionType, ActionType
+
+from pymongo import MongoClient
+
+import logger
+import settings
 from actionsapi.models import Action, Candle
+from common.exchange_calendar_euronext import EuronextExchangeCalendar
+
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, 'output.log'))
+
+m_client = MongoClient(settings.DB_CONN)
+db = m_client['djongo_connection']
+euronext_cal = EuronextExchangeCalendar()
 
 
 class StrategyName(Enum):
@@ -14,28 +27,19 @@ class Strategy:
     def __init__(self, name: str):
         self.is_opened = False
         self.name = name
+        self.__parameters = self.init_default_parameters()
 
     @abc.abstractmethod
     def compute_action(self, candle) -> Action:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def init_default_parameters(self):
+        raise NotImplementedError
+
     def process_candle(self, candle: Candle):
         action = self.compute_action(candle)
-        action.save()
+        if action is not None:
+            action.save()
 
-
-class SmaCrossoverStrategy(Strategy):
-    def __init__(self):
-        super().__init__(StrategyName.SMA_CROSSOVER.name)
-
-    def compute_action(self, candle: Candle) -> Action:
-        computed_position = PositionType.NONE
-        computed_action = ActionType.WAIT
-
-        action = Action(self.name,
-                        candle.symbol,
-                        0.0,
-                        computed_action,
-                        computed_position)
-        return action
 
