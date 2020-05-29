@@ -9,8 +9,6 @@ STRING_MAX_LENGTH = 200
 
 
 class Candle(models.Model):
-    _id = models.ObjectIdField()
-
     symbol = models.CharField(max_length=STRING_MAX_LENGTH, default='DUMMY_SYMBOL')
 
     PRICE_DECIMAL_PLACES = 5
@@ -69,8 +67,6 @@ class PositionType(Enum):
 
 
 class Action(models.Model):
-    _id = models.ObjectIdField()
-
     action_type = make_enum(ActionType, ActionType.BUY)
 
     position_type = make_enum(PositionType, PositionType.LONG)
@@ -89,7 +85,7 @@ class Action(models.Model):
 
     symbol = models.CharField(max_length=STRING_MAX_LENGTH)
 
-    candle_id = models.CharField(max_length=STRING_MAX_LENGTH)
+    candle_id = models.BigIntegerField(null=True)
 
     parameters = JSONField()
 
