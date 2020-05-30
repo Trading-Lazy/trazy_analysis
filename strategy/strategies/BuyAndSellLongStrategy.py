@@ -8,6 +8,9 @@ class BuyAndSellLongStrategy(Strategy):
     def __init__(self):
         super().__init__(StrategyName.BUY_AND_SELL_LONG_STRATEGY.name)
 
+    def init_default_parameters(self):
+        pass
+
     def compute_action(self, candle: Candle) -> Action:
         computed_position = PositionType.LONG
         computed_action = ActionType.SELL if self.is_opened else ActionType.BUY

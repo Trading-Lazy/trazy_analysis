@@ -10,7 +10,7 @@ from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
 from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 from strategy.strategies.DumbShortStrategy import DumbShortStrategy
 from strategy.strategies.SellAndBuyShortStrategy import SellAndBuyShortStrategy
-from tools.tools import compare_candles_list, clean_candles_in_db
+from test.tools.tools import compare_candles_list, clean_candles_in_db
 
 SYMBOL = "ANX.PA"
 OBJECT_ID_BASE = "5eae9ddd4d6f4e006f67c9c"

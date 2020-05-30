@@ -2,7 +2,6 @@ from decimal import Decimal
 from unittest.mock import patch, call, Mock
 
 import pytest
-from bson import ObjectId
 
 from simulator.simulation import Simulation
 from actionsapi.models import PositionType, ActionType, Candle, Action
@@ -10,7 +9,7 @@ from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
 from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 
 # disable logging into a file
-from tools.tools import compare_actions_list
+from test.tools.tools import compare_actions_list
 
 SIMULATION = Simulation(DumbLongStrategy(), log=False)
 SYMBOL = "ANX.PA"

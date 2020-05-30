@@ -8,6 +8,9 @@ class SellAndBuyShortStrategy(Strategy):
     def __init__(self):
         super().__init__(StrategyName.SELL_AND_BUY_SHORT_STRATEGY.name)
 
+    def init_default_parameters(self):
+        pass
+
     def compute_action(self, candle: Candle) -> Action:
         computed_position = PositionType.SHORT
         computed_action = ActionType.BUY if self.is_opened else ActionType.SELL

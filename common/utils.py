@@ -9,6 +9,6 @@ def validate_dataframe_columns(df: DataFrame, required_columns: list):
     if sorted_columns != sorted_required_columns:
         raise Exception(
             "The input dataframe is malformed. It must contain only columns: {} but has instead {}".format(
-                required_columns, df.columns
+                required_columns, df.columns.tolist()
             )
         )

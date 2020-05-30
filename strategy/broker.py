@@ -1,14 +1,12 @@
-import pika
-import settings
-import logger
-import os
 import json
 import multiprocessing as mp
+import pika
 
 from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
+from strategy.strategies.SellAndBuyShortStrategy import SellAndBuyShortStrategy
 from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 from strategy.strategies.DumbShortStrategy import DumbShortStrategy
-from strategy.strategies.SellAndBuyShortStrategy import SellAndBuyShortStrategy
+from strategy.strategies.SmaCrossoverStrategy import SmaCrossoverStrategy
 from .strategy import *
 
 list_strategies = []
@@ -52,6 +50,6 @@ if __name__ == "__main__":
     channel.queue_declare(queue='candles')
 
     channel.basic_consume(
-        queue='candles', on_message_callback=new_candle_callback, auto_ack=False)
+        queue='candles', on_message_callback=new_candle_callback, auto_ack=True)
 
     channel.start_consuming()
