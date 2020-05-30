@@ -21,6 +21,8 @@ class StrategyName(Enum):
     SMA_CROSSOVER = auto()
     DUMB_LONG_STRATEGY = auto()
     DUMB_SHORT_STRATEGY = auto()
+    BUY_AND_SELL_LONG_STRATEGY = auto()
+    SELL_AND_BUY_SHORT_STRATEGY = auto()
 
 
 class Strategy:

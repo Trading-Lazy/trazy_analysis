@@ -121,7 +121,7 @@ class SmaCrossoverStrategy(Strategy):
         if action is not None:
             return Action(strategy=StrategyName.SMA_CROSSOVER.name,
                           symbol=candle.symbol,
-                          candle_id=candle.pk,
+                          candle_id=candle._id,
                           confidence_level=1,
                           action_type=action,
                           position_type=position)

@@ -9,7 +9,8 @@ from strategy.constants import DATE_FORMAT
 import math
 import numpy as np
 
-sco: SmaCrossoverStrategy = SmaCrossoverStrategy()
+SCO: SmaCrossoverStrategy = SmaCrossoverStrategy()
+OBJECT_ID_BASE = "5eae9ddd4d6f4e006f67c9c"
 
 
 def get_df_hist() -> pd.DataFrame:
@@ -31,64 +32,64 @@ def get_df_hist() -> pd.DataFrame:
 
 
 def test_smacrossover_get_time_offset():
-    sco.set_interval('1 day')
-    assert (sco.get_time_offset() == pd.offsets.Day(1))
+    SCO.set_interval('1 day')
+    assert (SCO.get_time_offset() == pd.offsets.Day(1))
 
-    sco.set_interval('30 minute')
-    assert (sco.get_time_offset() == pd.offsets.Minute(30))
+    SCO.set_interval('30 minute')
+    assert (SCO.get_time_offset() == pd.offsets.Minute(30))
 
 
 def test_smacrossover_calc_time_range_1_day_interval():
-    sco.set_parameters({
+    SCO.set_parameters({
         'interval': '1 day',
         'short_period': 3,
         'long_period': 8
     })
 
-    start = sco.calc_required_history_start_timestamp(datetime(2020, 5, 1, 0, 0, tzinfo=timezone('UTC')))
+    start = SCO.calc_required_history_start_timestamp(datetime(2020, 5, 1, 0, 0, tzinfo=timezone('UTC')))
     assert (start == datetime(2020, 4, 20, 0, 0, tzinfo=timezone('UTC')))
 
 
 def test_smacrossover_calc_time_range_1_day_interval_2():
-    sco.set_parameters({
+    SCO.set_parameters({
         'interval': '1 day',
         'short_period': 3,
         'long_period': 8
     })
 
-    start = sco.calc_required_history_start_timestamp(datetime(2020, 4, 30, 0, 0, tzinfo=timezone('UTC')))
+    start = SCO.calc_required_history_start_timestamp(datetime(2020, 4, 30, 0, 0, tzinfo=timezone('UTC')))
     assert (start == datetime(2020, 4, 17, 0, 0, tzinfo=timezone('UTC')))
 
 
 def test_smacrossover_calc_time_range_30_minute_interval_on_business_hour():
-    sco.set_parameters({
+    SCO.set_parameters({
         'interval': '30 minute',
         'short_period': 2,
         'long_period': 4
     })
 
-    start = sco.calc_required_history_start_timestamp(datetime(2020, 4, 30, 15, 0, tzinfo=timezone('UTC')))
+    start = SCO.calc_required_history_start_timestamp(datetime(2020, 4, 30, 15, 0, tzinfo=timezone('UTC')))
     assert (start == datetime(2020, 4, 30, 13, 00, tzinfo=timezone('UTC')))
 
 
 def test_smacrossover_calc_time_range_30_minute_interval_on_non_business_hour():
-    sco.set_parameters({
+    SCO.set_parameters({
         'interval': '30 minute',
         'short_period': 2,
         'long_period': 4
     })
-    start = sco.calc_required_history_start_timestamp(datetime(2020, 5, 1, 12, 0, tzinfo=timezone('UTC')))
+    start = SCO.calc_required_history_start_timestamp(datetime(2020, 5, 1, 12, 0, tzinfo=timezone('UTC')))
     assert (start == datetime(2020, 4, 30, 13, 30, tzinfo=timezone('UTC')))
 
 
 def test_smacrossover_get_candles_with_signals_positions():
-    sco.set_parameters({
+    SCO.set_parameters({
         'interval': '30 minute',
         'short_period': 2,
         'long_period': 4
     })
 
-    df_signals_positions = sco.get_candles_with_signals_positions(get_df_hist())
+    df_signals_positions = SCO.get_candles_with_signals_positions(get_df_hist())
 
     expected_df_signals_positions = {
         'timestamp': ['2020-05-08 14:00:00', '2020-05-08 14:30:00', '2020-05-08 15:00:00',
@@ -177,7 +178,7 @@ def test_smacrossover_build_action():
 
 
 def test_smacrossover_calc_strategy():
-    sco.set_parameters({
+    SCO.set_parameters({
         'interval': '30 minute',
         'short_period': 2,
         'long_period': 4
@@ -197,8 +198,9 @@ def test_smacrossover_calc_strategy():
                            columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'volume'])
     df_hist['timestamp'] = pd.to_datetime(df_hist['timestamp'], format=DATE_FORMAT)
     df_hist.set_index('timestamp', inplace=True)
-    candle: Candle = Candle(id=5, symbol='ANX.PA', open=94.10, high=94.12, low=94.00, close=94.12, volume=2, timestamp=None)
-    action: Action = sco.calc_strategy(candle, df_hist)
+    candle: Candle = Candle(_id=OBJECT_ID_BASE + "1", symbol='ANX.PA', open=94.10, high=94.12, low=94.00,
+                            close=94.12, volume=2, timestamp=None)
+    action: Action = SCO.calc_strategy(candle, df_hist)
     assert (action.action_type == ActionType.BUY)
     assert (action.position_type == PositionType.LONG)
-    assert (action.candle_id == 5)
+    assert (action.candle_id == OBJECT_ID_BASE + "1")

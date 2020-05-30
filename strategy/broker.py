@@ -1,8 +1,9 @@
 import json
 import multiprocessing as mp
-
 import pika
 
+from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
+from strategy.strategies.SellAndBuyShortStrategy import SellAndBuyShortStrategy
 from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 from strategy.strategies.DumbShortStrategy import DumbShortStrategy
 from strategy.strategies.SmaCrossoverStrategy import SmaCrossoverStrategy
@@ -16,6 +17,10 @@ for s in settings.CONFIG['strategies']:
         list_strategies.append(DumbLongStrategy())
     if s == StrategyName.DUMB_SHORT_STRATEGY.name:
         list_strategies.append(DumbShortStrategy())
+    if s == StrategyName.BUY_AND_SELL_LONG_STRATEGY.name:
+        list_strategies.append(BuyAndSellLongStrategy())
+    if s == StrategyName.SELL_AND_BUY_SHORT_STRATEGY.name:
+        list_strategies.append(SellAndBuyShortStrategy())
 
 
 LOG = logger.get_root_logger(
