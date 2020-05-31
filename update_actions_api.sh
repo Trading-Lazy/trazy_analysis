@@ -7,4 +7,7 @@ then
 else
     echo "Invalid argument please pass only one argument that is a branch or a tag name"
 fi
-git subtree pull --prefix actionsapi actionsapi ${branch_or_tag} --squash
+git rm -r actionsapi
+git commit -m "Delete actionsapi"
+rm -rf actionsapi
+git subtree add --prefix actionsapi actionsapi ${branch_or_tag} --squash
