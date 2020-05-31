@@ -17,8 +17,10 @@ def get_env_variable(name):
                     'Environment variable “%s” not found.' % name)
 
 if not settings.configured:
+    SETTINGS_ENV = get_env_variable('SETTINGS_ENV')
+
     settings.configure(
-    DATABASES={
+    DATABASES = {
         'default': {
             'ENGINE': get_env_variable('DATABASE_ENGINE'),
             'ENFORCE_SCHEMA': True,
