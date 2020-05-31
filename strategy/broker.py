@@ -8,6 +8,7 @@ from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 from strategy.strategies.DumbShortStrategy import DumbShortStrategy
 from strategy.strategies.SmaCrossoverStrategy import SmaCrossoverStrategy
 from .strategy import *
+from common.utils import build_candle_from_json_string
 
 list_strategies = []
 for s in settings.CONFIG['strategies']:
@@ -33,14 +34,14 @@ def run_strategy(strategy, candle):
 
 def run_parallel_strategies(strategies, candle):
     pool = mp.Pool(mp.cpu_count())
-    pool.starmap(run_strategy, [(strategy,candle) for strategy in strategies])
+    pool.starmap(run_strategy, [(strategy, candle) for strategy in strategies])
     pool.close()
 
 
 def new_candle_callback(ch, method, properties, str_candle):
     LOG.info("Dequeue new candle: {}".format(str_candle))
-    candle = Candle()
-    candle.set_from_dict(json.loads(str_candle))
+    candle = build_candle_from_json_string(str_candle)
+    print(candle.timestamp)
     run_parallel_strategies(list_strategies, candle)
 
 

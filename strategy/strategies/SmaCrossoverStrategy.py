@@ -8,6 +8,7 @@ from common.helper import TimeInterval, find_start_interval_business_date, find_
 from strategy.candlefetcher import CandleFetcher
 from strategy.strategy import Strategy, StrategyName, euronext_cal, db, LOG
 from strategy.ta import ma
+from pytz import utc
 
 
 class SmaCrossoverStrategy(Strategy):
@@ -135,12 +136,19 @@ class SmaCrossoverStrategy(Strategy):
 
     def compute_action(self, candle: Candle) -> Action:
         # fetch action
-        last_action = db['actionsapi_action'].find_one(filter={"strategy": StrategyName.SMA_CROSSOVER.name},
-                                                        sort=[("id", -1)])
+        actions = Action.objects.all().filter(
+            strategy=StrategyName.SMA_CROSSOVER.name
+            #parameters=self.get_parameters()
+        )
+
+        last_action: Action = None
+        if len(actions) > 0:
+            last_action = actions[0]
+
         LOG.info("LAST ACTION : {}".format(last_action))
 
         # fetch candles
-        time_now = datetime.datetime.now()
+        time_now = datetime.datetime.now(utc)
 
         offset = self.get_time_offset()
         start_timestamp = self.calc_required_history_start_timestamp(time_now)
@@ -149,7 +157,7 @@ class SmaCrossoverStrategy(Strategy):
 
         if not df_hist.empty:
             action = self.calc_strategy(candle, df_hist)
-            if last_action['action_type'] == action.action_type.name:
+            if last_action.action_type == action.action_type.name:
                 return None
 
             return action

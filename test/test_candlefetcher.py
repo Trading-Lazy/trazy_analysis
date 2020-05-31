@@ -21,7 +21,7 @@ CANDLES = [
         low=Decimal("94.0000"),
         close=Decimal("94.1300"),
         volume=7,
-        timestamp="2020-05-08 14:17:00",
+        timestamp=pd.Timestamp("2020-05-08 14:17:00", tz='UTC'),
     ),
     Candle(
         _id=2,
@@ -31,7 +31,7 @@ CANDLES = [
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=91,
-        timestamp="2020-05-08 14:24:00",
+        timestamp=pd.Timestamp("2020-05-08 14:24:00", tz='UTC'),
     ),
     Candle(
         _id=3,
@@ -41,7 +41,7 @@ CANDLES = [
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=0,
-        timestamp="2020-05-08 14:24:56",
+        timestamp=pd.Timestamp("2020-05-08 14:24:56", tz='UTC'),
     ),
     Candle(
         _id=4,
@@ -51,7 +51,7 @@ CANDLES = [
         low=Decimal("94.0500"),
         close=Decimal("94.1800"),
         volume=0,
-        timestamp="2020-05-08 14:35:00",
+        timestamp=pd.Timestamp("2020-05-08 14:35:00", tz='UTC'),
     ),
     Candle(
         _id=5,
@@ -61,7 +61,7 @@ CANDLES = [
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=0,
-        timestamp="2020-05-08 14:41:00",
+        timestamp=pd.Timestamp("2020-05-08 14:41:00", tz='UTC'),
     ),
     Candle(
         _id=6,
@@ -71,7 +71,7 @@ CANDLES = [
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=7,
-        timestamp="2020-05-08 14:41:58",
+        timestamp=pd.Timestamp("2020-05-08 14:41:58", tz='UTC'),
     ),
 ]
 
@@ -80,9 +80,7 @@ def test_get_candles_from_db():
     clean_candles_in_db()
     for candle in CANDLES:
         candle.save()
-    start_str, end_str = CANDLES[0].timestamp, CANDLES[-1].timestamp
-    start = datetime.strptime(start_str, DATE_FORMAT)
-    end = datetime.strptime(end_str, DATE_FORMAT)
+    start, end = CANDLES[0].timestamp, CANDLES[-1].timestamp
     candles = CandleFetcher.get_candles_from_db(SYMBOL, start, end)
     assert compare_candles_list(candles, CANDLES)
     clean_candles_in_db()
@@ -229,9 +227,7 @@ def test_fetch():
     clean_candles_in_db()
     for candle in CANDLES:
         candle.save()
-    start_str, end_str = CANDLES[0].timestamp, CANDLES[-1].timestamp
-    start = datetime.strptime(start_str, DATE_FORMAT)
-    end = datetime.strptime(end_str, DATE_FORMAT)
+    start, end = CANDLES[0].timestamp, CANDLES[-1].timestamp
     df = CandleFetcher.fetch(SYMBOL, pd.offsets.Minute(5), EURONEXT_CAL, start, end)
     clean_candles_in_db()
 
