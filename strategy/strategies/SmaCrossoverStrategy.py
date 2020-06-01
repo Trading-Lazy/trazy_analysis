@@ -54,6 +54,14 @@ class SmaCrossoverStrategy(Strategy):
     def get_parameters(self) -> dict:
         return self.__parameters
 
+    def get_parameters_json(self) -> dict:
+        return {
+            'interval_unit': self.__interval.interval_unit,
+            'interval_value': self.__interval.interval_value,
+            'short_period': self.__short_period,
+            'long_period': self.__long_period
+        }
+
     def set_parameters(self, param: dict):
         if 'interval' in param:
             self.__interval = TimeInterval.process_interval(param['interval'])
@@ -136,14 +144,10 @@ class SmaCrossoverStrategy(Strategy):
 
     def compute_action(self, candle: Candle) -> Action:
         # fetch action
-        actions = Action.objects.all().filter(
-            strategy=StrategyName.SMA_CROSSOVER.name
-            #parameters=self.get_parameters()
-        )
-
-        last_action: Action = None
-        if len(actions) > 0:
-            last_action = actions[0]
+        last_action = Action.objects.all().filter(
+            strategy=StrategyName.SMA_CROSSOVER.name,
+            parameters=self.get_parameters_json()
+        ).first()
 
         LOG.info("LAST ACTION : {}".format(last_action))
 
@@ -157,7 +161,7 @@ class SmaCrossoverStrategy(Strategy):
 
         if not df_hist.empty:
             action = self.calc_strategy(candle, df_hist)
-            if last_action.action_type == action.action_type.name:
+            if last_action is not None and last_action.action_type == action.action_type.name:
                 return None
 
             return action

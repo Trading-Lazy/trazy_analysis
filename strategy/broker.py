@@ -41,7 +41,6 @@ def run_parallel_strategies(strategies, candle):
 def new_candle_callback(ch, method, properties, str_candle):
     LOG.info("Dequeue new candle: {}".format(str_candle))
     candle = build_candle_from_json_string(str_candle)
-    print(candle.timestamp)
     run_parallel_strategies(list_strategies, candle)
 
 

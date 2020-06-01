@@ -221,8 +221,7 @@ def test_fetch():
         expected_df_candles,
         columns=["timestamp", "symbol", "open", "high", "low", "close", "volume"],
     )
-    expected_df.index = pd.to_datetime(expected_df.timestamp, format=DATE_FORMAT)
-    expected_df = expected_df.drop(["timestamp"], axis=1)
+    expected_df = expected_df.set_index(['timestamp'])
 
     clean_candles_in_db()
     for candle in CANDLES:

@@ -8,7 +8,7 @@ import os
 from actionsapi.models import Candle
 from typing import List
 from django.forms import model_to_dict
-from common.utils import build_candle_from_dict
+from common.utils import build_candle_from_dict, candles_to_dict
 
 import settings
 
@@ -68,12 +68,13 @@ def push_latest_candle_to_rabbit(candle):
 
 
 def get_latest_candle_json(l_candles: List[Candle]) -> str:
-    candles_list = []
-    for candle in l_candles:
-        candles_list.append(model_to_dict(candle))
+    candles_list = candles_to_dict(l_candles)
     df_new_candles = pd.DataFrame(candles_list)
     df_new_candles['_id'] = df_new_candles['_id'].astype(str)
     return df_new_candles.iloc[df_new_candles['timestamp'].idxmax()].to_json(date_format='iso')
+
+
+
 
 
 

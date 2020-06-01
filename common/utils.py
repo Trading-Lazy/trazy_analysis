@@ -27,10 +27,12 @@ def build_candle_from_dict(candle_dict: dict) -> Candle:
 
 def build_candle_from_json_string(str_candle) -> Candle:
     action_json = json.loads(str_candle)
-    return Candle(symbol=action_json['symbol'],
-                    open=action_json['open'],
-                    high=action_json['high'],
-                    low=action_json['low'],
-                    close=action_json['close'],
-                    volume=action_json['volume'],
-                    timestamp=Timestamp(action_json['timestamp']))
+    action_json['timestamp'] = Timestamp(action_json['timestamp'])
+    return build_candle_from_dict(action_json)
+
+
+def candles_to_dict(l_candles):
+    candles_list = []
+    for candle in l_candles:
+        candles_list.append(model_to_dict(candle))
+    return candles_list
