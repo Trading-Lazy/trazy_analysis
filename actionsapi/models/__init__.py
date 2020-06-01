@@ -35,7 +35,8 @@ if not settings.configured:
     },
     INSTALLED_APPS = [
         'actionsapi.apps.ActionsApiConfig',
-    ])
+    ],
+    USE_TZ = True)
     django.setup()
 
 from .models import Candle, Action, ActionType, PositionType

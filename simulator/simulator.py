@@ -54,7 +54,7 @@ class Simulator:
                 low=Decimal(row["low"]),
                 close=Decimal(row["close"]),
                 volume=row["volume"],
-                timestamp=datetime.strptime(row["timestamp"], DATE_FORMAT),
+                timestamp=pd.Timestamp(row["timestamp"], tz='UTC'),
             )
             self.candles.append(candle)
 

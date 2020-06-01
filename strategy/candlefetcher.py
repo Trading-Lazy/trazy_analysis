@@ -9,17 +9,13 @@ import pandas as pd
 from pandasql import sqldf
 import numpy as np
 import settings
-from common.utils import validate_dataframe_columns
+from common.utils import validate_dataframe_columns, candles_to_dict
 from strategy.constants import DATE_FORMAT
 from actionsapi.models import Candle
 from pandas_market_calendars import MarketCalendar
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 
-m_client = MongoClient(settings.DB_CONN, tlsAllowInvalidCertificates=True)
-db = m_client["djongo_connection"]
-candles_collection = db["candles"]
 EURONEXT_CAL = EuronextExchangeCalendar()
-
 
 class CandleFetcher:
     @staticmethod
@@ -72,9 +68,7 @@ class CandleFetcher:
               start: datetime,
               end: datetime = datetime.now()) -> DataFrame:
         candles = CandleFetcher.get_candles_from_db(symbol, start, end)
-        candles_list = []
-        for candle in candles:
-            candles_list.append(model_to_dict(candle))
+        candles_list = candles_to_dict(candles)
         df = pd.DataFrame(
             candles_list,
             columns=["timestamp", "symbol", "open", "high", "low", "close", "volume"],

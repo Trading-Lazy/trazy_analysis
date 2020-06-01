@@ -8,6 +8,7 @@ from common.helper import TimeInterval, find_start_interval_business_date, find_
 from strategy.candlefetcher import CandleFetcher
 from strategy.strategy import Strategy, StrategyName, euronext_cal, db, LOG
 from strategy.ta import ma
+from pytz import utc
 
 
 class SmaCrossoverStrategy(Strategy):
@@ -52,6 +53,14 @@ class SmaCrossoverStrategy(Strategy):
 
     def get_parameters(self) -> dict:
         return self.__parameters
+
+    def get_parameters_json(self) -> dict:
+        return {
+            'interval_unit': self.__interval.interval_unit,
+            'interval_value': self.__interval.interval_value,
+            'short_period': self.__short_period,
+            'long_period': self.__long_period
+        }
 
     def set_parameters(self, param: dict):
         if 'interval' in param:
@@ -135,12 +144,15 @@ class SmaCrossoverStrategy(Strategy):
 
     def compute_action(self, candle: Candle) -> Action:
         # fetch action
-        last_action = db['actionsapi_action'].find_one(filter={"strategy": StrategyName.SMA_CROSSOVER.name},
-                                                        sort=[("id", -1)])
+        last_action = Action.objects.all().filter(
+            strategy=StrategyName.SMA_CROSSOVER.name,
+            parameters=self.get_parameters_json()
+        ).first()
+
         LOG.info("LAST ACTION : {}".format(last_action))
 
         # fetch candles
-        time_now = datetime.datetime.now()
+        time_now = datetime.datetime.now(utc)
 
         offset = self.get_time_offset()
         start_timestamp = self.calc_required_history_start_timestamp(time_now)
@@ -149,7 +161,7 @@ class SmaCrossoverStrategy(Strategy):
 
         if not df_hist.empty:
             action = self.calc_strategy(candle, df_hist)
-            if last_action['action_type'] == action.action_type.name:
+            if last_action is not None and last_action.action_type == action.action_type.name:
                 return None
 
             return action

@@ -19,9 +19,9 @@ if API_KEY is None:
     raise Exception('TRAZY_API_KEY is not defined')
 
 # MongoDB connection
-DB_CONN = os.environ.get('TRAZY_CONN')
+DB_CONN = os.environ.get('DATABASE_URL')
 if DB_CONN is None:
-    raise Exception('TRAZY_CONN is not defined')
+    raise Exception('DATABASE_URL is not defined')
 
 # RabbitMq connection
 CLOUDAMQP_URL = os.environ.get('CLOUDAMQP_URL', 'amqp://guest:guest@localhost/%2f')

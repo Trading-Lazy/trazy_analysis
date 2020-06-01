@@ -23,7 +23,7 @@ CANDLES = [
         low=Decimal("94.0000"),
         close=Decimal("94.1300"),
         volume=7,
-        timestamp="2020-05-08 14:17:00",
+        timestamp=pd.Timestamp("2020-05-08 14:17:00", tz='UTC'),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "2",
@@ -33,7 +33,7 @@ CANDLES = [
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=91,
-        timestamp="2020-05-08 14:24:00",
+        timestamp=pd.Timestamp("2020-05-08 14:24:00", tz='UTC'),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "3",
@@ -43,7 +43,7 @@ CANDLES = [
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=0,
-        timestamp="2020-05-08 14:24:56",
+        timestamp=pd.Timestamp("2020-05-08 14:24:56", tz='UTC'),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "4",
@@ -53,7 +53,7 @@ CANDLES = [
         low=Decimal("94.0500"),
         close=Decimal("94.1800"),
         volume=0,
-        timestamp="2020-05-08 14:35:00",
+        timestamp=pd.Timestamp("2020-05-08 14:35:00", tz='UTC'),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "5",
@@ -63,7 +63,7 @@ CANDLES = [
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=0,
-        timestamp="2020-05-08 14:41:00",
+        timestamp=pd.Timestamp("2020-05-08 14:41:00", tz='UTC'),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "6",
@@ -73,7 +73,7 @@ CANDLES = [
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=7,
-        timestamp="2020-05-08 14:41:58",
+        timestamp=pd.Timestamp("2020-05-08 14:41:58", tz='UTC'),
     ),
 ]
 FUND = Decimal("1000")
@@ -209,10 +209,8 @@ def test_set_commission():
 def test_run_simulation_without_commission():
     simulator = Simulator()
 
-    start_str = CANDLES[0].timestamp
-    start = datetime.strptime(start_str, DATE_FORMAT)
-    end_str = CANDLES[-1].timestamp
-    end = datetime.strptime(end_str, DATE_FORMAT)
+    start = CANDLES[0].timestamp
+    end = CANDLES[-1].timestamp
     clean_candles_in_db()
     for candle in CANDLES:
         candle.save()
@@ -264,10 +262,8 @@ def test_run_simulation_without_commission():
 def test_run_simulation_with_commission():
     simulator = Simulator()
 
-    start_str = CANDLES[0].timestamp
-    start = datetime.strptime(start_str, DATE_FORMAT)
-    end_str = CANDLES[-1].timestamp
-    end = datetime.strptime(end_str, DATE_FORMAT)
+    start= CANDLES[0].timestamp
+    end = CANDLES[-1].timestamp
     clean_candles_in_db()
     for candle in CANDLES:
         candle.save()
