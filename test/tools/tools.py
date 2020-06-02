@@ -9,6 +9,11 @@ def clean_candles_in_db():
         candle.delete()
 
 
+def clean_actions_in_db():
+    for action in Action.objects.all():
+        action.delete()
+
+
 def compare_candle(candle1: Candle, candle2: Candle) -> bool:
     return (
         candle1.symbol == candle2.symbol

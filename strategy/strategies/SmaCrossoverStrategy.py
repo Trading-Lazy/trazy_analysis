@@ -125,29 +125,32 @@ class SmaCrossoverStrategy(Strategy):
             computed_position = PositionType.LONG
         return computed_action, computed_position
 
-    @staticmethod
-    def build_action(candle, action, position):
+    def build_action(self, candle: Candle, action: ActionType, position: PositionType):
         if action is not None:
             return Action(strategy=StrategyName.SMA_CROSSOVER.name,
                           symbol=candle.symbol,
                           candle_id=candle._id,
                           confidence_level=1,
                           action_type=action,
-                          position_type=position)
+                          position_type=position,
+                          parameters=self.get_parameters_json())
 
         return None
 
     def calc_strategy(self, candle: Candle, history_candles: pd.DataFrame) -> Action:
         df_sma = self.get_candles_with_signals_positions(history_candles)
         computed_action, computed_position = SmaCrossoverStrategy.conclude_action_position(df_sma)
-        return SmaCrossoverStrategy.build_action(candle, computed_action, computed_position)
+        return self.build_action(candle, computed_action, computed_position)
 
-    def compute_action(self, candle: Candle) -> Action:
-        # fetch action
-        last_action = Action.objects.all().filter(
+    def get_last_action(self) -> Action:
+        return Action.objects.all().filter(
             strategy=StrategyName.SMA_CROSSOVER.name,
             parameters=self.get_parameters_json()
         ).first()
+
+    def compute_action(self, candle: Candle) -> Action:
+        # fetch action
+        last_action: Action = self.get_last_action()
 
         LOG.info("LAST ACTION : {}".format(last_action))
 
