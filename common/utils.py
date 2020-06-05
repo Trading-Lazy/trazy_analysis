@@ -27,7 +27,7 @@ def build_candle_from_dict(candle_dict: dict) -> Candle:
 
 def build_candle_from_json_string(str_candle) -> Candle:
     action_json = json.loads(str_candle)
-    action_json['timestamp'] = Timestamp(action_json['timestamp'])
+    action_json['timestamp'] = Timestamp(action_json['timestamp'], tz='UTC')
     return build_candle_from_dict(action_json)
 
 

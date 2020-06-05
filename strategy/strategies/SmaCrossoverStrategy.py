@@ -158,9 +158,9 @@ class SmaCrossoverStrategy(Strategy):
         time_now = datetime.datetime.now(utc)
 
         offset = self.get_time_offset()
-        start_timestamp = self.calc_required_history_start_timestamp(time_now)
+        start_timestamp = self.calc_required_history_start_timestamp(candle.timestamp)
 
-        df_hist = CandleFetcher.fetch(candle.symbol, offset, euronext_cal, pd.to_datetime(start_timestamp))
+        df_hist = CandleFetcher.fetch(candle.symbol, offset, euronext_cal, start_timestamp)
 
         if not df_hist.empty:
             action = self.calc_strategy(candle, df_hist)
