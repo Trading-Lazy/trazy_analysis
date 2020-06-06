@@ -42,7 +42,7 @@ def compare_action(action1: Action, action2: Action) -> bool:
         action1.action_type == action2.action_type
         and action1.position_type == action2.position_type
         and action1.amount == action2.amount
-        and action1.confidence_level == action2.confidence_level
+        and Decimal(action1.confidence_level) == Decimal(action2.confidence_level)
         and action1.strategy == action2.strategy
         and action1.symbol == action2.symbol
         and action1.candle_id == action2.candle_id

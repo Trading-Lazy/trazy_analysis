@@ -8,7 +8,7 @@ from pytz import timezone
 from strategy.constants import DATE_FORMAT
 import math
 import numpy as np
-from test.tools.tools import clean_actions_in_db
+from test.tools.tools import clean_actions_in_db, compare_action
 import decimal
 
 SCO: SmaCrossoverStrategy = SmaCrossoverStrategy()
@@ -231,11 +231,4 @@ def test_get_last_action():
         'interval': '1 day'
     })
     last_action = SCO.get_last_action()
-    assert last_action.action_type == action.action_type
-    assert last_action.position_type == action.position_type
-    assert last_action.amount == action.amount
-    assert last_action.candle_id == action.candle_id
-    assert last_action.parameters == action.parameters
-    assert last_action.symbol == action.symbol
-    assert last_action.strategy == action.strategy
-    assert decimal.Decimal(last_action.confidence_level) == action.confidence_level
+    assert compare_action(last_action, action)
