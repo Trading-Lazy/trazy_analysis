@@ -28,3 +28,17 @@ jobs:
             python -m pytest &> trazy-analysis-test-reports/tests.log
       - store_artifacts:
           path: /home/circleci/project/trazy-analysis-test-reports
+
+workflows:
+  version: 2.1
+  heroku_deploy:
+    jobs:
+      - build:
+          context: heroku_analysis_dev
+      - heroku/deploy-via-git: # Use the pre-configured job, deploy-via-git
+          context: heroku_analysis
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
