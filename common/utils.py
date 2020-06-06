@@ -16,13 +16,16 @@ def validate_dataframe_columns(df: DataFrame, required_columns: list):
 
 
 def build_candle_from_dict(candle_dict: dict) -> Candle:
-    return Candle(symbol=candle_dict['symbol'],
-                  open=candle_dict['open'],
-                  high=candle_dict['high'],
-                  low=candle_dict['low'],
-                  close=candle_dict['close'],
-                  volume=candle_dict['volume'],
-                  timestamp=candle_dict['timestamp'])
+    candle: Candle = Candle(symbol=candle_dict['symbol'],
+                            open=candle_dict['open'],
+                            high=candle_dict['high'],
+                            low=candle_dict['low'],
+                            close=candle_dict['close'],
+                            volume=candle_dict['volume'],
+                            timestamp=candle_dict['timestamp'])
+    if '_id' in candle_dict:
+        candle._id = candle_dict['_id']
+    return candle
 
 
 def build_candle_from_json_string(str_candle) -> Candle:

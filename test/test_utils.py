@@ -46,6 +46,7 @@ def test_validate_dataframe_columns_different_values_ko():
 
 def test_build_candle_from_dict():
     candle_dict = {
+        '_id':'5edc1be32e900cd0b2723a81',
         'symbol': 'ANX.PA',
         'open': 10,
         'high': 11,
@@ -62,6 +63,7 @@ def test_build_candle_from_dict():
     assert candle.close == 10
     assert candle.volume == 300
     assert candle.timestamp == pd.Timestamp('2020-01-01T12',tz='Europe/Paris')
+    assert candle._id == '5edc1be32e900cd0b2723a81'
 
 
 def test_build_candle_from_json_string():
