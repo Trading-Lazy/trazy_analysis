@@ -4,6 +4,7 @@ from django.utils import timezone
 from djongo import models
 from django.db.models import UniqueConstraint
 from jsonfield import JSONField
+from enumfields import EnumField
 
 STRING_MAX_LENGTH = 200
 
@@ -51,20 +52,20 @@ def make_enum(enum, default):
     max_length = 0
     for tag in enum:
         max_length = max(max_length, len(tag.name))
-    return models.CharField(
+    return EnumField(
+        enum=enum,
         max_length=max_length,
-        choices=[(tag, tag.name) for tag in enum],
         default=default
     )
 
 
 class ActionType(Enum):
-    BUY = "BUY",
+    BUY = "BUY"
     SELL = "SELL"
 
 
 class PositionType(Enum):
-    LONG = "LONG",
+    LONG = "LONG"
     SHORT = "SHORT"
 
 

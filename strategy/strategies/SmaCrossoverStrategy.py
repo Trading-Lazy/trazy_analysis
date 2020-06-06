@@ -125,29 +125,32 @@ class SmaCrossoverStrategy(Strategy):
             computed_position = PositionType.LONG
         return computed_action, computed_position
 
-    @staticmethod
-    def build_action(candle, action, position):
+    def build_action(self, candle: Candle, action: ActionType, position: PositionType):
         if action is not None:
             return Action(strategy=StrategyName.SMA_CROSSOVER.name,
                           symbol=candle.symbol,
                           candle_id=candle._id,
                           confidence_level=1,
                           action_type=action,
-                          position_type=position)
+                          position_type=position,
+                          parameters=self.get_parameters_json())
 
         return None
 
     def calc_strategy(self, candle: Candle, history_candles: pd.DataFrame) -> Action:
         df_sma = self.get_candles_with_signals_positions(history_candles)
         computed_action, computed_position = SmaCrossoverStrategy.conclude_action_position(df_sma)
-        return SmaCrossoverStrategy.build_action(candle, computed_action, computed_position)
+        return self.build_action(candle, computed_action, computed_position)
 
-    def compute_action(self, candle: Candle) -> Action:
-        # fetch action
-        last_action = Action.objects.all().filter(
+    def get_last_action(self) -> Action:
+        return Action.objects.all().filter(
             strategy=StrategyName.SMA_CROSSOVER.name,
             parameters=self.get_parameters_json()
         ).first()
+
+    def compute_action(self, candle: Candle) -> Action:
+        # fetch action
+        last_action: Action = self.get_last_action()
 
         LOG.info("LAST ACTION : {}".format(last_action))
 
@@ -155,9 +158,9 @@ class SmaCrossoverStrategy(Strategy):
         time_now = datetime.datetime.now(utc)
 
         offset = self.get_time_offset()
-        start_timestamp = self.calc_required_history_start_timestamp(time_now)
+        start_timestamp = self.calc_required_history_start_timestamp(candle.timestamp)
 
-        df_hist = CandleFetcher.fetch(candle.symbol, offset, euronext_cal, pd.to_datetime(start_timestamp))
+        df_hist = CandleFetcher.fetch(candle.symbol, offset, euronext_cal, start_timestamp)
 
         if not df_hist.empty:
             action = self.calc_strategy(candle, df_hist)

@@ -14,6 +14,7 @@ from strategy.constants import DATE_FORMAT
 from actionsapi.models import Candle
 from pandas_market_calendars import MarketCalendar
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
+from pytz import utc
 
 EURONEXT_CAL = EuronextExchangeCalendar()
 
@@ -66,7 +67,7 @@ class CandleFetcher:
               timeframe: pd.offsets.DateOffset,
               business_cal_df: MarketCalendar,
               start: datetime,
-              end: datetime = datetime.now()) -> DataFrame:
+              end: datetime = datetime.now(utc)) -> DataFrame:
         candles = CandleFetcher.get_candles_from_db(symbol, start, end)
         candles_list = candles_to_dict(candles)
         df = pd.DataFrame(

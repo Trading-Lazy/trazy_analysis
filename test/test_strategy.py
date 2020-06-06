@@ -8,6 +8,8 @@ from pytz import timezone
 from strategy.constants import DATE_FORMAT
 import math
 import numpy as np
+from test.tools.tools import clean_actions_in_db, compare_action
+import decimal
 
 SCO: SmaCrossoverStrategy = SmaCrossoverStrategy()
 OBJECT_ID_BASE = "5eae9ddd4d6f4e006f67c9c"
@@ -164,13 +166,13 @@ def test_smacrossover_conclude_action_position():
 
 def test_smacrossover_build_action():
     candle = Candle(symbol='ANX.PA', open=94.10, high=94.12, low=94.00, close=94.12, volume=2, timestamp=None)
-    action1 = SmaCrossoverStrategy.build_action(candle,ActionType.BUY, PositionType.LONG)
+    action1 = SCO.build_action(candle,ActionType.BUY, PositionType.LONG)
     assert (action1.action_type == ActionType.BUY)
     assert (action1.position_type == PositionType.LONG)
     assert (action1.symbol == 'ANX.PA')
     assert (action1.strategy == StrategyName.SMA_CROSSOVER.name)
 
-    action2 = SmaCrossoverStrategy.build_action(candle, ActionType.SELL, PositionType.LONG)
+    action2 = SCO.build_action(candle, ActionType.SELL, PositionType.LONG)
     assert (action2.action_type == ActionType.SELL)
     assert (action2.position_type == PositionType.LONG)
     assert (action2.symbol == 'ANX.PA')
@@ -198,9 +200,35 @@ def test_smacrossover_calc_strategy():
                            columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'volume'])
     df_hist['timestamp'] = pd.to_datetime(df_hist['timestamp'], format=DATE_FORMAT)
     df_hist.set_index('timestamp', inplace=True)
-    candle: Candle = Candle(_id=OBJECT_ID_BASE + "1", symbol='ANX.PA', open=94.10, high=94.12, low=94.00,
+    candle: Candle = Candle(_id=OBJECT_ID_BASE, symbol='ANX.PA', open=94.10, high=94.12, low=94.00,
                             close=94.12, volume=2, timestamp=None)
-    action: Action = SCO.calc_strategy(candle, df_hist)
+    action: Action = SCO. calc_strategy(candle, df_hist)
     assert (action.action_type == ActionType.BUY)
     assert (action.position_type == PositionType.LONG)
-    assert (action.candle_id == OBJECT_ID_BASE + "1")
+    assert (action.candle_id == OBJECT_ID_BASE)
+
+
+def test_get_last_action():
+    clean_actions_in_db()
+    action = Action(action_type=ActionType.BUY,
+                    position_type=PositionType.LONG,
+                    amount=1,
+                    confidence_level=1.000,
+                    strategy=StrategyName.SMA_CROSSOVER.name,
+                    symbol='ANX.PA',
+                    candle_id='1',
+                    timestamp=pd.Timestamp('2020-05-22 14:00:00', tz='UTC'),
+                    parameters={
+                        'interval_unit': 'day',
+                        'interval_value': 1,
+                        'short_period': 3,
+                        'long_period': 8
+                    })
+    action.save()
+    SCO.set_parameters({
+        'short_period': 3,
+        'long_period': 8,
+        'interval': '1 day'
+    })
+    last_action = SCO.get_last_action()
+    assert compare_action(last_action, action)
