@@ -26,6 +26,7 @@ isort==4.3.21
 jsonfield==3.1.0
 lazy-object-proxy==1.4.3
 mccabe==0.6.1
+mega.py==1.0.7
 more-itertools==8.2.0
 multidict==4.7.5
 numpy==1.18.3
@@ -33,10 +34,12 @@ packaging==20.3
 pandas==1.0.3
 pandas-market-calendars==1.3.5
 pandasql==0.7.3
+pathlib==1.0.1
 pathspec==0.8.0
 pika==1.1.0
 pluggy==0.13.1
 py==1.8.1
+pycryptodome==3.9.7
 pylint==2.5.2
 pymongo==3.10.1
 pyparsing==2.4.7
@@ -48,6 +51,7 @@ requests==2.23.0
 six==1.14.0
 SQLAlchemy==1.3.17
 sqlparse==0.2.4
+tenacity==5.1.5
 toml==0.10.1
 toolz==0.10.0
 trading-calendars==1.11.7
