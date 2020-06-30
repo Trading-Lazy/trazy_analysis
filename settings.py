@@ -26,4 +26,13 @@ if DB_CONN is None:
 # RabbitMq connection
 CLOUDAMQP_URL = os.environ.get('CLOUDAMQP_URL', 'amqp://guest:guest@localhost/%2f')
 
+TIINGO_API_TOKEN = os.environ.get('TIINGO_API_TOKEN')
+IEX_CLOUD_API_TOKEN = os.environ.get('IEX_CLOUD_API_TOKEN')
+MEGA_API_EMAIL = os.environ.get('MEGA_API_EMAIL')
+MEGA_API_PASSWORD = os.environ.get('MEGA_API_PASSWORD')
+
+HISTORICAL_FEED_DAY_OF_WEEK = os.environ.get('HISTORICAL_FEED_DAY_OF_WEEK')
+HISTORICAL_FEED_HOUR = os.environ.get('HISTORICAL_FEED_HOUR')
+HISTORICAL_FEED_MINUTE = os.environ.get('HISTORICAL_FEED_MINUTE')
+
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))

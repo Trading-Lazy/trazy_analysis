@@ -1,5 +1,10 @@
+import datetime
 from decimal import Decimal
 from typing import List
+from contextlib import contextmanager
+from unittest import mock
+
+import pytest
 
 from actionsapi.models import Candle, Action
 
@@ -60,3 +65,11 @@ def compare_actions_list(
         if not compare_action(actions_list1[i], actions_list2[i]):
             return False
     return True
+
+
+@contextmanager
+def not_raises(exception):
+    try:
+        yield
+    except exception:
+        raise pytest.fail("DID RAISE {0}".format(exception))
