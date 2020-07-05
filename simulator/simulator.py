@@ -1,3 +1,4 @@
+import multiprocessing
 from datetime import datetime
 from decimal import Decimal
 from multiprocessing import Queue
@@ -6,13 +7,11 @@ from typing import List
 import pandas as pd
 from pandas import DataFrame
 
-import multiprocessing
+from actionsapi.models import Candle
+from common.utils import validate_dataframe_columns
 from simulator.simulation import Simulation
 from strategy.candlefetcher import CandleFetcher
 from strategy.strategy import Strategy
-from actionsapi.models import Candle
-from strategy.constants import DATE_FORMAT
-from common.utils import validate_dataframe_columns
 
 
 class Simulator:
@@ -54,7 +53,7 @@ class Simulator:
                 low=Decimal(row["low"]),
                 close=Decimal(row["close"]),
                 volume=row["volume"],
-                timestamp=pd.Timestamp(row["timestamp"], tz='UTC'),
+                timestamp=pd.Timestamp(row["timestamp"], tz="UTC"),
             )
             self.candles.append(candle)
 
@@ -62,7 +61,7 @@ class Simulator:
         self, symbol: str, start: datetime, end: datetime = datetime.now()
     ):
         self.symbol = symbol
-        candles = CandleFetcher.get_candles_from_db(symbol, start, end)
+        candles = CandleFetcher.query_candles(symbol, start, end)
         self.set_candles(list(candles))
 
     def add_candles_from_csv(self, csv_file_path, sep=","):
