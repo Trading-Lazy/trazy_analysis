@@ -50,7 +50,7 @@ class CandleFetcher:
         }).fillna(method='ffill')
 
         if timeframe >= pd.offsets.Day(1):
-            df_resampled = df.reindex(business_cal.index)
+            df_resampled = df.reindex(business_cal.index.tz_localize(tz='UTC'))
         else:
             s = """
                 select
