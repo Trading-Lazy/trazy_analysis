@@ -1,8 +1,7 @@
 import io
 import os
 import random
-from typing import Dict, List, Optional, Tuple, Union
-from unittest.mock import MagicMock
+from typing import List, Optional
 
 import requests
 from Crypto.Cipher import AES
@@ -45,42 +44,18 @@ class MegaExtended(Mega):
         return super().login(email, password)
 
     @try_until_success
-    def get_files(
-        self,
-    ) -> Union[
-        Dict[str, Dict[str, Union[Dict[str, str], str, int]]],
-        MagicMock,
-        Dict[
-            str,
-            Union[
-                Dict[
-                    str,
-                    Union[
-                        Dict[str, str],
-                        str,
-                        Tuple[int, int, int, int],
-                        Tuple[int, int, int, int, int, int, int, int],
-                        Tuple[int, int],
-                        int,
-                    ],
-                ],
-                Dict[str, Union[Dict[str, str], str, Tuple[int, int, int, int], int]],
-                Dict[str, Union[str, int]],
-                Dict[str, Union[Dict[str, str], str, int]],
-            ],
-        ],
-    ]:
+    def get_files(self,) -> dict:
         return super().get_files()
 
     @try_until_success
-    def get_files_in_node(self, target: str) -> MagicMock:
+    def get_files_in_node(self, target: str) -> dict:
         return super().get_files_in_node(target)
 
     @try_until_success
-    def create_folder_helper(self, name: str, dest: Optional[str] = None) -> MagicMock:
+    def create_folder_helper(self, name: str, dest: Optional[str] = None):
         return super().create_folder(name, dest)
 
-    def create_folder(self, name: str, dest: Optional[str] = None) -> Dict[str, str]:
+    def create_folder(self, name: str, dest: Optional[str] = None) -> dict:
         data = self.create_folder_helper(name, dest)
         folder_name = name.split(PATH_SEPARATOR)[-1]
         path = name if dest is None else Path(dest) / name
@@ -264,7 +239,7 @@ class MegaExtended(Mega):
         return data
 
     @try_until_success
-    def destroy_helper(self, file_id: str) -> MagicMock:
+    def destroy_helper(self, file_id: str) -> dict:
         return super().destroy(file_id)
 
     def destroy(self, file_id: str) -> int:
