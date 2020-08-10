@@ -136,8 +136,8 @@ def test_resample_candle_data_interval_5_minute():
 
 def test_simple_resample_candle_data_interval_1_day():
     candles = {
-        'timestamp': ['2020-05-08 14:17:00', '2020-05-08 14:24:00', '2020-05-08 14:24:56',
-                      '2020-05-08 14:35:00', '2020-05-08 14:41:00', '2020-05-08 14:41:58'],
+        'timestamp': ['2020-05-08 14:17:00+00', '2020-05-08 14:24:00+00', '2020-05-08 14:24:56+00',
+                      '2020-05-08 14:35:00+00', '2020-05-08 14:41:00+00', '2020-05-08 14:41:58+00'],
         'symbol': ['ANX.PA', 'ANX.PA', 'ANX.PA', 'ANX.PA', 'ANX.PA', 'ANX.PA'],
         'open': [94.1200, 94.0700, 94.0700, 94.1700, 94.1900, 94.1900],
         'high': [94.1500, 94.1000, 94.1000, 94.1800, 94.2200, 94.2200],
@@ -151,7 +151,7 @@ def test_simple_resample_candle_data_interval_1_day():
     df = CandleFetcher.resample_candle_data(df, pd.offsets.Day(1), business_cal)
 
     expected_df_candles = {
-        'timestamp': ['2020-05-08'],
+        'timestamp': ['2020-05-08 00:00:00+00'],
         'symbol': ['ANX.PA'],
         'open': [94.12],
         'high': [94.22],
@@ -161,7 +161,7 @@ def test_simple_resample_candle_data_interval_1_day():
     }
     expected_df = pd.DataFrame(expected_df_candles,
                                columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'volume'])
-    expected_df.index = pd.to_datetime(expected_df.timestamp, format=DATE_FORMAT)
+    expected_df.index = pd.to_datetime(expected_df.timestamp)
 
     expected_df = expected_df.drop(['timestamp'], axis=1)
     assert ((df == expected_df).all(axis=None))
@@ -169,8 +169,8 @@ def test_simple_resample_candle_data_interval_1_day():
 
 def test_simple_resample_candle_data_interval_1_day_data_spread_over_2_days():
     candles = {
-        'timestamp': ['2020-05-08 14:17:00', '2020-05-08 14:24:00', '2020-05-08 14:24:56',
-                      '2020-05-08 14:35:00', '2020-05-11 14:41:00', '2020-05-11 14:41:58'],
+        'timestamp': ['2020-05-08 14:17:00+00', '2020-05-08 14:24:00+00', '2020-05-08 14:24:56+00',
+                      '2020-05-08 14:35:00+00', '2020-05-11 14:41:00+00', '2020-05-11 14:41:58+00'],
         'symbol': ['ANX.PA', 'ANX.PA', 'ANX.PA', 'ANX.PA', 'ANX.PA', 'ANX.PA'],
         'open': [94.1200, 94.0700, 94.0700, 94.1700, 94.1900, 94.1900],
         'high': [94.1500, 94.1000, 94.1000, 94.1800, 94.2200, 94.2200],
@@ -184,7 +184,7 @@ def test_simple_resample_candle_data_interval_1_day_data_spread_over_2_days():
     df = CandleFetcher.resample_candle_data(df, pd.offsets.Day(1), business_cal)
 
     expected_df_candles = {
-        'timestamp': ['2020-05-08','2020-05-11'],
+        'timestamp': ['2020-05-08 00:00:00+00','2020-05-11 00:00:00+00'],
         'symbol': ['ANX.PA','ANX.PA'],
         'open': [94.12, 94.19],
         'high': [94.18, 94.22],
@@ -194,7 +194,7 @@ def test_simple_resample_candle_data_interval_1_day_data_spread_over_2_days():
     }
     expected_df = pd.DataFrame(expected_df_candles,
                                columns=['timestamp', 'symbol', 'open', 'high', 'low', 'close', 'volume'])
-    expected_df.index = pd.to_datetime(expected_df.timestamp, format=DATE_FORMAT)
+    expected_df.index = pd.to_datetime(expected_df.timestamp)
 
     expected_df = expected_df.drop(['timestamp'], axis=1)
     assert ((df == expected_df).all(axis=None))

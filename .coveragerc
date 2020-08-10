@@ -2,3 +2,4 @@
 omit =
     venv/*
     strategy/ta.py
+    test/*

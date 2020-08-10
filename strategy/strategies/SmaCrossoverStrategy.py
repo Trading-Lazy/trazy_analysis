@@ -114,6 +114,7 @@ class SmaCrossoverStrategy(Strategy):
 
     @staticmethod
     def conclude_action_position(df_positions: pd.DataFrame) -> (ActionType, PositionType):
+        LOG.info("Calculated position : \n{}".format(df_positions))
         position = df_positions.iloc[-1]['positions']
         computed_action = None
         computed_position = None
@@ -140,6 +141,7 @@ class SmaCrossoverStrategy(Strategy):
     def calc_strategy(self, candle: Candle, history_candles: pd.DataFrame) -> Action:
         df_sma = self.get_candles_with_signals_positions(history_candles)
         computed_action, computed_position = SmaCrossoverStrategy.conclude_action_position(df_sma)
+        LOG.info("Computed action : {}, computed position : {}".format(computed_action, computed_position))
         return self.build_action(candle, computed_action, computed_position)
 
     def get_last_action(self) -> Action:
