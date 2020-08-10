@@ -1,16 +1,16 @@
-from datetime import datetime
 from decimal import Decimal
+from multiprocessing import Queue
 
 import pandas as pd
 
-from simulator.simulator import Simulator
 from actionsapi.models import Candle, PositionType
-from strategy.constants import DATE_FORMAT
+from simulator.simulation import Simulation
+from simulator.simulator import Simulator
 from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
 from strategy.strategies.DumbLongStrategy import DumbLongStrategy
 from strategy.strategies.DumbShortStrategy import DumbShortStrategy
 from strategy.strategies.SellAndBuyShortStrategy import SellAndBuyShortStrategy
-from test.tools.tools import compare_candles_list, clean_candles_in_db
+from test.tools.tools import clean_candles_in_db, compare_candles_list
 
 SYMBOL = "ANX.PA"
 OBJECT_ID_BASE = "5eae9ddd4d6f4e006f67c9c"
@@ -23,7 +23,7 @@ CANDLES = [
         low=Decimal("94.0000"),
         close=Decimal("94.1300"),
         volume=7,
-        timestamp=pd.Timestamp("2020-05-08 14:17:00", tz='UTC'),
+        timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "2",
@@ -33,7 +33,7 @@ CANDLES = [
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=91,
-        timestamp=pd.Timestamp("2020-05-08 14:24:00", tz='UTC'),
+        timestamp=pd.Timestamp("2020-05-08 14:24:00", tz="UTC"),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "3",
@@ -43,7 +43,7 @@ CANDLES = [
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=0,
-        timestamp=pd.Timestamp("2020-05-08 14:24:56", tz='UTC'),
+        timestamp=pd.Timestamp("2020-05-08 14:24:56", tz="UTC"),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "4",
@@ -53,7 +53,7 @@ CANDLES = [
         low=Decimal("94.0500"),
         close=Decimal("94.1800"),
         volume=0,
-        timestamp=pd.Timestamp("2020-05-08 14:35:00", tz='UTC'),
+        timestamp=pd.Timestamp("2020-05-08 14:35:00", tz="UTC"),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "5",
@@ -63,7 +63,7 @@ CANDLES = [
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=0,
-        timestamp=pd.Timestamp("2020-05-08 14:41:00", tz='UTC'),
+        timestamp=pd.Timestamp("2020-05-08 14:41:00", tz="UTC"),
     ),
     Candle(
         _id=OBJECT_ID_BASE + "6",
@@ -73,7 +73,7 @@ CANDLES = [
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=7,
-        timestamp=pd.Timestamp("2020-05-08 14:41:58", tz='UTC'),
+        timestamp=pd.Timestamp("2020-05-08 14:41:58", tz="UTC"),
     ),
 ]
 FUND = Decimal("1000")
@@ -206,7 +206,47 @@ def test_set_commission():
         assert simulation.commission == COMMISSION
 
 
-def test_run_simulation_without_commission():
+def test_run_simulation():
+    simulator = Simulator()
+    buyAndSellLongStrategy = BuyAndSellLongStrategy()
+    clean_candles_in_db()
+    for candle in CANDLES:
+        candle.save()
+    simulation = Simulation(
+        buyAndSellLongStrategy, CANDLES, FUND, COMMISSION, SYMBOL, False
+    )
+    final_states = Queue()
+    simulator.run_simulation(simulation, final_states)
+
+    expected_final_states = {
+        buyAndSellLongStrategy.name: {
+            "shares_amounts": {
+                PositionType.LONG: Decimal("0"),
+                PositionType.SHORT: Decimal("0"),
+            },
+            "portfolio_value": Decimal("0"),
+            "cash": Decimal("999.48513"),
+        }
+    }
+    while not final_states.empty():
+        final_state = final_states.get()
+        strategy_name = final_state["strategy_name"]
+        assert (
+            final_state["shares_amounts"][PositionType.LONG]
+            == expected_final_states[strategy_name]["shares_amounts"][PositionType.LONG]
+        )
+        assert (
+            final_state["portfolio_value"].normalize()
+            == expected_final_states[strategy_name]["portfolio_value"].normalize()
+        )
+        assert (
+            final_state["cash"].normalize()
+            == expected_final_states[strategy_name]["cash"].normalize()
+        )
+    clean_candles_in_db()
+
+
+def test_run_without_commission():
     simulator = Simulator()
 
     start = CANDLES[0].timestamp
@@ -259,10 +299,10 @@ def test_run_simulation_without_commission():
     clean_candles_in_db()
 
 
-def test_run_simulation_with_commission():
+def test_run_with_commission():
     simulator = Simulator()
 
-    start= CANDLES[0].timestamp
+    start = CANDLES[0].timestamp
     end = CANDLES[-1].timestamp
     clean_candles_in_db()
     for candle in CANDLES:
