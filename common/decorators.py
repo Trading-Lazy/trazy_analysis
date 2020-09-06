@@ -16,3 +16,14 @@ def try_until_success(func: Callable) -> Callable:
         return data
 
     return wrapper_try_until_succes
+
+
+def Singleton(cls):
+    instances = {}
+
+    def wrapper(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return wrapper

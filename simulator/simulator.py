@@ -1,21 +1,24 @@
 import multiprocessing
-from datetime import datetime
 from decimal import Decimal
 from multiprocessing import Queue
 from typing import List
 
 import pandas as pd
 from pandas import DataFrame
+from pandas_market_calendars import MarketCalendar
 
-from actionsapi.models import Candle
 from common.utils import validate_dataframe_columns
+from db_storage.db_storage import DbStorage
+from file_storage.file_storage import FileStorage
+from models.candle import Candle
 from simulator.simulation import Simulation
 from strategy.candlefetcher import CandleFetcher
 from strategy.strategy import Strategy
 
 
 class Simulator:
-    def __init__(self, symbol: str = "symbol"):
+    def __init__(self, db_storage: DbStorage, symbol: str = "symbol"):
+        self.db_storage = db_storage
         self.cash = 0
         self.commission = 0
         self.candles = []
@@ -24,13 +27,18 @@ class Simulator:
 
     def add_strategy(self, strategy: Strategy, log: bool = True):
         simulation = Simulation(
-            strategy, self.candles, self.cash, self.commission, self.symbol, log
+            strategy,
+            self.db_storage,
+            self.candles,
+            self.cash,
+            self.commission,
+            self.symbol,
+            log,
         )
         self.simulations.append(simulation)
 
     def add_candles_from_dataframe(self, df: DataFrame):
         required_columns = [
-            "_id",
             "symbol",
             "open",
             "high",
@@ -44,30 +52,36 @@ class Simulator:
         self.symbol = df[["symbol"]].iloc[0]
         df[["volume"]] = df[["volume"]].astype(int)
 
-        for index, row in df.iterrows():
+        for row in df.itertuples():
             candle = Candle(
-                _id=row["_id"],
-                symbol=row["symbol"],
-                open=Decimal(row["open"]),
-                high=Decimal(row["high"]),
-                low=Decimal(row["low"]),
-                close=Decimal(row["close"]),
-                volume=row["volume"],
-                timestamp=pd.Timestamp(row["timestamp"], tz="UTC"),
+                symbol=row.symbol,
+                open=Decimal(row.open),
+                high=Decimal(row.high),
+                low=Decimal(row.low),
+                close=Decimal(row.close),
+                volume=row.volume,
+                timestamp=pd.Timestamp(row.timestamp, tz="UTC"),
             )
             self.candles.append(candle)
 
     def add_candles_from_db(
-        self, symbol: str, start: datetime, end: datetime = datetime.now()
+        self,
+        db_storage: DbStorage,
+        file_storage: FileStorage,
+        market_cal: MarketCalendar,
+        symbol: str,
+        start: pd.Timestamp,
+        end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
     ):
         self.symbol = symbol
-        candles = CandleFetcher.query_candles(symbol, start, end)
-        self.set_candles(list(candles))
+        candles = CandleFetcher(db_storage, file_storage, market_cal).query_candles(
+            symbol, start, end
+        )
+        self.set_candles(candles)
 
     def add_candles_from_csv(self, csv_file_path, sep=","):
         self.candles = []
         dtype = {
-            "_id": str,
             "symbol": str,
             "open": str,
             "high": str,
