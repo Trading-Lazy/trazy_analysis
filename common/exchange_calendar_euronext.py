@@ -1,19 +1,25 @@
-
 from datetime import time
 
-from pandas.tseries.holiday import AbstractHolidayCalendar, EasterMonday, GoodFriday, Holiday, previous_friday
-from pytz import timezone
-
+from pandas.tseries.holiday import (
+    AbstractHolidayCalendar,
+    EasterMonday,
+    GoodFriday,
+    Holiday,
+    previous_friday,
+)
 from pandas_market_calendars import MarketCalendar
-from pandas_market_calendars.market_calendar import MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY
-
+from pandas_market_calendars.market_calendar import (
+    FRIDAY,
+    MONDAY,
+    THURSDAY,
+    TUESDAY,
+    WEDNESDAY,
+)
+from pytz import timezone
 
 # New Year's Eve
 EuronextNewYearsEve = Holiday(
-    "New Year's Eve",
-    month=12,
-    day=31,
-    observance=previous_friday,
+    "New Year's Eve", month=12, day=31, observance=previous_friday,
 )
 # New Year's Day
 EuronextNewYearsDay = Holiday(
@@ -31,12 +37,7 @@ MayBank = Holiday(
 )
 
 # Christmas Eve
-ChristmasEve = Holiday(
-    'Christmas Eve',
-    month=12,
-    day=24,
-    observance=previous_friday,
-)
+ChristmasEve = Holiday("Christmas Eve", month=12, day=24, observance=previous_friday,)
 # Christmas
 Christmas = Holiday(
     "Christmas",
@@ -47,24 +48,14 @@ Christmas = Holiday(
 # If christmas day is Saturday Monday 27th is a holiday
 # If christmas day is sunday the Tuesday 27th is a holiday
 WeekendChristmas = Holiday(
-    "Weekend Christmas",
-    month=12,
-    day=27,
-    days_of_week=(MONDAY, TUESDAY),
+    "Weekend Christmas", month=12, day=27, days_of_week=(MONDAY, TUESDAY),
 )
 # Boxing day
-BoxingDay = Holiday(
-    "Boxing Day",
-    month=12,
-    day=26,
-)
+BoxingDay = Holiday("Boxing Day", month=12, day=26,)
 # If boxing day is saturday then Monday 28th is a holiday
 # If boxing day is sunday then Tuesday 28th is a holiday
 WeekendBoxingDay = Holiday(
-    "Weekend Boxing Day",
-    month=12,
-    day=28,
-    days_of_week=(MONDAY, TUESDAY),
+    "Weekend Boxing Day", month=12, day=28, days_of_week=(MONDAY, TUESDAY),
 )
 
 
@@ -72,7 +63,8 @@ class EuronextExchangeCalendar(MarketCalendar):
     """
     Exchange calendar for EUREX
     """
-    aliases = ['Euronext']
+
+    aliases = ["Euronext"]
 
     @property
     def name(self):
@@ -80,7 +72,7 @@ class EuronextExchangeCalendar(MarketCalendar):
 
     @property
     def tz(self):
-        return timezone('Europe/Paris')
+        return timezone("Europe/Paris")
 
     @property
     def open_time_default(self):
@@ -92,23 +84,24 @@ class EuronextExchangeCalendar(MarketCalendar):
 
     @property
     def regular_holidays(self):
-        return AbstractHolidayCalendar(rules=[
-            EuronextNewYearsDay,
-            GoodFriday,
-            EasterMonday,
-            MayBank,
-            Christmas,
-            WeekendChristmas,
-            BoxingDay,
-            WeekendBoxingDay
-        ])
+        return AbstractHolidayCalendar(
+            rules=[
+                EuronextNewYearsDay,
+                GoodFriday,
+                EasterMonday,
+                MayBank,
+                Christmas,
+                WeekendChristmas,
+                BoxingDay,
+                WeekendBoxingDay,
+            ]
+        )
 
     @property
     def special_closes(self):
-        return [(
-            time(14, 5),
-            AbstractHolidayCalendar(rules=[
-                ChristmasEve,
-                EuronextNewYearsEve,
-            ])
-        )]
+        return [
+            (
+                time(14, 5),
+                AbstractHolidayCalendar(rules=[ChristmasEve, EuronextNewYearsEve,]),
+            )
+        ]

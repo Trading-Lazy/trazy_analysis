@@ -1,4 +1,4 @@
-from common.decorators import try_until_success
+from common.decorators import Singleton, try_until_success
 
 
 def test_try_until_success():
@@ -15,3 +15,14 @@ def test_try_until_success():
     func_to_try()
 
     assert failures == MAX_FAILURES
+
+
+def test_singleton():
+    @Singleton
+    class SingletonClass:
+        pass
+
+    obj1 = SingletonClass()
+    obj2 = SingletonClass()
+
+    assert obj1 == obj2

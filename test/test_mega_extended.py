@@ -3,7 +3,7 @@ from unittest.mock import call, patch
 import pytest
 from pathlib import Path
 
-from historical_data.meganz_storage import MegaExtended
+from file_storage.meganz_file_storage import MegaExtended
 
 MEGA_EXTENDED: MegaExtended = MegaExtended()
 EMAIL: str = "email"
@@ -172,8 +172,8 @@ def test_find_not_existing_file(
     assert MEGA_EXTENDED.find(path) == None
 
 
-@patch("historical_data.meganz_storage.MegaExtended.find")
-@patch("historical_data.meganz_storage.MegaExtended.create_folder_helper")
+@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("file_storage.meganz_file_storage.MegaExtended.create_folder_helper")
 def test_create_folder_none_dest(
     create_folder_helper_mocked, find_mocked, mega_extended_fixture
 ):
@@ -205,8 +205,8 @@ def test_create_folder_none_dest(
     assert created_folder_response == create_folder_helper_response
 
 
-@patch("historical_data.meganz_storage.MegaExtended.find")
-@patch("historical_data.meganz_storage.MegaExtended.create_folder_helper")
+@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("file_storage.meganz_file_storage.MegaExtended.create_folder_helper")
 def test_create_folder_dest(
     create_folder_helper_mocked, find_mocked, mega_extended_fixture
 ):
@@ -243,8 +243,8 @@ def test_upload_helper(mega_extended_fixture):
     pass
 
 
-@patch("historical_data.meganz_storage.MegaExtended.find")
-@patch("historical_data.meganz_storage.MegaExtended.upload_helper")
+@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("file_storage.meganz_file_storage.MegaExtended.upload_helper")
 def test_upload(upload_helper_mocked, find_mocked, mega_extended_fixture):
     upload_helper_response = {
         "f": [
@@ -304,7 +304,7 @@ def test_destroy_helper(destroy_mocked, mega_extended_fixture):
     destroy_mocked.assert_has_calls(calls)
 
 
-@patch("historical_data.meganz_storage.MegaExtended.destroy_helper")
+@patch("file_storage.meganz_file_storage.MegaExtended.destroy_helper")
 def test_destroy(destroy_helper_mocked, mega_extended_fixture):
     destroy_helper_response = 0
     destroy_helper_mocked.return_value = destroy_helper_response
@@ -345,7 +345,7 @@ def test_destroy(destroy_helper_mocked, mega_extended_fixture):
     assert FILE1_ID not in MEGA_EXTENDED.id_cache
 
 
-@patch("historical_data.meganz_storage.MegaExtended.get_file_content_helper")
+@patch("file_storage.meganz_file_storage.MegaExtended.get_file_content_helper")
 def test_get_file_content(get_file_content_helper_mocked):
     get_file_content_helper_mocked.return_value = FILE1_CONTENT
     assert MEGA_EXTENDED.get_file_content(FILE1_NAME) == FILE1_CONTENT
