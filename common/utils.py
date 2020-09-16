@@ -1,12 +1,8 @@
-import json
-from typing import List
+from datetime import datetime
 
-from django.forms import model_to_dict
-from pandas import Timestamp
-from pandas._libs.tslibs.timestamps import Timestamp
+import pandas as pd
+import pytz
 from pandas.core.frame import DataFrame
-
-from actionsapi.models.models import Candle
 
 
 def lists_equal(list1: list, list2: list) -> bool:
@@ -22,29 +18,19 @@ def validate_dataframe_columns(df: DataFrame, required_columns: list) -> None:
         )
 
 
-def build_candle_from_dict(candle_dict: dict) -> Candle:
-    candle: Candle = Candle(
-        symbol=candle_dict["symbol"],
-        open=candle_dict["open"],
-        high=candle_dict["high"],
-        low=candle_dict["low"],
-        close=candle_dict["close"],
-        volume=candle_dict["volume"],
-        timestamp=candle_dict["timestamp"],
-    )
-    if "_id" in candle_dict:
-        candle._id = candle_dict["_id"]
-    return candle
-
-
-def build_candle_from_json_string(str_candle: str) -> Candle:
-    action_json = json.loads(str_candle)
-    action_json["timestamp"] = Timestamp(action_json["timestamp"], tz="UTC")
-    return build_candle_from_dict(action_json)
-
-
-def candles_to_dict(l_candles: List[Candle]) -> List[dict]:
-    candles_list = []
-    for candle in l_candles:
-        candles_list.append(model_to_dict(candle))
-    return candles_list
+def timestamp_to_utc(timestamp):
+    if isinstance(timestamp, pd.Timestamp) or isinstance(timestamp, pd.DatetimeIndex):
+        if timestamp.tz is None:
+            timestamp = timestamp.tz_localize("UTC")
+        timestamp = timestamp.tz_convert("UTC")
+    elif isinstance(timestamp, datetime):
+        if timestamp.tzinfo is None or timestamp.tzinfo.utcoffset(timestamp) is None:
+            timestamp = pytz.timezone("UTC").localize(timestamp)
+        timestamp = timestamp.astimezone(pytz.UTC)
+    else:
+        raise Exception(
+            "Unsupported type: {}. It should be either pandas Timestamp or datetime".format(
+                type(timestamp)
+            )
+        )
+    return timestamp
