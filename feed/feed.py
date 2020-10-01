@@ -1,80 +1,154 @@
-from alpha_vantage.timeseries import TimeSeries
-from pymongo import MongoClient
+import copy
+from typing import Dict, List
 
 import pandas as pd
-import pika
-import logger
-import os
-from actionsapi.models import Candle
-from typing import List
-from django.forms import model_to_dict
-from common.utils import build_candle_from_dict, candles_to_dict
+from apscheduler.schedulers.blocking import BlockingScheduler
 
-import settings
-
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, 'output.log'))
-
-ts = TimeSeries(key=settings.API_KEY)
+from candles_queue.candles_queue import CandlesQueue
+from common.types import CandleDataFrame
+from market_data.historical.historical_data_handler import HistoricalDataHandler
+from market_data.live.live_data_handler import LiveDataHandler
+from models.candle import Candle
 
 
-def get_alpha_vantage() -> list:
-    data, meta_data = ts.get_intraday(settings.SYMBOL, interval='1min')
-    return transform_av_response_to_candles(data,meta_data)
+class Feed:
+    def set_symbols(self, symbols: List[str]):
+        self.symbols = symbols
+        self.ids = {symbol: (str(id(self)) + symbol) for symbol in self.symbols}
+
+    def __init__(
+        self,
+        candles_queue: CandlesQueue,
+        candles: Dict[str, List[Candle]] = {},
+        **scheduler_kwargs
+    ):
+        self.symbols = None
+        self.ids = None
+        self.set_symbols(candles.keys())
+        self.candles_queue = candles_queue
+        self.candles = copy.deepcopy(candles)
+        self.sched = BlockingScheduler()
+        self.scheduler_kwargs = scheduler_kwargs
+
+    def feed_queue(self, symbol):
+        if len(self.candles[symbol]) > 0:
+            candle = self.candles[symbol].pop(0)
+            candle_json = candle.to_json()
+            self.candles_queue.push(candle_json)
+        else:
+            self.sched.remove_job(self.ids[symbol])
+            if len(self.sched.get_jobs()) == 0:
+                self.stop()
+
+    def start(self):
+        for symbol in self.symbols:
+            self.sched.add_job(
+                self.feed_queue,
+                "interval",
+                **self.scheduler_kwargs,
+                id=self.ids[symbol],
+                args=[symbol]
+            )
+        self.sched.start()
+
+    def stop(self) -> None:
+        self.sched.remove_all_jobs()
+        if self.sched.running:
+            self.sched.shutdown(wait=False)
 
 
-def transform_av_response_to_candles(av_data, av_meta_data) -> List[Candle]:
-    df_data = pd.DataFrame.from_dict(av_data, orient='index')
-    df_data.columns = ['open', 'high', 'low', 'close', 'volume']
-    df_data['open'] = pd.to_numeric(df_data['open'])
-    df_data['high'] = pd.to_numeric(df_data['high'])
-    df_data['low'] = pd.to_numeric(df_data['low'])
-    df_data['close'] = pd.to_numeric(df_data['close'])
-    df_data['volume'] = pd.to_numeric(df_data['volume'])
-    df_data['symbol'] = settings.SYMBOL
-    df_data['interval'] = av_meta_data['4. Interval']
-    df_data.index = pd.to_datetime(df_data.index)
-    df_data.index = df_data.index.tz_localize(av_meta_data['6. Time Zone']).tz_convert('Europe/Paris')
-    df_data.index = df_data.index.rename('timestamp')
-    df_data = df_data.reset_index()
-    df_data = df_data[['timestamp', 'symbol', 'interval', 'open', 'high', 'low', 'close', 'volume']]
-    l_candles = [build_candle_from_dict(c) for c in list(df_data.T.to_dict().values())]
-    return l_candles
+class LiveFeed(Feed):
+    def __init__(
+        self,
+        symbols: List[str],
+        candles_queue: CandlesQueue,
+        live_data_handler: LiveDataHandler,
+        **scheduler_kwargs
+    ):
+        super().__init__(candles_queue, candles={}, **scheduler_kwargs)
+        self.set_symbols(symbols)
+        self.live_data_handler = live_data_handler
 
-
-def insert_candles_to_db(l_candle) -> List[Candle]:
-    l_new_candle = []
-    for candle in l_candle:
-        existing_candle = Candle.objects.all().filter(
-            symbol=candle.symbol,
-            timestamp=candle.timestamp
+    def feed_queue(self, symbol):
+        candles = self.live_data_handler.request_ticker_lastest_candles(
+            symbol, nb_candles=2
         )
-        if existing_candle is None or len(existing_candle) == 0:
-            candle.save()
-            l_new_candle.append(candle)
+        for candle in candles:
+            self.candles_queue.push(candle.to_json())
 
-    return l_new_candle
+class OfflineFeed(Feed):
+    def __init__(
+            self,
+            candles_queue: CandlesQueue,
+            candles: Dict[str, List[Candle]] = {}
+    ):
+        super().__init__(candles_queue, candles)
 
+    def start(self):
+        for symbol in self.candles:
+            while len(self.candles[symbol]) != 0:
+                candle = self.candles[symbol].pop(0)
+                candle_json = candle.to_json()
+                self.candles_queue.push(candle_json)
 
-def push_latest_candle_to_rabbit(candle):
-    connection = pika.BlockingConnection(pika.URLParameters(settings.CLOUDAMQP_URL))
-    channel = connection.channel()
-    channel.queue_declare(queue='candles')
-    channel.basic_publish(exchange='',
-                          routing_key='candles',
-                          body=candle)
-    LOG.info("Sent new candle!")
-    connection.close()
-
-
-def get_latest_candle_json(l_candles: List[Candle]) -> str:
-    candles_list = candles_to_dict(l_candles)
-    df_new_candles = pd.DataFrame(candles_list)
-    df_new_candles['_id'] = df_new_candles['_id'].astype(str)
-    return df_new_candles.iloc[df_new_candles['timestamp'].idxmax()].to_json(date_format='iso')
+    def stop(self):
+        pass
 
 
 
+class HistoricalFeed(OfflineFeed):
+    def __init__(
+        self,
+        symbols: List[str],
+        candles_queue: CandlesQueue,
+        historical_data_handler: HistoricalDataHandler,
+        start: pd.Timestamp,
+        end: pd.Timestamp,
+    ):
+        candles: Dict[str, List[Candle]] = {}
+        for symbol in symbols:
+            self.historical_data_handler = historical_data_handler
+            (
+                candle_dataframe,
+                _,
+                _,
+            ) = self.historical_data_handler.request_ticker_data_in_range(
+                symbol, start, end
+            )
+            candles[symbol] = candle_dataframe.to_candles()
+            self.candle_dataframe = candle_dataframe
+        super().__init__(candles_queue, candles)
 
 
+class PandasFeed(OfflineFeed):
+    def __init__(
+        self, candle_dataframes: List[CandleDataFrame], candles_queue: CandlesQueue
+    ):
+        candles = {}
+        for candle_dataframe in candle_dataframes:
+            candles[candle_dataframe.symbol] = candle_dataframe.to_candles()
+        super().__init__(candles_queue, candles)
 
+
+class CsvFeed(OfflineFeed):
+    def __init__(
+        self,
+        csv_filenames: Dict[str, str],
+        candles_queue: CandlesQueue,
+        sep: str = ",",
+    ):
+        dtype = {
+            "timestamp": str,
+            "open": str,
+            "high": str,
+            "low": str,
+            "close": str,
+            "volume": int,
+        }
+        candle_dataframes: List[CandleDataFrame] = []
+        for symbol, csv_filename in csv_filenames.items():
+            dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=sep)
+            candle_dataframe = CandleDataFrame.from_dataframe(dataframe, symbol)
+            candle_dataframes.append(candle_dataframe)
+        pandas_feed = PandasFeed(candle_dataframes, candles_queue)
+        super().__init__(candles_queue, pandas_feed.candles)

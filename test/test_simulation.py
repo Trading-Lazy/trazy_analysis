@@ -1,18 +1,28 @@
 from decimal import Decimal
-from unittest.mock import patch, call, Mock
+from unittest.mock import Mock, call, patch
 
+import pandas as pd
 import pytest
 
+from broker.simulatedbroker import SimulatedBroker
+from db_storage.mongodb_storage import MongoDbStorage
+from models.action import Action
+from models.candle import Candle
+from models.enums import ActionType, PositionType
+from settings import DATABASE_NAME
 from simulator.simulation import Simulation
-from actionsapi.models import PositionType, ActionType, Candle, Action
-from strategy.strategies.BuyAndSellLongStrategy import BuyAndSellLongStrategy
-from strategy.strategies.DumbLongStrategy import DumbLongStrategy
+from strategy.strategies.buy_and_sell_long_strategy import BuyAndSellLongStrategy
+from strategy.strategies.dumb_long_strategy import DumbLongStrategy
 
 # disable logging into a file
 from test.tools.tools import compare_actions_list
 
-SIMULATION = Simulation(DumbLongStrategy(), log=False)
-SYMBOL = "ANX.PA"
+DB_STORAGE = MongoDbStorage(DATABASE_NAME)
+SYMBOL = "IVV"
+BROKER = SimulatedBroker(cash=Decimal("10000"))
+SIMULATION = Simulation(
+    DumbLongStrategy(SYMBOL, DB_STORAGE, BROKER), DB_STORAGE, log=False
+)
 
 BUY_LONG_AMOUNT_OK = 5
 SELL_LONG_AMOUNT_OK = 3
@@ -35,130 +45,123 @@ TOTAL_COST_ESTIMATE_KO = Decimal("1200")
 UNIT_COST_ESTIMATE = Decimal("100")
 
 STRATEGY_NAME = "strategy"
-OBJECT_ID_BASE = "5eae9ddd4d6f4e006f67c9c"
 ACTIONS = [
     Action(
         action_type=ActionType.BUY,
         position_type=PositionType.LONG,
-        amount=1,
+        size=1,
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=OBJECT_ID_BASE + "1",
+        candle_timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
         parameters={},
     ),
     Action(
         action_type=ActionType.SELL,
         position_type=PositionType.LONG,
-        amount=1,
+        size=1,
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=OBJECT_ID_BASE + "2",
+        candle_timestamp=pd.Timestamp("2020-05-08 14:24:00", tz="UTC"),
         parameters={},
     ),
     Action(
         action_type=ActionType.BUY,
         position_type=PositionType.LONG,
-        amount=1,
+        size=1,
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=OBJECT_ID_BASE + "3",
+        candle_timestamp=pd.Timestamp("2020-05-08 14:24:56", tz="UTC"),
         parameters={},
     ),
     Action(
         action_type=ActionType.SELL,
         position_type=PositionType.LONG,
-        amount=1,
+        size=1,
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=OBJECT_ID_BASE + "4",
+        candle_timestamp=pd.Timestamp("2020-05-08 14:35:00", tz="UTC"),
         parameters={},
     ),
     Action(
         action_type=ActionType.BUY,
         position_type=PositionType.LONG,
-        amount=1,
+        size=1,
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=OBJECT_ID_BASE + "5",
+        candle_timestamp=pd.Timestamp("2020-05-08 14:41:00", tz="UTC"),
         parameters={},
     ),
     Action(
         action_type=ActionType.SELL,
         position_type=PositionType.LONG,
-        amount=1,
+        size=1,
         confidence_level=1,
         strategy=STRATEGY_NAME,
         symbol=SYMBOL,
-        candle_id=OBJECT_ID_BASE + "6",
+        candle_timestamp=pd.Timestamp("2020-05-08 14:41:58", tz="UTC"),
         parameters={},
     ),
 ]
 
 CANDLES = [
     Candle(
-        _id=OBJECT_ID_BASE + "1",
         symbol=SYMBOL,
         open=Decimal("94.1200"),
         high=Decimal("94.1500"),
         low=Decimal("94.0000"),
         close=Decimal("94.1300"),
         volume=7,
-        timestamp="2020-05-08 14:17:00",
+        timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
     ),
     Candle(
-        _id=OBJECT_ID_BASE + "2",
         symbol=SYMBOL,
         open=Decimal("94.0700"),
         high=Decimal("94.1000"),
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=91,
-        timestamp="2020-05-08 14:24:00",
+        timestamp=pd.Timestamp("2020-05-08 14:24:00", tz="UTC"),
     ),
     Candle(
-        _id=OBJECT_ID_BASE + "3",
         symbol=SYMBOL,
         open=Decimal("94.0700"),
         high=Decimal("94.1000"),
         low=Decimal("93.9500"),
         close=Decimal("94.0800"),
         volume=0,
-        timestamp="2020-05-08 14:24:56",
+        timestamp=pd.Timestamp("2020-05-08 14:24:56", tz="UTC"),
     ),
     Candle(
-        _id=OBJECT_ID_BASE + "4",
         symbol=SYMBOL,
         open=Decimal("94.1700"),
         high=Decimal("94.1800"),
         low=Decimal("94.0500"),
         close=Decimal("94.1800"),
         volume=0,
-        timestamp="2020-05-08 14:35:00",
+        timestamp=pd.Timestamp("2020-05-08 14:35:00", tz="UTC"),
     ),
     Candle(
-        _id=OBJECT_ID_BASE + "5",
         symbol=SYMBOL,
         open=Decimal("94.1900"),
         high=Decimal("94.2200"),
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=0,
-        timestamp="2020-05-08 14:41:00",
+        timestamp=pd.Timestamp("2020-05-08 14:41:00", tz="UTC"),
     ),
     Candle(
-        _id=OBJECT_ID_BASE + "6",
         symbol=SYMBOL,
         open=Decimal("94.1900"),
         high=Decimal("94.2200"),
         low=Decimal("94.0700"),
         close=Decimal("94.2000"),
         volume=7,
-        timestamp="2020-05-08 14:41:58",
+        timestamp=pd.Timestamp("2020-05-08 14:41:58", tz="UTC"),
     ),
 ]
 
@@ -565,15 +568,15 @@ def test_position_sell_buy_short_ko(simulation_fixture):
     assert SIMULATION.cash == FUND - SIMULATION.portfolio_value
 
 
-@patch("actionsapi.models.Candle.objects")
-def test_run_without_commission(candle_objects_mock, simulation_fixture):
+@patch("db_storage.mongodb_storage.MongoDbStorage.get_candle_by_identifier")
+def test_run_without_commission(get_candle_by_identifier_mocked, simulation_fixture):
     SIMULATION.fund(FUND)
 
     SIMULATION.candles = CANDLES
-    buy_and_sell_long_strategy = BuyAndSellLongStrategy()
+    buy_and_sell_long_strategy = BuyAndSellLongStrategy(SYMBOL, DB_STORAGE, BROKER)
     SIMULATION.strategy = buy_and_sell_long_strategy
 
-    candle_objects_mock.get.side_effect = [
+    get_candle_by_identifier_mocked.side_effect = [
         CANDLES[0],
         CANDLES[1],
         CANDLES[2],
@@ -583,14 +586,14 @@ def test_run_without_commission(candle_objects_mock, simulation_fixture):
     ]
     SIMULATION.run()
     calls = [
-        call(_id=OBJECT_ID_BASE + "1"),
-        call(_id=OBJECT_ID_BASE + "2"),
-        call(_id=OBJECT_ID_BASE + "3"),
-        call(_id=OBJECT_ID_BASE + "4"),
-        call(_id=OBJECT_ID_BASE + "5"),
-        call(_id=OBJECT_ID_BASE + "6"),
+        call("IVV", pd.Timestamp("2020-05-08 14:17:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:24:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:24:56+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:35:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:41:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:41:58+0000", tz="UTC")),
     ]
-    candle_objects_mock.get.assert_has_calls(calls)
+    get_candle_by_identifier_mocked.assert_has_calls(calls)
 
     expected_cash = FUND
     sign = Decimal("-1")
@@ -605,16 +608,16 @@ def test_run_without_commission(candle_objects_mock, simulation_fixture):
     assert SIMULATION.cash == expected_cash
 
 
-@patch("actionsapi.models.Candle.objects")
-def test_run_with_commission(candle_objects_mock, simulation_fixture):
+@patch("db_storage.mongodb_storage.MongoDbStorage.get_candle_by_identifier")
+def test_run_with_commission(get_candle_by_identifier_mocked, simulation_fixture):
     SIMULATION.fund(FUND)
     SIMULATION.commission = COMMISSION
 
     SIMULATION.candles = CANDLES
-    buy_and_sell_long_strategy = BuyAndSellLongStrategy()
+    buy_and_sell_long_strategy = BuyAndSellLongStrategy(SYMBOL, DB_STORAGE, BROKER)
     SIMULATION.strategy = buy_and_sell_long_strategy
 
-    candle_objects_mock.get.side_effect = [
+    get_candle_by_identifier_mocked.side_effect = [
         CANDLES[0],
         CANDLES[1],
         CANDLES[2],
@@ -624,14 +627,14 @@ def test_run_with_commission(candle_objects_mock, simulation_fixture):
     ]
     SIMULATION.run()
     calls = [
-        call(_id=OBJECT_ID_BASE + "1"),
-        call(_id=OBJECT_ID_BASE + "2"),
-        call(_id=OBJECT_ID_BASE + "3"),
-        call(_id=OBJECT_ID_BASE + "4"),
-        call(_id=OBJECT_ID_BASE + "5"),
-        call(_id=OBJECT_ID_BASE + "6"),
+        call("IVV", pd.Timestamp("2020-05-08 14:17:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:24:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:24:56+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:35:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:41:00+0000", tz="UTC")),
+        call("IVV", pd.Timestamp("2020-05-08 14:41:58+0000", tz="UTC")),
     ]
-    candle_objects_mock.get.assert_has_calls(calls)
+    get_candle_by_identifier_mocked.assert_has_calls(calls)
 
     expected_cash = FUND
     sign = Decimal("-1")

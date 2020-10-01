@@ -4,13 +4,13 @@ import time
 from decimal import Decimal
 from typing import List
 
-from bson import ObjectId
-from pymongo import MongoClient
-
 import settings
-from strategy.strategy import Strategy
-from actionsapi.models import PositionType, ActionType, Candle, Action
+from db_storage.db_storage import DbStorage
 from logger import logger
+from models.action import Action
+from models.candle import Candle
+from models.enums import ActionType, PositionType
+from strategy.strategy import Strategy
 
 
 class Simulation:
@@ -51,6 +51,7 @@ class Simulation:
     def __init__(
         self,
         strategy: Strategy,
+        db_storage: DbStorage,
         candles: List[Candle] = None,
         cash: Decimal = Decimal("0"),
         commission: Decimal = Decimal("0"),
@@ -60,6 +61,7 @@ class Simulation:
         epoch_time_now = int(time.time())
         self.symbol = symbol
         self.strategy = strategy
+        self.db_storage = db_storage
         simulation_name = "{}_{}_{}".format(
             self.strategy.name, self.symbol, epoch_time_now
         )
@@ -228,13 +230,15 @@ class Simulation:
         self.logger.info("Starting funds: {}".format(self.cash))
         actions = self.get_actions()
         for action in actions:
-            candle = Candle.objects.get(_id=action.candle_id)
+            candle = self.db_storage.get_candle_by_identifier(
+                action.symbol, action.candle_timestamp
+            )
             unit_cost_estimate = Decimal(candle.close)
             self.position(
                 action.position_type,
                 action.action_type,
                 unit_cost_estimate,
-                action.amount,
+                action.size,
             )
 
         self.logger.info("Final state:")

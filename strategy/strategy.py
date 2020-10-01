@@ -1,47 +1,33 @@
 import abc
 import os
-from enum import Enum, auto
-
-from pymongo import MongoClient
-
 import logger
 import settings
-from actionsapi.models import Action, Candle
+from broker.broker import Broker
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
+from db_storage.db_storage import DbStorage
+from models.action import Action
+from models.candle import Candle
 
 LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, 'output.log'))
+    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+)
 
-m_client = MongoClient(settings.DB_CONN)
-db = m_client['djongo_connection']
 euronext_cal = EuronextExchangeCalendar()
 
 
-class StrategyName(Enum):
-    SMA_CROSSOVER = auto()
-    DUMB_LONG_STRATEGY = auto()
-    DUMB_SHORT_STRATEGY = auto()
-    BUY_AND_SELL_LONG_STRATEGY = auto()
-    SELL_AND_BUY_SHORT_STRATEGY = auto()
-
-
 class Strategy:
-    def __init__(self, name: str):
+    def __init__(self, symbol: str, db_storage: DbStorage, broker: Broker):
+        self.symbol = symbol
+        self.db_storage = db_storage
+        self.broker = broker
         self.is_opened = False
-        self.name = name
-        self.__parameters = self.init_default_parameters()
+        self.name = self.__class__.__name__
 
     @abc.abstractmethod
-    def compute_action(self, candle) -> Action:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def init_default_parameters(self):
+    def compute_action(self, candle) -> Action:  # pragma: no cover
         raise NotImplementedError
 
     def process_candle(self, candle: Candle):
         action = self.compute_action(candle)
         if action is not None:
-            action.save()
-
-
+            self.db_storage.add_action(action)
