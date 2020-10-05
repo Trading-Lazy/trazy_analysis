@@ -44,7 +44,7 @@ class CandleFetcher:
         end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
     ) -> CandleDataFrame:
         candles = self.query_candles(symbol, start, end)
-        df = CandleDataFrame(symbol=symbol, candles=candles)
+        df = CandleDataFrame.from_candle_list(symbol=symbol, candles=candles)
         return df
 
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)

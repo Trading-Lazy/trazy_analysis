@@ -260,7 +260,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
             timestamp=pd.Timestamp("2020-05-08 14:45:00+00:00"),
         ),
     ]
-    expected_df = CandleDataFrame(symbol=SYMBOL, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=expected_df_candles)
     assert (df == expected_df).all(axis=None)
 
     date_str = "20200508"
@@ -318,7 +318,7 @@ def test_fetch_no_db_data(get_file_content_mocked):
             timestamp=pd.Timestamp("2020-06-11 14:20:00+00:00"),
         ),
     ]
-    expected_df = CandleDataFrame(symbol=SYMBOL, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=expected_df_candles)
     assert (df == expected_df).all(axis=None)
 
     date_str = "20200611"
@@ -421,7 +421,7 @@ def test_fetch(get_file_content_mocked):
             timestamp=pd.Timestamp("2020-05-08 14:45:00+00:00"),
         ),
     ]
-    expected_df = CandleDataFrame(symbol=SYMBOL, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=expected_df_candles)
     assert (df == expected_df).all(axis=None)
 
     date_str = "20200508"
@@ -484,7 +484,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
             timestamp=pd.Timestamp("2020-05-08 00:00:00+00:00"),
         ),
     ]
-    expected_df = CandleDataFrame(symbol=SYMBOL, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=expected_df_candles)
     assert (df == expected_df).all(axis=None)
 
     date_str = "20200507"

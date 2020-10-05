@@ -26,13 +26,18 @@ class Feed:
         self.ids = None
         self.set_symbols(candles.keys())
         self.candles_queue = candles_queue
-        self.candles = copy.deepcopy(candles)
+        self.candles = candles
+        self.indexes = {}
+        for symbol in self.symbols:
+            self.indexes[symbol] = 0
         self.sched = BlockingScheduler()
         self.scheduler_kwargs = scheduler_kwargs
 
     def feed_queue(self, symbol):
-        if len(self.candles[symbol]) > 0:
-            candle = self.candles[symbol].pop(0)
+        if self.indexes[symbol] < len(self.candles[symbol]):
+            index = self.indexes[symbol]
+            candle = self.candles[symbol][index]
+            self.indexes[symbol] += 1
             candle_json = candle.to_json()
             self.candles_queue.push(candle_json)
         else:
@@ -86,8 +91,10 @@ class OfflineFeed(Feed):
 
     def start(self):
         for symbol in self.candles:
-            while len(self.candles[symbol]) != 0:
-                candle = self.candles[symbol].pop(0)
+            while self.indexes[symbol] < len(self.candles[symbol]):
+                index = self.indexes[symbol]
+                candle = self.candles[symbol][index]
+                self.indexes[symbol] += 1
                 candle_json = candle.to_json()
                 self.candles_queue.push(candle_json)
 
@@ -145,10 +152,9 @@ class CsvFeed(OfflineFeed):
             "close": str,
             "volume": int,
         }
-        candle_dataframes: List[CandleDataFrame] = []
+        candles = {}
         for symbol, csv_filename in csv_filenames.items():
             dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=sep)
             candle_dataframe = CandleDataFrame.from_dataframe(dataframe, symbol)
-            candle_dataframes.append(candle_dataframe)
-        pandas_feed = PandasFeed(candle_dataframes, candles_queue)
-        super().__init__(candles_queue, pandas_feed.candles)
+            candles[candle_dataframe.symbol] = candle_dataframe.to_candles()
+        super().__init__(candles_queue, candles)

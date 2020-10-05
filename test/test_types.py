@@ -49,7 +49,7 @@ MARKET_CAL = EuronextExchangeCalendar()
 
 
 def test_candle_dataframe():
-    candle_dataframe = CandleDataFrame(
+    candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4]
     )
 
@@ -79,13 +79,13 @@ def test_candle_dataframe():
 
 def test_candle_dataframe_duplicate_index_in_init():
     with pytest.raises(ValueError):
-        CandleDataFrame(
+        CandleDataFrame.from_candle_list(
             symbol=SYMBOL, candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4, CANDLE4]
         )
 
 
 def test_candle_dataframe_add_candle():
-    candle_dataframe = CandleDataFrame(
+    candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=[CANDLE1, CANDLE2, CANDLE3]
     )
     expected_df_candles = {
@@ -132,7 +132,7 @@ def test_candle_dataframe_add_candle():
 
 
 def test_candle_dataframe_duplicate_index_in_add_candle():
-    candle_dataframe = CandleDataFrame(
+    candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4]
     )
     with pytest.raises(ValueError):
@@ -140,7 +140,7 @@ def test_candle_dataframe_duplicate_index_in_add_candle():
 
 
 def test_get_candle():
-    candle_dataframe = CandleDataFrame(
+    candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4]
     )
     assert candle_dataframe.get_candle(0) == CANDLE1
@@ -150,27 +150,31 @@ def test_get_candle():
 
 
 def test_get_candle_symbol_not_set():
-    candle_dataframe = CandleDataFrame(candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4])
+    candles = [CANDLE1, CANDLE2, CANDLE3, CANDLE4]
+    candles_data = [candle.to_serializable_dict() for candle in candles]
+    candle_dataframe = CandleDataFrame(candles_data=candles_data)
     with pytest.raises(Exception):
         candle_dataframe.get_candle(2)
 
 
 def test_to_candles():
-    candle_dataframe = CandleDataFrame(
+    candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4]
     )
     assert candle_dataframe.to_candles() == [CANDLE1, CANDLE2, CANDLE3, CANDLE4]
 
 
 def test_to_candles_symbol_not_set():
-    candle_dataframe = CandleDataFrame(candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4])
+    candles = [CANDLE1, CANDLE2, CANDLE3, CANDLE4]
+    candles_data = [candle.to_serializable_dict() for candle in candles]
+    candle_dataframe = CandleDataFrame(candles_data=candles_data)
     with pytest.raises(Exception):
         candle_dataframe.to_candles()
 
 
 def test_append():
-    candle_dataframe1 = CandleDataFrame(symbol=SYMBOL, candles=[CANDLE1, CANDLE2])
-    candle_dataframe2 = CandleDataFrame(symbol=SYMBOL, candles=[CANDLE3, CANDLE4])
+    candle_dataframe1 = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=[CANDLE1, CANDLE2])
+    candle_dataframe2 = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=[CANDLE3, CANDLE4])
     concatenated_candle_dataframe = candle_dataframe1.append(candle_dataframe2)
     assert concatenated_candle_dataframe.to_candles() == [
         CANDLE1,
@@ -182,12 +186,23 @@ def test_append():
 
 
 def test_append_duplicate_index():
-    candle_dataframe1 = CandleDataFrame(symbol=SYMBOL, candles=[CANDLE1, CANDLE2])
-    candle_dataframe2 = CandleDataFrame(
+    candle_dataframe1 = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=[CANDLE1, CANDLE2])
+    candle_dataframe2 = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=[CANDLE1, CANDLE3, CANDLE4]
     )
     with pytest.raises(Exception):
         candle_dataframe1.append(candle_dataframe2)
+
+
+def test_from_candle_list_empty_candles_list():
+    candle_dataframe = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=[])
+    assert candle_dataframe.to_candles() == []
+
+
+def test_from_candle_list():
+    candles = [CANDLE1, CANDLE2, CANDLE3, CANDLE4]
+    candle_dataframe = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=candles)
+    assert candle_dataframe.to_candles() == candles
 
 
 def test_from_dataframe_index_is_set():
@@ -239,9 +254,18 @@ def test_from_dataframe_index_is_not_set():
 
 
 def test_concat():
-    candle_dataframe1 = CandleDataFrame(candles=[CANDLE1])
-    candle_dataframe2 = CandleDataFrame(candles=[CANDLE2, CANDLE3])
-    candle_dataframe3 = CandleDataFrame(candles=[CANDLE4])
+    candles1 = [CANDLE1]
+    candles_data1 = [candle.to_serializable_dict() for candle in candles1]
+    candle_dataframe1 = CandleDataFrame(candles_data=candles_data1)
+
+    candles2 = [CANDLE2, CANDLE3]
+    candles_data2 = [candle.to_serializable_dict() for candle in candles2]
+    candle_dataframe2 = CandleDataFrame(candles_data=candles_data2)
+
+    candles3 = [CANDLE4]
+    candles_data3 = [candle.to_serializable_dict() for candle in candles3]
+    candle_dataframe3 = CandleDataFrame(candles_data=candles_data3)
+
     concatenated_candle_dataframe = CandleDataFrame.concat(
         [candle_dataframe1, candle_dataframe2, candle_dataframe3], SYMBOL
     )
@@ -255,9 +279,18 @@ def test_concat():
 
 
 def test_concat_duplicate_index():
-    candle_dataframe1 = CandleDataFrame(candles=[CANDLE1])
-    candle_dataframe2 = CandleDataFrame(candles=[CANDLE2, CANDLE3])
-    candle_dataframe3 = CandleDataFrame(candles=[CANDLE1, CANDLE4])
+    candles1 = [CANDLE1]
+    candles_data1 = [candle.to_serializable_dict() for candle in candles1]
+    candle_dataframe1 = CandleDataFrame(candles_data=candles_data1)
+
+    candles2 = [CANDLE2, CANDLE3]
+    candles_data2 = [candle.to_serializable_dict() for candle in candles2]
+    candle_dataframe2 = CandleDataFrame(candles_data=candles_data2)
+
+    candles3 = [CANDLE1, CANDLE4]
+    candles_data3 = [candle.to_serializable_dict() for candle in candles3]
+    candle_dataframe3 = CandleDataFrame(candles_data=candles_data3)
+
     with pytest.raises(Exception):
         CandleDataFrame.concat(
             [candle_dataframe1, candle_dataframe2, candle_dataframe3], SYMBOL
@@ -265,7 +298,7 @@ def test_concat_duplicate_index():
 
 
 def test_aggregate():
-    candle_dataframe = CandleDataFrame(
+    candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=[CANDLE1, CANDLE2, CANDLE3, CANDLE4]
     )
     aggregated_candle_dataframe = candle_dataframe.aggregate(
@@ -303,7 +336,7 @@ def test_aggregate():
 
 
 def test_aggregate_empty_candle_dataframe():
-    candle_dataframe = CandleDataFrame(symbol=SYMBOL, candles=[])
+    candle_dataframe = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=[])
     aggregated_candle_dataframe = candle_dataframe.aggregate(
         pd.offsets.Minute(1), MARKET_CAL
     )

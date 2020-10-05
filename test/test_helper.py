@@ -22,8 +22,11 @@ from common.helper import (
 )
 from common.types import CandleDataFrame
 from strategy.strategy import euronext_cal
-from test.test_candlefetcher import MARKET_CAL, SYMBOL
-from test.test_historical_data_handler import STATUS_CODE_OK, URL
+
+SYMBOL = "IVV"
+MARKET_CAL = EuronextExchangeCalendar()
+STATUS_CODE_OK = 200
+URL = "trazy.com"
 
 
 def test_process_interval():
