@@ -95,7 +95,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
                 )
             )
             error_response_periods[period] = "{}: {}".format(response.status_code, data)
-        return CandleDataFrame(symbol=ticker, candles=[])
+        return CandleDataFrame.from_candle_list(symbol=ticker, candles=[])
 
     @classmethod
     def request_ticker_data_from_periods(

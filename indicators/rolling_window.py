@@ -125,7 +125,7 @@ class TimeFramedCandleRollingWindowStream(RollingWindowStream):
                 )
                 self.aggregated_candle = self.aggregated_df.get_candle(0)
                 super()._handle_new_data(self.aggregated_candle)
-            self.aggregated_df = CandleDataFrame(
+            self.aggregated_df = CandleDataFrame.from_candle_list(
                 symbol=new_data.symbol, candles=[new_data]
             )
             self.aggregate_oldest_timestamp = round_time(

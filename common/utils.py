@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytz
+from pandas import DatetimeIndex
 from pandas.core.frame import DataFrame
 
 

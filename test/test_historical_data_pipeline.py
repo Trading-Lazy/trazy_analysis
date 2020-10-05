@@ -79,7 +79,7 @@ def test_write_candle_dataframe_in_file_storage(write_mocked):
             timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
         ),
     ]
-    candle_dataframe = CandleDataFrame(symbol=ticker, candles=candles)
+    candle_dataframe = CandleDataFrame.from_candle_list(symbol=ticker, candles=candles)
     historical_data_pipeline = HistoricalDataPipeline(
         TIINGO_HISTORICAL_DATA_HANDLER, STORAGE
     )
@@ -354,7 +354,7 @@ def test_get_all_tickers_for_all_periods(
             timestamp=pd.Timestamp("2020-06-18 13:31:00+00:00"),
         ),
     ]
-    aapl_candle_dataframe = CandleDataFrame(symbol="aapl", candles=aapl_candles)
+    aapl_candle_dataframe = CandleDataFrame.from_candle_list(symbol="aapl", candles=aapl_candles)
 
     googl_candles = [
         Candle(
@@ -376,7 +376,7 @@ def test_get_all_tickers_for_all_periods(
             timestamp=pd.Timestamp("2020-06-19 13:33:00+00:00"),
         ),
     ]
-    googl_candle_dataframe = CandleDataFrame(symbol="googl", candles=googl_candles)
+    googl_candle_dataframe = CandleDataFrame.from_candle_list(symbol="googl", candles=googl_candles)
 
     amzn_candles = [
         Candle(
@@ -398,7 +398,7 @@ def test_get_all_tickers_for_all_periods(
             timestamp=pd.Timestamp("2020-06-19 13:35:00+00:00"),
         ),
     ]
-    amzn_candle_dataframe = CandleDataFrame(symbol="amzn", candles=amzn_candles)
+    amzn_candle_dataframe = CandleDataFrame.from_candle_list(symbol="amzn", candles=amzn_candles)
 
     request_ticker_data_from_periods_mocked.side_effect = [
         (aapl_candle_dataframe, [(date(2020, 6, 11), date(2020, 6, 13))], {}),
