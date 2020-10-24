@@ -7,10 +7,10 @@ from rx import Observable
 
 from common.decorators import Singleton
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
-from common.helper import round_time
+from common.helper import round_time, get_or_create_nested_dict
 from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc
-from indicators.common import PriceType, get_or_create_nested_dict
+from indicators.common import PriceType
 from indicators.stream import StreamData
 from models.candle import Candle
 

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from bot.data_consumer import DataConsumer
 from bot.data_flow import DataFlow
-from broker.simulatedbroker import SimulatedBroker
+from broker.simulated_broker import SimulatedBroker
 from candles_queue.candles_queue import CandlesQueue
 from candles_queue.rabbit_mq import RabbitMq
 from db_storage.mongodb_storage import MongoDbStorage
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
     strategies = [ReactiveSmaCrossoverStrategy]
-    broker = SimulatedBroker(cash=Decimal("10000"))
+    broker = SimulatedBroker()
     data_consumer = DataConsumer(symbols, candles_queue, db_storage, broker, strategies, save_candles=True)
 
     data_flow = DataFlow(feed, data_consumer)

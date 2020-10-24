@@ -2,7 +2,7 @@ from _pydecimal import Decimal
 from typing import List
 
 import pandas as pd
-from pandas import DataFrame, DatetimeIndex
+from pandas import DataFrame, DatetimeIndex, Index
 from pandas_market_calendars import MarketCalendar
 
 from common.utils import timestamp_to_utc, validate_dataframe_columns

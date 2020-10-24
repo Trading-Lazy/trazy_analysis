@@ -3,12 +3,12 @@ from multiprocessing import Queue
 
 import pandas as pd
 
-from broker.simulatedbroker import SimulatedBroker
+from broker.simulated_broker import SimulatedBroker
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from db_storage.mongodb_storage import MongoDbStorage
 from file_storage.meganz_file_storage import MegaNzFileStorage
 from models.candle import Candle
-from models.enums import PositionType
+from models.enums import Direction
 from settings import DATABASE_NAME
 from simulator.simulation import Simulation
 from simulator.simulator import Simulator
@@ -81,7 +81,8 @@ CANDLES = [
 ]
 FUND = Decimal("1000")
 COMMISSION = Decimal("0.001")
-BROKER = SimulatedBroker(cash=FUND)
+START_TIMESTAMP = pd.Timestamp("2017-10-05 08:00:00", tz="UTC")
+BROKER = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
 
 
 def test_add_strategy():
@@ -139,7 +140,15 @@ def test_add_candles_from_dataframe():
     }
     df = pd.DataFrame(
         columns_values,
-        columns=["timestamp", "symbol", "open", "high", "low", "close", "volume",],
+        columns=[
+            "timestamp",
+            "symbol",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ],
     )
     simulator.add_candles_from_dataframe(df)
     assert compare_candles_list(simulator.candles, CANDLES)
@@ -215,8 +224,8 @@ def test_run_simulation():
     expected_final_states = {
         buyAndSellLongStrategy.name: {
             "shares_amounts": {
-                PositionType.LONG: Decimal("0"),
-                PositionType.SHORT: Decimal("0"),
+                Direction.LONG: Decimal("0"),
+                Direction.SHORT: Decimal("0"),
             },
             "portfolio_value": Decimal("0"),
             "cash": Decimal("999.48513"),
@@ -226,8 +235,8 @@ def test_run_simulation():
         final_state = final_states.get()
         strategy_name = final_state["strategy_name"]
         assert (
-            final_state["shares_amounts"][PositionType.LONG]
-            == expected_final_states[strategy_name]["shares_amounts"][PositionType.LONG]
+            final_state["shares_amounts"][Direction.LONG]
+            == expected_final_states[strategy_name]["shares_amounts"][Direction.LONG]
         )
         assert (
             final_state["portfolio_value"].normalize()
@@ -260,16 +269,16 @@ def test_run_without_commission():
     expected_final_states = {
         buyAndSellLongStrategy.name: {
             "shares_amounts": {
-                PositionType.LONG: Decimal("0"),
-                PositionType.SHORT: Decimal("0"),
+                Direction.LONG: Decimal("0"),
+                Direction.SHORT: Decimal("0"),
             },
             "portfolio_value": Decimal("0"),
             "cash": Decimal("1000.05"),
         },
         sellAndBuyShortStrategy.name: {
             "shares_amounts": {
-                PositionType.LONG: Decimal("0"),
-                PositionType.SHORT: Decimal("0"),
+                Direction.LONG: Decimal("0"),
+                Direction.SHORT: Decimal("0"),
             },
             "portfolio_value": Decimal("0"),
             "cash": Decimal("999.95"),
@@ -280,8 +289,8 @@ def test_run_without_commission():
         final_state = final_states.get()
         strategy_name = final_state["strategy_name"]
         assert (
-            final_state["shares_amounts"][PositionType.LONG]
-            == expected_final_states[strategy_name]["shares_amounts"][PositionType.LONG]
+            final_state["shares_amounts"][Direction.LONG]
+            == expected_final_states[strategy_name]["shares_amounts"][Direction.LONG]
         )
         assert (
             final_state["portfolio_value"].normalize()
@@ -316,16 +325,16 @@ def test_run_with_commission():
     expected_final_states = {
         buyAndSellLongStrategy.name: {
             "shares_amounts": {
-                PositionType.LONG: Decimal("0"),
-                PositionType.SHORT: Decimal("0"),
+                Direction.LONG: Decimal("0"),
+                Direction.SHORT: Decimal("0"),
             },
             "portfolio_value": Decimal("0"),
             "cash": Decimal("999.48513"),
         },
         sellAndBuyShortStrategy.name: {
             "shares_amounts": {
-                PositionType.LONG: Decimal("0"),
-                PositionType.SHORT: Decimal("0"),
+                Direction.LONG: Decimal("0"),
+                Direction.SHORT: Decimal("0"),
             },
             "portfolio_value": Decimal("0"),
             "cash": Decimal("999.38513"),
@@ -336,8 +345,8 @@ def test_run_with_commission():
         final_state = final_states.get()
         strategy_name = final_state["strategy_name"]
         assert (
-            final_state["shares_amounts"][PositionType.LONG]
-            == expected_final_states[strategy_name]["shares_amounts"][PositionType.LONG]
+            final_state["shares_amounts"][Direction.LONG]
+            == expected_final_states[strategy_name]["shares_amounts"][Direction.LONG]
         )
         assert (
             final_state["portfolio_value"].normalize()

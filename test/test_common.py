@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from file_storage.common import concat_path
-from indicators.common import get_or_create_nested_dict, get_state
+from indicators.common import get_state
+from common.helper import get_or_create_nested_dict
 from indicators.crossover import CrossoverState
 from market_data.common import RateLimitedSingletonMeta, get_periods
 

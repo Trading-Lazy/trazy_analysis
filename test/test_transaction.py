@@ -2,22 +2,18 @@ from decimal import Decimal
 
 import pandas as pd
 
+from models.enums import Direction, Action
 from position.transaction import Transaction
 
-TRANSACTION_WITHOUT_COMMISSION = Transaction(
+TRANSACTION = Transaction(
     "AAPL",
     size=168,
-    timestamp=pd.Timestamp("2015-05-06"),
-    price=Decimal("56.18"),
-    order_id="153",
-)
-TRANSACTION_WITH_COMMISSION = Transaction(
-    "AAPL",
-    size=168,
-    timestamp=pd.Timestamp("2015-05-06"),
+    action=Action.BUY,
+    direction=Direction.LONG,
     price=Decimal("56.18"),
     order_id="153",
     commission=Decimal("5.3"),
+    timestamp=pd.Timestamp("2015-05-06"),
 )
 
 
@@ -28,14 +24,14 @@ def test_transaction_representation():
     """
     exp_repr = (
         "Transaction(symbol=AAPL, "
-        "size=168, timestamp=2015-05-06 00:00:00, price=56.18, order_id=153)"
+        "size=168, action=BUY, direction=LONG, timestamp=2015-05-06 00:00:00, price=56.18, order_id=153)"
     )
-    assert repr(TRANSACTION_WITHOUT_COMMISSION) == exp_repr
+    assert repr(TRANSACTION) == exp_repr
 
 
 def test_cost_without_commission():
-    assert TRANSACTION_WITHOUT_COMMISSION.cost_with_commission == Decimal("9438.24")
+    assert TRANSACTION.cost_without_commission == Decimal("9438.24")
 
 
 def test_cost_with_commission():
-    assert TRANSACTION_WITH_COMMISSION.cost_with_commission == Decimal("9443.54")
+    assert TRANSACTION.cost_with_commission == Decimal("9443.54")

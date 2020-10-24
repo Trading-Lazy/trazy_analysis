@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -231,3 +232,30 @@ def resample_candle_data(
         df_resampled = sqldf(s, locals())
         df_resampled = CandleDataFrame.from_dataframe(df_resampled, symbol)
     return df_resampled
+
+
+def get_or_create_nested_dict(nested_dict: dict, *keys) -> None:
+    """
+    Check if *keys (nested) exists in `element` (dict).
+    """
+    if not isinstance(nested_dict, dict):
+        raise AttributeError("keys_exists() expects dict as first argument.")
+    if len(keys) == 0:
+        raise AttributeError("keys_exists() expects at least two arguments, one given.")
+
+    _nested_dict = nested_dict
+    for key in keys:
+        try:
+            _nested_dict = _nested_dict[key]
+        except KeyError:
+            _nested_dict[key] = {}
+            _nested_dict = _nested_dict[key]
+
+def check_type(object, allowed_types: List[type]):
+    if object is None:
+        return
+    object_type = type(object)
+    if object_type not in allowed_types:
+        raise Exception(
+            "data type should be one of {} not {}".format(allowed_types, object_type)
+        )

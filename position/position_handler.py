@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from common.helper import get_or_create_nested_dict
 from position.position import Position
 from position.transaction import Transaction
 
@@ -23,36 +24,60 @@ class PositionHandler:
         position for the transaction's symbol accordingly.
         """
         symbol = transaction.symbol
-        if symbol in self.positions:
-            self.positions[symbol].transact(transaction)
+        get_or_create_nested_dict(self.positions, symbol)
+        if transaction.direction in self.positions[symbol]:
+            self.positions[symbol][transaction.direction].transact(transaction)
         else:
             position = Position.open_from_transaction(transaction)
-            self.positions[symbol] = position
+            self.positions[symbol][transaction.direction] = position
 
         # If the position has zero size remove it
-        if self.positions[symbol].net_size == 0:
-            del self.positions[symbol]
+        if self.positions[symbol][transaction.direction].net_size == 0:
+            del self.positions[symbol][transaction.direction]
+            if len(self.positions[symbol]) == 0:
+                del self.positions[symbol]
 
     def total_market_value(self) -> Decimal:
         """
         Calculate the sum of all the positions' market values.
         """
-        return sum(pos.market_value for symbol, pos in self.positions.items())
+        market_value = Decimal('0.0')
+        for values in self.positions.values():
+            for pos in values.values():
+                market_value += pos.market_value
+        return market_value
 
     def total_unrealised_pnl(self) -> Decimal:
         """
         Calculate the sum of all the positions' unrealised P&Ls.
         """
-        return sum(pos.unrealised_pnl for symbol, pos in self.positions.items())
+        unrealised_pnl = Decimal('0.0')
+        for values in self.positions.values():
+            for pos in values.values():
+                unrealised_pnl += pos.unrealised_pnl
+        return unrealised_pnl
 
     def total_realised_pnl(self) -> Decimal:
         """
         Calculate the sum of all the positions' realised P&Ls.
         """
-        return sum(pos.realised_pnl for symbol, pos in self.positions.items())
+        realised_pnl = Decimal('0.0')
+        for values in self.positions.values():
+            for pos in values.values():
+                realised_pnl += pos.realised_pnl
+        return realised_pnl
 
     def total_pnl(self) -> Decimal:
         """
         Calculate the sum of all the positions' P&Ls.
         """
-        return sum(pos.total_pnl for symbol, pos in self.positions.items())
+        total_pnl = Decimal('0.0')
+        for symbol_values in self.positions.values():
+            for pos in symbol_values.values():
+                total_pnl += pos.total_pnl
+        return total_pnl
+
+    def __eq__(self, other):
+        if not isinstance(other, PositionHandler):
+            return False
+        return self.positions == other.positions

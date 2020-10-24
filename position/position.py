@@ -1,10 +1,20 @@
+import os
 from decimal import Decimal
 from math import floor
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
+import settings
+from logger import logger
+from models.enums import Direction, Action
 from position.transaction import Transaction
+
+
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+)
 
 
 class Position:
@@ -23,17 +33,17 @@ class Position:
         The initial price of the Position.
     timestamp : `pd.Timestamp`
         The time at which the Position was created.
-    buy_size : `int`
+    size : `int`
         The amount of the symbol bought.
-    sell_size : `int`
+    size : `int`
         The amount of the symbol sold.
-    avg_bought : `Decimal`
+    avg : `Decimal`
         The initial price paid for buying assets.
-    avg_sold : `Decimal`
+    avg : `Decimal`
         The initial price paid for selling assets.
-    buy_commission : `Decimal`
+    commission : `Decimal`
         The commission spent on buying assets for this position.
-    sell_commission : `Decimal`
+    commission : `Decimal`
         The commission spent on selling assets for this position.
     """
 
@@ -43,6 +53,7 @@ class Position:
         price: Decimal,
         buy_size: int,
         sell_size: int,
+        direction: Direction,
         avg_bought: Decimal,
         avg_sold: Decimal,
         buy_commission: Decimal,
@@ -53,6 +64,7 @@ class Position:
         self.price = price
         self.buy_size = buy_size
         self.sell_size = sell_size
+        self.direction = direction
         self.avg_bought = avg_bought
         self.avg_sold = avg_sold
         self.buy_commission = buy_commission
@@ -76,17 +88,18 @@ class Position:
         symbol = transaction.symbol
         current_price = transaction.price
         current_dt = transaction.timestamp
+        direction = transaction.direction
 
-        if transaction.size > 0:
+        if transaction.action == Action.BUY:
             buy_size = transaction.size
             sell_size = 0
             avg_bought = current_price
             avg_sold = Decimal("0.0")
             buy_commission = transaction.commission
             sell_commission = Decimal("0.0")
-        else:
+        elif transaction.action == Action.SELL:
             buy_size = 0
-            sell_size = -1 * transaction.size
+            sell_size = transaction.size
             avg_bought = Decimal("0.0")
             avg_sold = current_price
             buy_commission = Decimal("0.0")
@@ -97,6 +110,7 @@ class Position:
             current_price,
             buy_size,
             sell_size,
+            direction,
             avg_bought,
             avg_sold,
             buy_commission,
@@ -124,20 +138,6 @@ class Position:
                 self.timestamp = timestamp
 
     @property
-    def direction(self) -> int:
-        """
-        Returns an integer value representing the direction.
-        Returns
-        -------
-        `int`
-            1 - Long, 0 - No direction, -1 - Short.
-        """
-        if self.net_size == 0:
-            return 0
-        else:
-            return np.copysign(1, self.net_size)
-
-    @property
     def market_value(self) -> Decimal:
         """
         Return the market value (respecting the direction) of the
@@ -160,7 +160,7 @@ class Position:
         """
         if self.net_size == 0:
             return Decimal("0.0")
-        elif self.net_size > 0:
+        elif self.direction == Direction.LONG:
             return (
                 self.avg_bought * self.buy_size + self.buy_commission
             ) / self.buy_size
@@ -249,7 +249,7 @@ class Position:
         `Decimal`
             The calculated realised P&L.
         """
-        if self.direction == 1:
+        if self.direction == Direction.LONG:
             if self.sell_size == 0:
                 return Decimal("0.0")
             else:
@@ -258,7 +258,7 @@ class Position:
                     - ((Decimal(self.sell_size) / self.buy_size) * self.buy_commission)
                     - self.sell_commission
                 )
-        elif self.direction == -1:
+        elif self.direction == Direction.SHORT:
             if self.buy_size == 0:
                 return Decimal("0.0")
             else:
@@ -328,6 +328,12 @@ class Position:
         commission : `Decimal`
             The commission paid to the broker for the purchase.
         """
+        if self.direction == Direction.SHORT and self.net_size + size > 0:
+            LOG.error(
+                "ERROR: Position limit reached. Position size %s should be greater or equal to transaction size %s"
+                % (-self.net_size, size)
+            )
+            size = self.net_size
         self.avg_bought = ((self.avg_bought * self.buy_size) + (size * price)) / (
             self.buy_size + size
         )
@@ -347,6 +353,12 @@ class Position:
         commission : `Decimal`
             The commission paid to the broker for the sale.
         """
+        if self.direction == Direction.LONG and self.net_size - size < 0:
+            LOG.error(
+                "ERROR: Position limit reached. Position size %s should be greater or equal to transaction size %s"
+                % (self.net_size, size)
+            )
+            size = self.net_size
         self.avg_sold = ((self.avg_sold * self.sell_size) + (size * price)) / (
             self.sell_size + size
         )
@@ -369,19 +381,26 @@ class Position:
                 % (self.symbol, transaction.symbol)
             )
 
+        if self.direction != transaction.direction:
+            raise ValueError(
+                "Failed to update Position with direction %s when "
+                "carrying out transaction in direction %s. "
+                % (self.direction.name, transaction.direction.name)
+            )
+
         # Nothing to do if the transaction has no size
         if int(floor(transaction.size)) == 0:
             return
 
         # Depending upon the direction of the transaction
         # ensure the correct calculation is called
-        if transaction.size > 0:
+        if transaction.action == Action.BUY:
             self._transact_buy(
                 transaction.size, transaction.price, transaction.commission
             )
-        else:
+        elif transaction.action == Action.SELL:
             self._transact_sell(
-                -1 * transaction.size,
+                transaction.size,
                 transaction.price,
                 transaction.commission,
             )
@@ -389,3 +408,8 @@ class Position:
         # Update the current trade information
         self.update_price(transaction.price, transaction.timestamp)
         self.timestamp = transaction.timestamp
+
+    def __eq__(self, other: Any):
+        if not isinstance(other, Position):
+            return False
+        return self.__dict__ == other.__dict__

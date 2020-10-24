@@ -3,6 +3,7 @@ from decimal import Decimal
 import pandas as pd
 import pytz
 
+from models.enums import Direction, Action
 from position.position_handler import PositionHandler
 from position.transaction import Transaction
 
@@ -21,20 +22,22 @@ def test_transact_position_new_position():
     transaction = Transaction(
         symbol,
         size=100,
-        timestamp=pd.Timestamp("2015-05-06 15:00:00", tz=pytz.UTC),
+        action=Action.BUY,
+        direction=Direction.LONG,
         price=Decimal("960.0"),
         order_id="123",
         commission=Decimal("26.83"),
+        timestamp=pd.Timestamp("2015-05-06 15:00:00", tz=pytz.UTC),
     )
     ph.transact_position(transaction)
 
     # Check that the position object is set correctly
-    pos = ph.positions[symbol]
+    pos = ph.positions[symbol][Direction.LONG]
 
     assert pos.buy_size == 100
     assert pos.sell_size == 0
     assert pos.net_size == 100
-    assert pos.direction == 1
+    assert pos.direction == Direction.LONG
     assert pos.avg_price == Decimal("960.2683")
 
 
@@ -54,30 +57,34 @@ def test_transact_position_current_position():
     transaction_long = Transaction(
         symbol,
         size=100,
-        timestamp=timestamp,
+        action=Action.BUY,
+        direction=Direction.LONG,
         price=Decimal("960.0"),
         order_id="123",
         commission=Decimal("26.83"),
+        timestamp=timestamp,
     )
     ph.transact_position(transaction_long)
 
     transaction_long_again = Transaction(
         symbol,
         size=200,
-        timestamp=new_timestamp,
+        action=Action.BUY,
+        direction=Direction.LONG,
         price=Decimal("990.0"),
         order_id="234",
         commission=Decimal("18.53"),
+        timestamp=new_timestamp,
     )
     ph.transact_position(transaction_long_again)
 
     # Check that the position object is set correctly
-    pos = ph.positions[symbol]
+    pos = ph.positions[symbol][Direction.LONG]
 
     assert pos.buy_size == 300
     assert pos.sell_size == 0
     assert pos.net_size == 300
-    assert pos.direction == 1
+    assert pos.direction == Direction.LONG
     assert pos.avg_price == Decimal("980.1512")
 
 
@@ -97,20 +104,24 @@ def test_transact_position_size_zero():
     transaction_long = Transaction(
         symbol,
         size=100,
-        timestamp=timestamp,
+        action=Action.BUY,
+        direction=Direction.LONG,
         price=Decimal("960.0"),
         order_id="123",
         commission=Decimal("26.83"),
+        timestamp=timestamp,
     )
     ph.transact_position(transaction_long)
 
     transaction_close = Transaction(
         symbol,
-        size=-100,
-        timestamp=new_timestamp,
+        size=100,
+        action=Action.SELL,
+        direction=Direction.LONG,
         price=Decimal("980.0"),
         order_id="234",
         commission=Decimal("18.53"),
+        timestamp=new_timestamp,
     )
     ph.transact_position(transaction_close)
 
@@ -146,10 +157,12 @@ def test_total_values_for_two_separate_transactions():
     trans_pos_1 = Transaction(
         symbol1,
         size=75,
-        timestamp=timestamp1,
+        action=Action.BUY,
+        direction=Direction.LONG,
         price=Decimal("483.45"),
         order_id="1",
         commission=Decimal("15.97"),
+        timestamp=timestamp1,
     )
     ph.transact_position(trans_pos_1)
 
@@ -159,10 +172,12 @@ def test_total_values_for_two_separate_transactions():
     trans_pos_2 = Transaction(
         symbol2,
         size=250,
-        timestamp=timestamp2,
+        action=Action.BUY,
+        direction=Direction.LONG,
         price=Decimal("142.58"),
         order_id="2",
         commission=Decimal("8.35"),
+        timestamp=timestamp2,
     )
     ph.transact_position(trans_pos_2)
 

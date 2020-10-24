@@ -1,10 +1,17 @@
+import os
+import traceback
 from collections import deque
 from typing import Callable
 
 from rx.subject import Subject
 
+import settings
 from candles_queue.candles_queue import CandlesQueue
+from logger import logger
 
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+)
 
 class SimpleQueue(CandlesQueue):
     def __init__(self, queue_name: str):
@@ -30,7 +37,10 @@ class SimpleQueue(CandlesQueue):
             try:
                 queue_elt = self.queue.pop()
                 callback(queue_elt)
-            except:
+            except Exception:
+                LOG.error(
+                    "Exception will reenqueue candle: {}".format(traceback.format_exc())
+                )
                 self.queue.append(queue_elt)
                 self.subject.on_next(queue_elt)
 

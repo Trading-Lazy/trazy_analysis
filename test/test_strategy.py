@@ -4,23 +4,25 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 
-from broker.simulatedbroker import SimulatedBroker
+from broker.simulated_broker import SimulatedBroker
 from common.constants import DATE_FORMAT
+from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from db_storage.mongodb_storage import MongoDbStorage
 from file_storage.meganz_file_storage import MegaNzFileStorage
-from models.action import Action
+from models.order import Order
 from models.candle import Candle
-from models.enums import ActionType, PositionType
+from models.enums import Action, Direction, OrderType
 from settings import DATABASE_NAME
 from strategy.strategies.sma_crossover_strategy import SmaCrossoverStrategy
 
 SYMBOL = "ANX.PA"
 DB_STORAGE = MongoDbStorage(DATABASE_NAME)
 FILE_STORAGE = MegaNzFileStorage()
-BROKER = SimulatedBroker(cash=Decimal("10000"))
-SCO: SmaCrossoverStrategy = SmaCrossoverStrategy(
-    SYMBOL, DB_STORAGE, FILE_STORAGE, BROKER
-)
+FUND = Decimal("10000")
+START_TIMESTAMP = pd.Timestamp("2017-10-05 08:00:00", tz="UTC")
+MARKET_CAL = EuronextExchangeCalendar()
+BROKER = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
+SCO: SmaCrossoverStrategy = SmaCrossoverStrategy(SYMBOL, DB_STORAGE)
 
 
 def get_df_hist() -> pd.DataFrame:
@@ -141,7 +143,7 @@ def test_smacrossover_conclude_action_position():
     action, position = SmaCrossoverStrategy.conclude_action_position(
         df_signals_positions
     )
-    assert action == ActionType.BUY and position == PositionType.LONG
+    assert action == Action.BUY and position == Direction.LONG
 
     # action = BUY and position = LONG
     df_signals_positions = {
@@ -165,24 +167,29 @@ def test_smacrossover_conclude_action_position():
     action, position = SmaCrossoverStrategy.conclude_action_position(
         df_signals_positions
     )
-    assert action == ActionType.SELL and position == PositionType.LONG
+    assert action == Action.SELL and position == Direction.LONG
 
 
-def test_smacrossover_build_action():
+def test_smacrossover_build_order():
     candle = Candle(
-        symbol="ANX.PA", open=94.10, high=94.12, low=94.00, close=94.12, volume=2,
+        symbol="ANX.PA",
+        open=94.10,
+        high=94.12,
+        low=94.00,
+        close=94.12,
+        volume=2,
     )
-    action1 = SCO.build_action(candle, ActionType.BUY, PositionType.LONG)
-    assert action1.action_type == ActionType.BUY
-    assert action1.position_type == PositionType.LONG
-    assert action1.symbol == "ANX.PA"
-    assert action1.strategy == SmaCrossoverStrategy.__name__
+    order1 = SCO.build_order(candle, Action.BUY, Direction.LONG)
+    assert order1.action == Action.BUY
+    assert order1.direction == Direction.LONG
+    assert order1.symbol == "ANX.PA"
+    assert order1.strategy == SmaCrossoverStrategy.__name__
 
-    action2 = SCO.build_action(candle, ActionType.SELL, PositionType.LONG)
-    assert action2.action_type == ActionType.SELL
-    assert action2.position_type == PositionType.LONG
-    assert action2.symbol == "ANX.PA"
-    assert action2.strategy == SmaCrossoverStrategy.__name__
+    order2 = SCO.build_order(candle, Action.SELL, Direction.LONG)
+    assert order2.action == Action.SELL
+    assert order2.direction == Direction.LONG
+    assert order2.symbol == "ANX.PA"
+    assert order2.strategy == SmaCrossoverStrategy.__name__
 
 
 def test_smacrossover_calc_strategy():
@@ -210,16 +217,21 @@ def test_smacrossover_calc_strategy():
     df_hist["timestamp"] = pd.to_datetime(df_hist["timestamp"], format=DATE_FORMAT)
     df_hist.set_index("timestamp", inplace=True)
     candle: Candle = Candle(
-        symbol="ANX.PA", open=94.10, high=94.12, low=94.00, close=94.12, volume=2,
+        symbol="ANX.PA",
+        open=94.10,
+        high=94.12,
+        low=94.00,
+        close=94.12,
+        volume=2,
     )
-    action: Action = SCO.calc_strategy(candle, df_hist)
-    assert action.action_type == ActionType.BUY
-    assert action.position_type == PositionType.LONG
-    assert action.candle_timestamp == candle.timestamp
+    order: Order = SCO.calc_strategy(candle, df_hist)
+    assert order.action == Action.BUY
+    assert order.direction == Direction.LONG
+    assert order.root_candle_timestamp == candle.timestamp
 
 
-def test_get_last_action():
-    DB_STORAGE.clean_all_actions()
+def test_get_last_order():
+    DB_STORAGE.clean_all_orders()
     DB_STORAGE.clean_all_candles()
     candle: Candle = Candle(
         symbol="ANX.PA",
@@ -231,25 +243,10 @@ def test_get_last_action():
         timestamp=pd.Timestamp("2020-05-22 13:00:00", tz="UTC"),
     )
     DB_STORAGE.add_candle(candle)
-    action = Action(
-        action_type=ActionType.BUY,
-        position_type=PositionType.LONG,
-        size=1,
-        confidence_level=1.000,
-        strategy=SmaCrossoverStrategy.__name__,
-        symbol="ANX.PA",
-        candle_timestamp=pd.Timestamp("2020-05-22 13:00:00", tz="UTC"),
-        timestamp=pd.Timestamp("2020-05-22 14:00:00", tz="UTC"),
-        parameters={
-            "interval_unit": "day",
-            "interval_value": 1,
-            "short_period": 3,
-            "long_period": 8,
-        },
-    )
-    DB_STORAGE.add_action(action)
+    order = Order(generation_time=pd.Timestamp("2020-05-22 14:00:00", tz="UTC"))
+    DB_STORAGE.add_order(order)
     SCO.set_parameters({"short_period": 3, "long_period": 8, "interval": "1 day"})
-    last_action = SCO.get_last_action()
-    assert last_action == action
-    DB_STORAGE.clean_all_actions()
+    last_order = SCO.get_last_order()
+    assert last_order == order
+    DB_STORAGE.clean_all_orders()
     DB_STORAGE.clean_all_candles()

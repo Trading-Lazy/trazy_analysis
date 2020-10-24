@@ -9,17 +9,17 @@ from bson import ObjectId
 from pymongo.results import InsertOneResult
 
 from db_storage.mongodb_storage import MongoDbStorage
-from models.action import Action
+from models.order import Order
 from models.candle import Candle
-from models.enums import ActionType, PositionType
+from models.enums import Action, Direction, OrderType
 from settings import (
-    ACTIONS_COLLECTION_NAME,
+    ORDERS_COLLECTION_NAME,
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
     DATABASE_URL,
     DOCUMENTS_COLLECTION_NAME,
 )
-from test.tools.tools import compare_actions_list, compare_candles_list
+from test.tools.tools import compare_orders_list, compare_candles_list
 
 DOC1_KEY = "key1"
 DOC1_VALUE = "value1"
@@ -63,29 +63,9 @@ CANDLE3: Candle = Candle(
     timestamp=pd.Timestamp("2020-05-08 14:37:00", tz="UTC"),
 )
 
-ACTION1: Action = Action(
-    action_type=ActionType.BUY,
-    position_type=PositionType.LONG,
-    size=100,
-    confidence_level=Decimal("0.05"),
-    strategy="SmaCrossover",
-    symbol="AAPL",
-    candle_timestamp=pd.Timestamp("2020-05-08 14:16:00", tz="UTC"),
-    parameters={},
-    timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
-)
+ORDER1: Order = Order(generation_time=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"))
 
-ACTION2: Action = Action(
-    action_type=ActionType.SELL,
-    position_type=PositionType.LONG,
-    size=100,
-    confidence_level=Decimal("0.05"),
-    strategy="SmaCrossover",
-    symbol="AAPL",
-    candle_timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
-    parameters={},
-    timestamp=pd.Timestamp("2020-05-08 15:19:00", tz="UTC"),
-)
+ORDER2: Order = Order(generation_time=pd.Timestamp("2020-05-08 15:19:00", tz="UTC"))
 
 MONGODB_STORAGE = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
@@ -99,7 +79,7 @@ def test_check_collection_name_success(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
     ]
 
     mongodb_storage = MongoDbStorage()
@@ -115,7 +95,7 @@ def test_check_collection_name_ko(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
     ]
 
     mongodb_storage = MongoDbStorage()
@@ -134,7 +114,7 @@ def test_init_default_args(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
     ]
 
     mongodb_storage = MongoDbStorage()
@@ -153,7 +133,7 @@ def test_init(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
     ]
 
     mongodb_storage = MongoDbStorage(database_name, database_url)
@@ -184,7 +164,7 @@ def test_init_non_existing_database_name(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
     ]
 
     with pytest.raises(Exception):
@@ -207,7 +187,7 @@ def test_get_collection_in_cache(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
     ]
 
     mongodb_storage = MongoDbStorage()
@@ -227,7 +207,7 @@ def test_get_collection_not_in_cache_and_in_db(mongo_client_mocked):
     collection_name = "collection"
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
         collection_name,
     ]
 
@@ -251,7 +231,7 @@ def test_get_collection_not_in_cache_and_not_in_db(mongo_client_mocked):
     collection2_name = "collection2"
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
         collection2_name,
     ]
 
@@ -271,7 +251,7 @@ def test_add_document(mongo_client_mocked):
     collection_name = "collection"
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
-        ACTIONS_COLLECTION_NAME,
+        ORDERS_COLLECTION_NAME,
         collection_name,
     ]
     db.__getitem__.return_value = MagicMock()
@@ -537,80 +517,80 @@ def test_get_all_candles():
 
 
 @patch("db_storage.mongodb_storage.MongoDbStorage.add_document")
-def test_add_action(add_document_mocked):
+def test_add_order(add_document_mocked):
     mongodb_storage = MongoDbStorage()
 
-    mongodb_storage.add_action(ACTION1)
+    mongodb_storage.add_order(ORDER1)
 
-    serializable_action = ACTION1.to_serializable_dict()
-    serializable_action["candle_timestamp"] = pd.Timestamp(
-        serializable_action["candle_timestamp"]
+    serializable_order = ORDER1.to_serializable_dict()
+    serializable_order["candle_timestamp"] = pd.Timestamp(
+        serializable_order["candle_timestamp"]
     )
-    serializable_action["timestamp"] = pd.Timestamp(serializable_action["timestamp"])
-    add_document_calls = [call(serializable_action, ACTIONS_COLLECTION_NAME)]
+    serializable_order["timestamp"] = pd.Timestamp(serializable_order["timestamp"])
+    add_document_calls = [call(serializable_order, ORDERS_COLLECTION_NAME)]
     add_document_mocked.assert_has_calls(add_document_calls)
 
 
-def test_clean_all_actions():
+def test_clean_all_orders():
 
-    MONGODB_STORAGE.add_action(ACTION1)
-    collection = MONGODB_STORAGE.get_collection(ACTIONS_COLLECTION_NAME)
+    MONGODB_STORAGE.add_order(ORDER1)
+    collection = MONGODB_STORAGE.get_collection(ORDERS_COLLECTION_NAME)
     assert collection.count_documents({}) > 0
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
     assert collection.count_documents({}) == 0
 
 
-def test_get_action():
+def test_get_order():
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
-    id = MONGODB_STORAGE.add_action(ACTION1)
-    action: Action = MONGODB_STORAGE.get_action(id)
-    assert action == ACTION1
+    id = MONGODB_STORAGE.add_order(ORDER1)
+    order: Order = MONGODB_STORAGE.get_order(id)
+    assert order == ORDER1
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
 
-def test_get_action_by_identifier():
+def test_get_order_by_identifier():
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
-    MONGODB_STORAGE.add_action(ACTION1)
-    action: Action = MONGODB_STORAGE.get_action_by_identifier(
-        ACTION1.symbol, ACTION1.strategy, ACTION1.candle_timestamp
+    MONGODB_STORAGE.add_order(ORDER1)
+    order: Order = MONGODB_STORAGE.get_order_by_identifier(
+        ORDER1.symbol, ORDER1.signal_id, ORDER1.root_candle_timestamp
     )
-    assert action == ACTION1
+    assert order == ORDER1
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
 
-def test_get_action_by_identifier_non_existing_action():
+def test_get_order_by_identifier_non_existing_order():
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
-    action: Action = MONGODB_STORAGE.get_action_by_identifier(
-        ACTION1.symbol, ACTION1.strategy, ACTION1.candle_timestamp
+    order: Order = MONGODB_STORAGE.get_order_by_identifier(
+        ORDER1.symbol, ORDER1.signal_id, ORDER1.root_candle_timestamp
     )
-    assert action is None
+    assert order is None
 
 
-def test_get_all_actions():
+def test_get_all_orders():
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
-    MONGODB_STORAGE.add_action(ACTION1)
-    MONGODB_STORAGE.add_action(ACTION2)
+    MONGODB_STORAGE.add_order(ORDER1)
+    MONGODB_STORAGE.add_order(ORDER2)
 
-    actions = MONGODB_STORAGE.get_all_actions()
-    assert compare_actions_list(actions, [ACTION1, ACTION2])
+    orders = MONGODB_STORAGE.get_all_orders()
+    assert compare_orders_list(orders, [ORDER1, ORDER2])
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
 
-def test_get_action_non_existing_id():
+def test_get_order_non_existing_id():
 
-    MONGODB_STORAGE.clean_all_actions()
+    MONGODB_STORAGE.clean_all_orders()
 
     id = "5f262523794d9a0a2816645b"
-    action: Action = MONGODB_STORAGE.get_action(id)
-    assert action is None
+    order: Order = MONGODB_STORAGE.get_order(id)
+    assert order is None

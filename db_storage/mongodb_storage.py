@@ -9,10 +9,10 @@ from pymongo.results import DeleteResult, InsertOneResult
 import settings
 from db_storage.db_storage import DbStorage
 from logger import logger
-from models.action import Action
+from models.order import Order
 from models.candle import Candle
 from settings import (
-    ACTIONS_COLLECTION_NAME,
+    ORDERS_COLLECTION_NAME,
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
     DATABASE_URL,
@@ -58,9 +58,9 @@ class MongoDbStorage(DbStorage):
         self.collections_cache[CANDLES_COLLECTION_NAME] = self.db[
             CANDLES_COLLECTION_NAME
         ]
-        self.check_collection_name(ACTIONS_COLLECTION_NAME)
-        self.collections_cache[ACTIONS_COLLECTION_NAME] = self.db[
-            ACTIONS_COLLECTION_NAME
+        self.check_collection_name(ORDERS_COLLECTION_NAME)
+        self.collections_cache[ORDERS_COLLECTION_NAME] = self.db[
+            ORDERS_COLLECTION_NAME
         ]
 
     def get_collection(self, collection_name: str) -> pymongo.collection.Collection:
@@ -160,7 +160,7 @@ class MongoDbStorage(DbStorage):
     def clean_all_candles(self) -> int:
         return self.clean_all_documents(CANDLES_COLLECTION_NAME)
 
-    def add_action(self, action: Action) -> str:
+    def add_order(self, action: Order) -> str:
         serializable_action = action.to_serializable_dict()
         serializable_action["candle_timestamp"] = pd.Timestamp(
             serializable_action["candle_timestamp"]
@@ -168,34 +168,34 @@ class MongoDbStorage(DbStorage):
         serializable_action["timestamp"] = pd.Timestamp(
             serializable_action["timestamp"]
         )
-        return self.add_document(serializable_action, ACTIONS_COLLECTION_NAME)
+        return self.add_document(serializable_action, ORDERS_COLLECTION_NAME)
 
-    def get_action(self, id: str) -> Action:
-        action_dict: dict = self.get_document(id, ACTIONS_COLLECTION_NAME)
+    def get_order(self, id: str) -> Order:
+        action_dict: dict = self.get_document(id, ORDERS_COLLECTION_NAME)
         if action_dict is None:
             return None
-        return Action.from_serializable_dict(action_dict)
+        return Order.from_serializable_dict(action_dict)
 
-    def get_action_by_identifier(
+    def get_order_by_identifier(
         self, symbol: str, strategy: str, candle_timestamp: pd.Timestamp
-    ) -> Action:
+    ) -> Order:
         query = {
             "symbol": symbol,
             "strategy": strategy,
             "candle_timestamp": candle_timestamp,
         }
-        action_dict = self.find_one(query, ACTIONS_COLLECTION_NAME)
+        action_dict = self.find_one(query, ORDERS_COLLECTION_NAME)
         if action_dict is None:
             return None
-        return Action.from_serializable_dict(action_dict)
+        return Order.from_serializable_dict(action_dict)
 
-    def get_all_actions(self) -> List[Action]:
-        actions_in_dict = self.get_all_documents(ACTIONS_COLLECTION_NAME)
+    def get_all_orders(self) -> List[Order]:
+        actions_in_dict = self.get_all_documents(ORDERS_COLLECTION_NAME)
         actions = []
         for action_dict in actions_in_dict:
-            action = Action.from_serializable_dict(action_dict)
+            action = Order.from_serializable_dict(action_dict)
             actions.append(action)
         return actions
 
-    def clean_all_actions(self) -> int:
-        return self.clean_all_documents(ACTIONS_COLLECTION_NAME)
+    def clean_all_orders(self) -> int:
+        return self.clean_all_documents(ORDERS_COLLECTION_NAME)

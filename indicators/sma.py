@@ -4,7 +4,8 @@ import pandas as pd
 from rx import Observable
 
 from common.decorators import Singleton
-from indicators.common import PriceType, get_or_create_nested_dict
+from indicators.common import PriceType
+from common.helper import get_or_create_nested_dict
 from indicators.rolling_window import RollingWindowStream
 from indicators.stream import StreamData
 

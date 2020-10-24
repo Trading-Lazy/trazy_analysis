@@ -1,19 +1,17 @@
-import datetime
+from decimal import Decimal
 
 import numpy as np
 import pandas as pd
-from pytz import utc
-
-from broker.broker import Broker
 from common.helper import (
     TimeInterval,
     calc_required_history_start_timestamp,
 )
 from db_storage.db_storage import DbStorage
-from file_storage.file_storage import FileStorage
-from models.action import Action
+from models.signal import Signal
 from models.candle import Candle
-from models.enums import ActionType, PositionType
+from models.enums import Action, Direction
+from models.signal import Signal
+from order_manager.order_management import OrderManager
 from strategy.candlefetcher import CandleFetcher
 from strategy.strategy import LOG, Strategy, euronext_cal
 from strategy.ta import ma
@@ -21,18 +19,13 @@ from strategy.ta import ma
 
 class SmaCrossoverStrategy(Strategy):
     def __init__(
-        self,
-        symbol: str,
-        db_storage: DbStorage,
-        file_storage: FileStorage,
-        broker: Broker,
+        self, symbol: str, db_storage: DbStorage, order_manager: OrderManager
     ):
-        super().__init__(symbol, db_storage, broker)
+        super().__init__(symbol, db_storage, order_manager)
         self.__interval: TimeInterval = None
         self.__short_period = None
         self.__long_period = None
         self.__parameters = {}
-        self.file_storage = file_storage
         self.candle_fetcher = CandleFetcher(
             db_storage=self.db_storage,
             file_storage=self.file_storage,
@@ -127,52 +120,51 @@ class SmaCrossoverStrategy(Strategy):
     @staticmethod
     def conclude_action_position(
         df_positions: pd.DataFrame,
-    ) -> (ActionType, PositionType):
+    ) -> (Action, Direction):
         position = df_positions.iloc[-1]["positions"]
-        computed_action = None
-        computed_position = None
+        generated_action = None
+        generated_direction = None
         if position == 1:
-            computed_action = ActionType.BUY
-            computed_position = PositionType.LONG
+            generated_action = Action.BUY
+            generated_direction = Direction.LONG
         elif position == -1:
-            computed_action = ActionType.SELL
-            computed_position = PositionType.LONG
-        return computed_action, computed_position
+            generated_action = Action.SELL
+            generated_direction = Direction.LONG
+        return generated_action, generated_direction
 
-    def build_action(self, candle: Candle, action: ActionType, position: PositionType):
+    def build_signal(self, candle: Candle, action: Action, direction: Direction):
         if action is not None:
-            return Action(
+            return Signal(
+                action=action,
+                direction=direction,
+                confidence_level=Decimal("1.0"),
                 strategy=self.name,
                 symbol=candle.symbol,
-                candle_timestamp=candle.timestamp,
-                confidence_level=1,
-                action_type=action,
-                position_type=position,
-                size=1,
-                parameters=self.get_parameters_json(),
+                root_candle_timestamp=candle.timestamp,
+                parameters={},
             )
 
         return None
 
-    def calc_strategy(self, candle: Candle, history_candles: pd.DataFrame) -> Action:
+    def calc_strategy(self, candle: Candle, history_candles: pd.DataFrame) -> Signal:
         df_sma = self.get_candles_with_signals_positions(history_candles)
         (
-            computed_action,
-            computed_position,
+            generated_action,
+            generated_direction,
         ) = SmaCrossoverStrategy.conclude_action_position(df_sma)
-        return self.build_action(candle, computed_action, computed_position)
+        return self.build_signal(candle, generated_action, generated_direction)
 
-    def get_last_action(self) -> Action:
-        actions = self.db_storage.get_all_actions()
-        actions = sorted(actions, key=lambda action: action.timestamp, reverse=True)
-        return actions[-1]
+    def get_last_signal(self) -> Signal:
+        signals = self.db_storage.get_all_signals()
+        signals = sorted(signals, key=lambda signal: signal.timestamp, reverse=True)
+        return signals[-1]
 
-    def compute_action(self, candle: Candle) -> Action:
-        # fetch action
-        last_action: Action = self.get_last_action()
+    def generate_signal(self, candle: Candle) -> Signal:
+        # fetch signal
+        last_signal: Signal = self.get_last_signal()
         self.__last_candle_timestamp = candle.timestamp
 
-        LOG.info("LAST ACTION : {}".format(last_action))
+        LOG.info("LAST SIGNAL : {}".format(last_signal))
 
         # fetch candles
         offset = self.get_time_offset()
@@ -185,14 +177,11 @@ class SmaCrossoverStrategy(Strategy):
         )
 
         if not df_hist.empty:
-            action = self.calc_strategy(candle, df_hist)
-            if (
-                last_action is not None
-                and last_action.action_type == action.action_type.name
-            ):
+            signal = self.calc_strategy(candle, df_hist)
+            if last_signal is not None and last_signal.action == signal.action.name:
                 return None
 
-            return action
+            return signal
         else:
             LOG.info("No history candles can be used to calculate the strategy")
             return None

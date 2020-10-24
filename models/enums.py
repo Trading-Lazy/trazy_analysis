@@ -1,11 +1,19 @@
 from enum import Enum
 
 
-class ActionType(Enum):
+class Action(Enum):
     BUY = "BUY"
     SELL = "SELL"
 
 
-class PositionType(Enum):
+class Direction(Enum):
     LONG = "LONG"
     SHORT = "SHORT"
+
+
+class OrderStatus(Enum):
+    CANCELLED = "CANCELLED"
+    CREATED = "CREATED"
+    COMPLETE = "COMPLETE"
+    EXPIRED = "EXPIRED"
+    SUBMITTED = "SUBMITTED"

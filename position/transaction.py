@@ -3,6 +3,8 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 
+from models.enums import Direction, Action
+
 
 class Transaction:
     """
@@ -28,6 +30,8 @@ class Transaction:
         self,
         symbol: str,
         size: int,
+        action,
+        direction: Direction,
         price: Decimal,
         order_id: str,
         commission=Decimal("0.0"),
@@ -35,7 +39,8 @@ class Transaction:
     ):
         self.symbol = symbol
         self.size = size
-        self.direction = np.copysign(1, self.size)
+        self.action = action
+        self.direction = direction
         self.timestamp = timestamp
         self.price = price
         self.order_id = order_id
@@ -50,13 +55,19 @@ class Transaction:
         `str`
             The string representation of the Transaction.
         """
-        return "%s(symbol=%s, size=%s, timestamp=%s, " "price=%s, order_id=%s)" % (
-            type(self).__name__,
-            self.symbol,
-            self.size,
-            self.timestamp,
-            self.price,
-            self.order_id,
+        return (
+            "%s(symbol=%s, size=%s, action=%s, direction=%s, timestamp=%s, "
+            "price=%s, order_id=%s)"
+            % (
+                type(self).__name__,
+                self.symbol,
+                self.size,
+                self.action.name,
+                self.direction.name,
+                self.timestamp,
+                self.price,
+                self.order_id,
+            )
         )
 
     @property
@@ -69,7 +80,10 @@ class Transaction:
         `Decimal`
             The transaction cost without commission.
         """
-        return self.size * self.price
+        if self.action == Action.SELL:
+            return -(self.size * self.price)
+        else:
+            return self.size * self.price
 
     @property
     def cost_with_commission(self):

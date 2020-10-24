@@ -5,8 +5,9 @@ import pandas as pd
 from pymongo.errors import DuplicateKeyError
 
 from bot.data_consumer import DataConsumer
-from broker.simulatedbroker import SimulatedBroker
+from broker.simulated_broker import SimulatedBroker
 from candles_queue.simple_queue import SimpleQueue
+from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from db_storage.mongodb_storage import MongoDbStorage
 from indicators.rolling_window import RollingWindowFactory
 from models.candle import Candle
@@ -31,17 +32,18 @@ CANDLE = Candle(
 )
 CANDLE_JSON = CANDLE.to_json()
 FUND = Decimal("10000")
-BROKER = SimulatedBroker(cash=FUND)
+START_TIMESTAMP = pd.Timestamp("2017-10-05 08:00:00", tz="UTC")
+MARKET_CAL = EuronextExchangeCalendar()
+BROKER = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
 
 
 def test___init__():
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL, AAPL_SYMBOL]
     candles_queue = SimpleQueue(QUEUE_NAME)
     strategies_classes = [ReactiveSmaCrossoverStrategy, BuyAndSellLongStrategy]
-    BROKER.reset()
-    BROKER.add_cash(FUND)
+    broker = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
     data_consumer = DataConsumer(
-        symbols, candles_queue, DB_STORAGE, BROKER, strategies_classes, save_candles=True
+        symbols, candles_queue, DB_STORAGE, broker, strategies_classes, save_candles=True
     )
 
     assert data_consumer.symbols == [AAPL_SYMBOL, GOOGL_SYMBOL]
@@ -71,10 +73,9 @@ def test_add_strategy():
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = SimpleQueue(QUEUE_NAME)
     strategies_classes = [ReactiveSmaCrossoverStrategy]
-    BROKER.reset()
-    BROKER.add_cash(FUND)
+    broker = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
     data_consumer = DataConsumer(
-        symbols, candles_queue, DB_STORAGE, BROKER, strategies_classes, save_candles=True
+        symbols, candles_queue, DB_STORAGE, broker, strategies_classes, save_candles=True
     )
 
     data_consumer.add_strategy(BuyAndSellLongStrategy)
@@ -94,10 +95,9 @@ def test_run_strategy(process_candle_mocked):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = SimpleQueue(QUEUE_NAME)
     strategies_classes = [ReactiveSmaCrossoverStrategy]
-    BROKER.reset()
-    BROKER.add_cash(FUND)
+    broker = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
     data_consumer = DataConsumer(
-        symbols, candles_queue, DB_STORAGE, BROKER, strategies_classes, save_candles=True
+        symbols, candles_queue, DB_STORAGE, broker, strategies_classes, save_candles=True
     )
     strategy_object = data_consumer.strategies_instances[0]
     data_consumer.run_strategy(strategy_object, CANDLE)
@@ -111,10 +111,9 @@ def test_run_strategies(run_strategy_mocked):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = SimpleQueue(QUEUE_NAME)
     strategies_classes = [ReactiveSmaCrossoverStrategy, BuyAndSellLongStrategy]
-    BROKER.reset()
-    BROKER.add_cash(FUND)
+    broker = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
     data_consumer = DataConsumer(
-        symbols, candles_queue, DB_STORAGE, BROKER, strategies_classes, save_candles=True
+        symbols, candles_queue, DB_STORAGE, broker, strategies_classes, save_candles=True
     )
 
     data_consumer.run_strategies(CANDLE)
@@ -143,10 +142,9 @@ def test_handle_new_candle_callback(
     strategies_classes = [ReactiveSmaCrossoverStrategy, BuyAndSellLongStrategy]
     candle_with_identifier_exists_mocked.return_value = False
 
-    BROKER.reset()
-    BROKER.add_cash(FUND)
+    broker = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
     data_consumer = DataConsumer(
-        symbols, candles_queue, DB_STORAGE, BROKER, strategies_classes, save_candles=True
+        symbols, candles_queue, DB_STORAGE, broker, strategies_classes, save_candles=True
     )
 
     DB_STORAGE.clean_all_candles()
@@ -174,10 +172,9 @@ def test_start(add_consumer_with_ack_mocked):
     candles_queue = SimpleQueue(QUEUE_NAME)
     strategies_classes = [ReactiveSmaCrossoverStrategy, BuyAndSellLongStrategy]
 
-    BROKER.reset()
-    BROKER.add_cash(FUND)
+    broker = SimulatedBroker(MARKET_CAL, START_TIMESTAMP, initial_funds=FUND)
     data_consumer = DataConsumer(
-        symbols, candles_queue, DB_STORAGE, BROKER, strategies_classes, save_candles=True
+        symbols, candles_queue, DB_STORAGE, broker, strategies_classes, save_candles=True
     )
     data_consumer.start()
 

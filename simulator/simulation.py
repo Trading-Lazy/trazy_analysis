@@ -7,9 +7,9 @@ from typing import List
 import settings
 from db_storage.db_storage import DbStorage
 from logger import logger
-from models.action import Action
+from models.order import Order
 from models.candle import Candle
-from models.enums import ActionType, PositionType
+from models.enums import Action, Direction
 from strategy.strategy import Strategy
 
 
@@ -34,18 +34,18 @@ class Simulation:
         self.commission = Decimal("0")
         self.portfolio_value = Decimal("0")
         self.last_transaction_price = {
-            PositionType.LONG: {
-                ActionType.BUY: Decimal("0"),
-                ActionType.SELL: Decimal("0"),
+            Direction.LONG: {
+                Action.BUY: Decimal("0"),
+                Action.SELL: Decimal("0"),
             },
-            PositionType.SHORT: {
-                ActionType.SELL: Decimal("0"),
-                ActionType.BUY: Decimal("0"),
+            Direction.SHORT: {
+                Action.SELL: Decimal("0"),
+                Action.BUY: Decimal("0"),
             },
         }
         self.shares_amounts = {
-            PositionType.LONG: 0,
-            PositionType.SHORT: 0,
+            Direction.LONG: 0,
+            Direction.SHORT: 0,
         }
 
     def __init__(
@@ -81,58 +81,58 @@ class Simulation:
         self.commission = commission
         self.portfolio_value = Decimal("0")
         self.last_transaction_price = {
-            PositionType.LONG: {
-                ActionType.BUY: Decimal("0"),
-                ActionType.SELL: Decimal("0"),
+            Direction.LONG: {
+                Action.BUY: Decimal("0"),
+                Action.SELL: Decimal("0"),
             },
-            PositionType.SHORT: {
-                ActionType.SELL: Decimal("0"),
-                ActionType.BUY: Decimal("0"),
+            Direction.SHORT: {
+                Action.SELL: Decimal("0"),
+                Action.BUY: Decimal("0"),
             },
         }
         self.shares_amounts = {
-            PositionType.LONG: 0,
-            PositionType.SHORT: 0,
+            Direction.LONG: 0,
+            Direction.SHORT: 0,
         }
 
     def fund(self, cash: Decimal) -> None:
         self.cash += cash
 
-    def get_actions(self) -> List[Action]:
-        actions = []
+    def get_orders(self) -> List[Order]:
+        orders = []
         for candle in self.candles:
-            action = self.strategy.compute_action(candle)
-            if action is None:
+            order = self.strategy.generate_signal(candle)
+            if order is None:
                 continue
-            actions.append(action)
-        return actions
+            orders.append(order)
+        return orders
 
-    def is_closed_position(self, position_type: PositionType, action_type: ActionType):
+    def is_closed_position(self, direction: Direction, action: Action):
         return (
-            position_type == PositionType.LONG
-            and action_type == ActionType.SELL
-            or position_type == PositionType.SHORT
-            and action_type == ActionType.BUY
+                direction == Direction.LONG
+                and action == Action.SELL
+                or direction == Direction.SHORT
+                and action == Action.BUY
         )
 
     def validate_shares_amounts(
-        self, position_type: PositionType, action_type: ActionType, amount: int
+        self, direction: Direction, action: Action, amount: int
     ):
         exception_str = "For a {} position, you cannot {} more than you {}".format(
-            position_type.name,
-            action_type.name,
-            action_type.BUY.name
-            if action_type == action_type.SELL.name
-            else action_type.SELL.name,
+            direction.name,
+            action.name,
+            action.BUY.name
+            if action == action.SELL.name
+            else action.SELL.name,
         )
         if (
-            self.is_closed_position(position_type, action_type)
-            and abs(self.shares_amounts[position_type]) < amount
+            self.is_closed_position(direction, action)
+            and abs(self.shares_amounts[direction]) < amount
         ):
             raise Exception(exception_str)
 
-    def validate_cash(self, action_type: ActionType, total_cost_estimate):
-        if action_type == ActionType.BUY and self.cash < total_cost_estimate:
+    def validate_cash(self, action: Action, total_cost_estimate):
+        if action == Action.BUY and self.cash < total_cost_estimate:
             raise Exception(
                 "Cannot update cash, cash has to be greater than or equal to the cost estimate. Cash: {}, "
                 "Cost estimate "
@@ -141,43 +141,43 @@ class Simulation:
 
     def validate_transaction(
         self,
-        position_type: PositionType,
-        action_type: ActionType,
+        direction: Direction,
+        action: Action,
         amount: int,
         total_cost_estimate: int,
     ):
-        self.validate_shares_amounts(position_type, action_type, amount)
-        self.validate_cash(action_type, total_cost_estimate)
+        self.validate_shares_amounts(direction, action, amount)
+        self.validate_cash(action, total_cost_estimate)
 
     def update_shares_amounts(
-        self, position_type: PositionType, action_type: ActionType, amount: int
+        self, direction: Direction, action: Action, amount: int
     ):
-        if action_type == ActionType.BUY:
-            self.shares_amounts[position_type] += amount
+        if action == Action.BUY:
+            self.shares_amounts[direction] += amount
         else:
-            self.shares_amounts[position_type] -= amount
+            self.shares_amounts[direction] -= amount
 
     def update_portfolio_value(
-        self, position_type: PositionType, unit_cost_estimate: Decimal
+        self, direction: Direction, unit_cost_estimate: Decimal
     ):
-        self.portfolio_value = self.shares_amounts[position_type] * unit_cost_estimate
+        self.portfolio_value = self.shares_amounts[direction] * unit_cost_estimate
 
     def update_cash(
         self,
-        action_type: ActionType,
+        action: Action,
         cost_estimate: Decimal,
         commission_amount: Decimal,
     ):
-        if action_type == ActionType.BUY:
+        if action == Action.BUY:
             self.cash -= cost_estimate
         else:
             self.cash += cost_estimate
         self.cash -= commission_amount
 
-    def compute_profit(self, position_type: PositionType) -> Decimal:
+    def compute_profit(self, direction: Direction) -> Decimal:
         profit = (
-            self.last_transaction_price[position_type][ActionType.SELL]
-            - self.last_transaction_price[position_type][ActionType.BUY]
+            self.last_transaction_price[direction][Action.SELL]
+            - self.last_transaction_price[direction][Action.BUY]
         )
         return profit
 
@@ -188,8 +188,8 @@ class Simulation:
 
     def position(
         self,
-        position_type: PositionType,
-        action_type: ActionType,
+        direction: Direction,
+        action: Action,
         unit_cost_estimate: Decimal,
         amount: int,
     ):
@@ -197,21 +197,21 @@ class Simulation:
         commission_amount = cost_estimate * self.commission
         total_cost_estimate = cost_estimate + commission_amount
 
-        self.last_transaction_price[position_type][action_type] = total_cost_estimate
+        self.last_transaction_price[direction][action] = total_cost_estimate
 
         self.validate_transaction(
-            position_type, action_type, amount, total_cost_estimate
+            direction, action, amount, total_cost_estimate
         )
 
-        self.update_shares_amounts(position_type, action_type, amount)
+        self.update_shares_amounts(direction, action, amount)
 
-        self.update_portfolio_value(position_type, unit_cost_estimate)
+        self.update_portfolio_value(direction, unit_cost_estimate)
 
-        self.update_cash(action_type, cost_estimate, commission_amount)
+        self.update_cash(action, cost_estimate, commission_amount)
 
         action_str = "{} {} {} shares at unit cost {}, total: {}, commission: {}".format(
-            action_type.name,
-            position_type.name,
+            action.name,
+            direction.name,
             amount,
             unit_cost_estimate,
             cost_estimate,
@@ -219,8 +219,8 @@ class Simulation:
         )
         self.logger.info(action_str)
 
-        if self.is_closed_position(position_type, action_type):
-            profit = self.compute_profit(PositionType.LONG)
+        if self.is_closed_position(direction, action):
+            profit = self.compute_profit(Direction.LONG)
             self.logger.info("TRANSACTION PROFIT {}".format(profit))
 
         # Log state after transaction
@@ -228,17 +228,17 @@ class Simulation:
 
     def run(self):
         self.logger.info("Starting funds: {}".format(self.cash))
-        actions = self.get_actions()
-        for action in actions:
+        orders = self.get_orders()
+        for order in orders:
             candle = self.db_storage.get_candle_by_identifier(
-                action.symbol, action.candle_timestamp
+                order.symbol, order.root_candle_timestamp
             )
             unit_cost_estimate = Decimal(candle.close)
             self.position(
-                action.position_type,
-                action.action_type,
+                order.direction,
+                order.action,
                 unit_cost_estimate,
-                action.size,
+                order.size,
             )
 
         self.logger.info("Final state:")

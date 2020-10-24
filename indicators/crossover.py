@@ -3,8 +3,9 @@ from enum import Enum
 
 from rx import Observable
 
+from common.helper import check_type
 from indicators.common import get_state
-from indicators.stream import StreamData, check_data_type
+from indicators.stream import StreamData
 
 
 class CrossoverState(Enum):
@@ -21,8 +22,8 @@ class Crossover(StreamData):
     ):
         self.sign_stream = source_stream_data1 - source_stream_data2
         super().__init__(source_data=self.sign_stream)
-        check_data_type(source_stream_data1.data, [int, float, Decimal])
-        check_data_type(source_stream_data2.data, [int, float, Decimal])
+        check_type(source_stream_data1.data, [int, float, Decimal])
+        check_type(source_stream_data2.data, [int, float, Decimal])
         self.state = CrossoverState.IDLE
         self.data = Decimal("0")
 

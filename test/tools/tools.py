@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import pytest
 
 from db_storage.db_storage import DbStorage
-from models.action import Action
+from models.order import Order
 from models.candle import Candle
 
 
@@ -13,7 +13,7 @@ def clean_candles_in_db(db_storage: DbStorage):
 
 
 def clean_actions_in_db(db_storage: DbStorage):
-    db_storage.clean_all_actions()
+    db_storage.clean_all_orders()
 
 
 def compare_candles_list(
@@ -28,14 +28,14 @@ def compare_candles_list(
     return True
 
 
-def compare_actions_list(
-    actions_list1: List[Action], actions_list2: List[Action]
+def compare_orders_list(
+    orders_list1: List[Order], orders_list2: List[Order]
 ) -> bool:
-    if len(actions_list1) != len(actions_list2):
+    if len(orders_list1) != len(orders_list2):
         return False
-    length = len(actions_list1)
+    length = len(orders_list1)
     for i in range(0, length):
-        if actions_list1[i] != actions_list2[i]:
+        if orders_list1[i] != orders_list2[i]:
             return False
     return True
 

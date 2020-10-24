@@ -36,7 +36,7 @@ class TiingoDataHandler(DataHandler):
     @classmethod
     def ticker_data_is_none(cls, data: str) -> bool:
         columns_line = data.partition("\n")[0]
-        columns = list(filter(None, columns_line.split(",")))
+        columns = list(columns_line.split(","))
         return not lists_equal(columns, cls.TICKER_DATA_RESPONSE_USED_COLUMNS)
 
     @classmethod
