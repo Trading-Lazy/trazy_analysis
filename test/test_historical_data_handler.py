@@ -42,7 +42,7 @@ AAPL_CANDLES1 = [
         timestamp=pd.Timestamp("2020-06-13 13:31:00+00:00"),
     ),
 ]
-AAPL_CANDLE_DATAFRAME1 = CandleDataFrame(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES1)
+AAPL_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES1)
 
 AAPL_CANDLES2 = [
     Candle(
@@ -64,8 +64,7 @@ AAPL_CANDLES2 = [
         timestamp=pd.Timestamp("2020-06-17 13:33:00+00:00"),
     ),
 ]
-AAPL_CANDLE_DATAFRAME2 = CandleDataFrame(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2)
-
+AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2)
 AAPL_CANDLES3 = [
     Candle(
         symbol=AAPL_SYMBOL,
@@ -86,10 +85,10 @@ AAPL_CANDLES3 = [
         timestamp=pd.Timestamp("2020-06-19 13:35:00+00:00"),
     ),
 ]
-AAPL_CANDLE_DATAFRAME3 = CandleDataFrame(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES3)
+AAPL_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES3)
 
 AAPL_CANDLES = AAPL_CANDLES1 + AAPL_CANDLES2 + AAPL_CANDLES3
-AAPL_CANDLE_DATAFRAME = CandleDataFrame(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES)
+AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES)
 
 
 def test_parse_ticker_data_tiingo():
@@ -609,7 +608,7 @@ def test_request_ticker_data_for_period_error_iex(
 )
 def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked):
     expected_candles = AAPL_CANDLES1 + AAPL_CANDLES2 + AAPL_CANDLES3
-    expected_candle_dataframe = CandleDataFrame(
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=AAPL_SYMBOL, candles=expected_candles
     )
     request_ticker_data_for_period_mocked.side_effect = [
@@ -653,7 +652,7 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
     )
     start = pd.Timestamp("2020-06-11 13:31:00+00:00")
     end = pd.Timestamp("2020-06-19 13:34:00+00:00")
-    expected_candle_dataframe = CandleDataFrame(
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=AAPL_SYMBOL, candles=AAPL_CANDLES[1:-1]
     )
     TiingoHistoricalDataHandler.MAX_DOWNLOAD_FRAME = timedelta(days=3)

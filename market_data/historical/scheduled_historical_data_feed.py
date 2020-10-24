@@ -3,6 +3,9 @@ from historical_market_data.start_historical_data_pipeline import (
     start_historical_data_pipeline,
 )
 
+from market_data.historical.start_historical_data_pipeline import (
+    start_historical_data_pipeline,
+)
 from settings import (
     HISTORICAL_FEED_DAY_OF_WEEK,
     HISTORICAL_FEED_HOUR,

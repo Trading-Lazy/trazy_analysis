@@ -41,9 +41,6 @@ def get_strategies_classes(
         )
 
         for member in dir(module):
-            if member == "Strategy":
-                continue
-
             strategy_class = getattr(module, member)
             if (
                 strategy_class

@@ -70,10 +70,10 @@ class DataConsumer:
             )
             LOG.info("add_to_db: {}".format(add_to_db))
             if not self.save_candles or add_to_db:
-                RollingWindow(candle.symbol).on_next(candle)
+                RollingWindow(candle.symbol).push(candle)
             self.run_strategies(candle)
             if add_to_db:
                 self.db_storage.add_candle(candle)
 
     def start(self):
-        self.candles_queue.add_consumer_with_ack(self.handle_new_candle_callback)
+        self.candles_queue.add_consumer(self.handle_new_candle_callback)

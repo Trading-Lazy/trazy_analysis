@@ -82,10 +82,10 @@ class RabbitMq(CandlesQueue):
         )
         self.consumers_threads.append(consumer_thread)
 
-    def add_consumer(self, callback: Callable[[str], None]) -> None:
+    def add_consumer_no_retry(self, callback: Callable[[str], None]) -> None:
         self.add_consumer_helper(callback, auto_ack=True)
 
-    def add_consumer_with_ack(self, callback: Callable[[str], None]) -> None:
+    def add_consumer(self, callback: Callable[[str], None]) -> None:
         self.add_consumer_helper(callback)
 
     def push(self, queue_elt: str) -> None:

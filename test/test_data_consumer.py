@@ -168,7 +168,7 @@ def test_handle_new_candle_callback(
     DB_STORAGE.clean_all_candles()
 
 
-@patch("candles_queue.simple_queue.SimpleQueue.add_consumer_with_ack")
+@patch("candles_queue.simple_queue.SimpleQueue.add_consumer")
 def test_start(add_consumer_with_ack_mocked):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = SimpleQueue(QUEUE_NAME)

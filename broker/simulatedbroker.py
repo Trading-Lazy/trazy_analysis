@@ -6,14 +6,8 @@ from models.enums import ActionType, PositionType
 
 
 class SimulatedBroker(Broker):
-    def get_symbol_price(self, symbol: str) -> Decimal:  # pragma: no cover
-        return 0
-
     def get_balance(self) -> Decimal:  # pragma: no cover
         return self.cash
-
-    def compute_order_size(self, symbol) -> Decimal:  # pragma: no cover
-        return 1
 
     def reset(self) -> None:
         self.cash = Decimal("0")

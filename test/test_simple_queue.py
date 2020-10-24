@@ -52,7 +52,7 @@ def test_add_consumer():
         received_message = message
 
     simple_queue = SimpleQueue(QUEUE_NAME)
-    simple_queue.add_consumer(callback)
+    simple_queue.add_consumer_no_retry(callback)
     simple_queue.push(MESSAGE1)
 
     assert received_message == MESSAGE1
@@ -72,7 +72,7 @@ def test_add_consumer_messages_already_in_queue():
     simple_queue.push(MESSAGE1)
     simple_queue.push(MESSAGE2)
 
-    simple_queue.add_consumer(callback)
+    simple_queue.add_consumer_no_retry(callback)
     simple_queue.push(MESSAGE3)
 
     assert number_of_calls == 3
@@ -94,7 +94,7 @@ def test_add_consumer_with_ack():
             raise Exception()
 
     simple_queue = SimpleQueue(QUEUE_NAME)
-    simple_queue.add_consumer_with_ack(callback)
+    simple_queue.add_consumer(callback)
     simple_queue.push(MESSAGE1)
 
     assert number_of_retries == 2

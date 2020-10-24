@@ -22,18 +22,29 @@ class CandleDataFrame(DataFrame):
 
     def __init__(self, *args, **kwargs):
         self.symbol: str = kwargs.pop("symbol", None)
-        candles_in_init = "candles" in kwargs
-        if candles_in_init:
-            candles: List[Candle] = kwargs.pop("candles")
-            dict_list = [candle.to_serializable_dict() for candle in candles]
-            kwargs.update({"data": dict_list})
-            kwargs.update({"columns": CandleDataFrame.ALL_COLUMNS})
+        candles_data_in_init = "candles_data" in kwargs
+        if candles_data_in_init:
+            candles_data = kwargs.pop("candles_data")
+            kwargs.update({"data": candles_data})
         super().__init__(*args, **kwargs)
-        if candles_in_init:
-            self["timestamp"] = pd.to_datetime(self["timestamp"])
-            self.set_index("timestamp", inplace=True, verify_integrity=True)
+        if candles_data_in_init:
+            datetime_index_exist = isinstance(self.index, DatetimeIndex)
+            if "symbol" in self.columns.tolist():
+                self.drop(["symbol"], axis=1, inplace=True)
+            if not datetime_index_exist:
+                validate_dataframe_columns(self, CandleDataFrame.ALL_COLUMNS)
+                self["timestamp"] = pd.to_datetime(self["timestamp"])
+                self.set_index("timestamp", inplace=True, verify_integrity=True)
+            else:
+                validate_dataframe_columns(self, CandleDataFrame.DATA_COLUMNS)
+                self.index.name = "timestamp"
             self.index = timestamp_to_utc(self.index)
             self.sort_index(inplace=True)
+            # reorder columns
+            if list(self.columns) != CandleDataFrame.DATA_COLUMNS:
+                for i, colname in enumerate(CandleDataFrame.DATA_COLUMNS):
+                    col = self.pop(colname)
+                    self.insert(i, colname, col)
 
     def add_candle(self, candle: Candle) -> None:
         if candle.timestamp in self.index:
@@ -65,17 +76,13 @@ class CandleDataFrame(DataFrame):
     def to_candles(self) -> List[Candle]:
         if self.symbol is None:
             raise Exception("CandleDataFrame symbol is not set")
+        map_index_to_values = self.to_dict(orient="index")
         candles = []
-        for row in self.itertuples():
-            candle = Candle(
-                symbol=self.symbol,
-                open=Decimal(row.open),
-                high=Decimal(row.high),
-                low=Decimal(row.low),
-                close=Decimal(row.close),
-                volume=int(row.volume),
-                timestamp=row.Index,
-            )
+        for timestamp in map_index_to_values:
+            candle_dict = map_index_to_values[timestamp]
+            candle_dict["symbol"] = self.symbol
+            candle_dict["timestamp"] = timestamp
+            candle = Candle.from_serializable_dict(candle_dict)
             candles.append(candle)
         return candles
 
@@ -87,29 +94,15 @@ class CandleDataFrame(DataFrame):
         return candle_dataframe
 
     @staticmethod
+    def from_candle_list(symbol: str, candles: List[Candle]):
+        if len(candles) == 0:
+            return CandleDataFrame(symbol=symbol)
+        candles_data = [candle.to_serializable_dict() for candle in candles]
+        return CandleDataFrame(symbol=symbol, candles_data=candles_data)
+
+    @staticmethod
     def from_dataframe(df: DataFrame, symbol: str) -> "CandleDataFrame":
-        required_columns = CandleDataFrame.DATA_COLUMNS
-        there_is_datetime_index = isinstance(df.index, DatetimeIndex)
-        if not there_is_datetime_index:
-            required_columns = CandleDataFrame.ALL_COLUMNS
-        else:
-            df.index.name = "timestamp"
-        validate_dataframe_columns(df, required_columns)
-        candles = []
-        for row in df.itertuples():
-            candle = Candle(
-                symbol=symbol,
-                open=Decimal(row.open),
-                high=Decimal(row.high),
-                low=Decimal(row.low),
-                close=Decimal(row.close),
-                volume=int(row.volume),
-                timestamp=row.Index
-                if there_is_datetime_index
-                else pd.Timestamp(row.timestamp, tz="UTC"),
-            )
-            candles.append(candle)
-        return CandleDataFrame(symbol=symbol, candles=candles)
+        return CandleDataFrame(symbol=symbol, candles_data=df)
 
     @staticmethod
     def concat(
@@ -126,11 +119,12 @@ class CandleDataFrame(DataFrame):
         self, time_unit: pd.offsets.DateOffset, market_cal: MarketCalendar
     ) -> "CandleDataFrame":
         if self.empty:
-            return CandleDataFrame(symbol=self.symbol, candles=[])
+            return CandleDataFrame(symbol=self.symbol)
         start = self.index[0]
         end = self.index[-1]
         market_cal_df = market_cal.schedule(
-            start_date=start.strftime("%Y-%m-%d"), end_date=end.strftime("%Y-%m-%d"),
+            start_date=start.strftime("%Y-%m-%d"),
+            end_date=end.strftime("%Y-%m-%d"),
         )
 
         from common.helper import resample_candle_data

@@ -19,13 +19,13 @@ class SimpleQueue(CandlesQueue):
 
         self.subject.subscribe(lambda _: handle_new_elt())
 
-    def add_consumer(self, callback: Callable[[str], None]) -> None:
+    def add_consumer_no_retry(self, callback: Callable[[str], None]) -> None:
         def handle_new_elt():
             callback(self.queue.pop())
 
         self.add_consumer_helper(handle_new_elt)
 
-    def add_consumer_with_ack(self, callback: Callable[[str], None]) -> None:
+    def add_consumer(self, callback: Callable[[str], None]) -> None:
         def handle_new_elt():
             try:
                 queue_elt = self.queue.pop()

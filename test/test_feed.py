@@ -68,7 +68,7 @@ AAPL_CANDLES2 = [
     ),
 ]
 AAPL_CANDLES = AAPL_CANDLES1 + AAPL_CANDLES2
-AAPL_CANDLE_DATAFRAME = CandleDataFrame(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES)
+AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES)
 
 GOOGL_SYMBOL = "GOOGL"
 GOOGL_CANDLES1 = [
@@ -112,7 +112,7 @@ GOOGL_CANDLES2 = [
     ),
 ]
 GOOGL_CANDLES = GOOGL_CANDLES1 + GOOGL_CANDLES2
-GOOGL_CANDLE_DATAFRAME = CandleDataFrame(symbol=GOOGL_SYMBOL, candles=GOOGL_CANDLES)
+GOOGL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(symbol=GOOGL_SYMBOL, candles=GOOGL_CANDLES)
 
 
 def test_feed():
@@ -143,7 +143,7 @@ def test_feed():
                     checks = False
                 googl_idx += 1
 
-    candles_queue.add_consumer(callback)
+    candles_queue.add_consumer_no_retry(callback)
 
     feed.start()
     assert checks
@@ -189,7 +189,7 @@ def test_live_feed(request_ticker_lastest_candles_mocked):
             if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
                 live_feed.stop()
 
-    candles_queue.add_consumer(callback)
+    candles_queue.add_consumer_no_retry(callback)
 
     live_feed.start()
     assert checks
@@ -223,7 +223,7 @@ def test_offline_feed():
                     checks = False
                 googl_idx += 1
 
-    candles_queue.add_consumer(callback)
+    candles_queue.add_consumer_no_retry(callback)
 
     offline_feed.start()
     assert checks
@@ -273,7 +273,7 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
             if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
                 historical_feed.stop()
 
-    candles_queue.add_consumer(callback)
+    candles_queue.add_consumer_no_retry(callback)
 
     historical_feed.start()
     assert checks
@@ -282,8 +282,8 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
 def test_pandas_feed():
     candles_queue = SimpleQueue(QUEUE_NAME)
     candle_dataframes = [
-        CandleDataFrame(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES),
-        CandleDataFrame(symbol=GOOGL_SYMBOL, candles=GOOGL_CANDLES),
+        CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES),
+        CandleDataFrame.from_candle_list(symbol=GOOGL_SYMBOL, candles=GOOGL_CANDLES),
     ]
     pandas_feed = PandasFeed(candle_dataframes, candles_queue)
 
@@ -310,7 +310,7 @@ def test_pandas_feed():
             if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
                 pandas_feed.stop()
 
-    candles_queue.add_consumer(callback)
+    candles_queue.add_consumer_no_retry(callback)
 
     pandas_feed.start()
     assert checks
@@ -350,7 +350,7 @@ def test_csv_feed():
             if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
                 csv_feed.stop()
 
-    candles_queue.add_consumer(callback)
+    candles_queue.add_consumer_no_retry(callback)
 
     csv_feed.start()
     assert checks

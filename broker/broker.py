@@ -6,10 +6,6 @@ from models.enums import ActionType, PositionType
 
 class Broker:
     @abc.abstractmethod
-    def get_symbol_price(self, symbol: str) -> Decimal:  # pragma: no cover
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def submit_order(
         self,
         symbol: str,
@@ -22,10 +18,6 @@ class Broker:
 
     @abc.abstractmethod
     def get_balance(self) -> Decimal:  # pragma: no cover
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def compute_order_size(self, symbol) -> Decimal:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod

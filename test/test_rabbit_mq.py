@@ -47,7 +47,7 @@ def test_add_consumer():
         received_message = message
 
     rabbit_mq = RabbitMq(QUEUE_NAME1, CONNECTION_URL)
-    rabbit_mq.add_consumer(callback)
+    rabbit_mq.add_consumer_no_retry(callback)
     rabbit_mq.push(MESSAGE)
 
     time.sleep(2)
@@ -69,7 +69,7 @@ def test_add_consumer_with_ack():
 
     rabbit_mq = RabbitMq(QUEUE_NAME2, CONNECTION_URL)
     rabbit_mq.flush()
-    rabbit_mq.add_consumer_with_ack(callback)
+    rabbit_mq.add_consumer(callback)
     rabbit_mq.push(MESSAGE)
 
     time.sleep(2)
