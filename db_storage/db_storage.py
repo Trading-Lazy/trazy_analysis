@@ -3,8 +3,8 @@ from typing import List
 
 import pandas as pd
 
-from models.order import Order
 from models.candle import Candle
+from models.order import Order
 
 
 class DbStorage:
@@ -72,6 +72,28 @@ class DbStorage:
 
     @abc.abstractmethod
     def clean_all_candles(self) -> int:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def add_signal(self, action: Order) -> str:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_signal(self, id: str) -> Candle:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_signal_by_identifier(
+        self, symbol: str, strategy: str, candle_timestamp: pd.Timestamp
+    ) -> Candle:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_all_signals(self) -> List[Order]:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def clean_all_signals(self) -> int:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod

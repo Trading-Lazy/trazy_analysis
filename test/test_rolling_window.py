@@ -1,15 +1,16 @@
-from _pydecimal import Decimal
+from decimal import Decimal
 
 import pandas as pd
 import pytest
 
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from indicators.common import PriceType
+from indicators.indicators import IndicatorsManager
 from indicators.rolling_window import (
-    PriceRollingWindowFactory,
-    RollingWindowFactory,
+    PriceRollingWindowManager,
+    RollingWindowManager,
     RollingWindowStream,
-    TimeFramedCandleRollingWindowFactory,
+    TimeFramedCandleRollingWindowManager,
     TimeFramedCandleRollingWindowStream,
     get_price_selector_function,
 )
@@ -249,7 +250,7 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_1_day_data():
 
 
 def test_rolling_window_factory():
-    rolling_window_factory = RollingWindowFactory()
+    rolling_window_factory = RollingWindowManager()
     rolling_window1 = rolling_window_factory(SYMBOL1, period=5)
     rolling_window2 = rolling_window_factory(SYMBOL1, period=5)
     rolling_window3 = rolling_window_factory(SYMBOL1, period=3)
@@ -260,7 +261,10 @@ def test_rolling_window_factory():
 
 
 def test_time_framed_rolling_window_factory():
-    time_framed_rolling_window_factory = TimeFramedCandleRollingWindowFactory()
+    indicators_manager = IndicatorsManager()
+    time_framed_rolling_window_factory = TimeFramedCandleRollingWindowManager(
+        indicators_manager
+    )
     time_framed_rolling_window1 = time_framed_rolling_window_factory(
         SYMBOL1, period=3, time_unit=pd.offsets.Minute(5)
     )
@@ -283,7 +287,8 @@ def test_time_framed_rolling_window_factory():
 
 
 def test_price_rolling_window_factory():
-    price_rolling_window_factory = PriceRollingWindowFactory()
+    indicators_manager = IndicatorsManager()
+    price_rolling_window_factory = PriceRollingWindowManager(indicators_manager)
     price_rolling_window1 = price_rolling_window_factory(
         SYMBOL1, period=3, time_unit=pd.offsets.Minute(5), price_type=PriceType.CLOSE
     )

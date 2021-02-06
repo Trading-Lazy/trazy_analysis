@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from common.helper import get_or_create_nested_dict
+from models.enums import Direction
 from position.position import Position
 from position.transaction import Transaction
 
@@ -17,6 +18,9 @@ class PositionHandler:
         an ordered dictionary containing the current positions.
         """
         self.positions = {}
+
+    def position_size(self, symbol: str, direction: Direction) -> int:
+        return self.positions[symbol][direction].net_size
 
     def transact_position(self, transaction: Transaction) -> None:
         """
@@ -41,7 +45,7 @@ class PositionHandler:
         """
         Calculate the sum of all the positions' market values.
         """
-        market_value = Decimal('0.0')
+        market_value = Decimal("0.0")
         for values in self.positions.values():
             for pos in values.values():
                 market_value += pos.market_value
@@ -51,7 +55,7 @@ class PositionHandler:
         """
         Calculate the sum of all the positions' unrealised P&Ls.
         """
-        unrealised_pnl = Decimal('0.0')
+        unrealised_pnl = Decimal("0.0")
         for values in self.positions.values():
             for pos in values.values():
                 unrealised_pnl += pos.unrealised_pnl
@@ -61,7 +65,7 @@ class PositionHandler:
         """
         Calculate the sum of all the positions' realised P&Ls.
         """
-        realised_pnl = Decimal('0.0')
+        realised_pnl = Decimal("0.0")
         for values in self.positions.values():
             for pos in values.values():
                 realised_pnl += pos.realised_pnl
@@ -71,7 +75,7 @@ class PositionHandler:
         """
         Calculate the sum of all the positions' P&Ls.
         """
-        total_pnl = Decimal('0.0')
+        total_pnl = Decimal("0.0")
         for symbol_values in self.positions.values():
             for pos in symbol_values.values():
                 total_pnl += pos.total_pnl

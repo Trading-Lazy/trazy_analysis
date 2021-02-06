@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 import pytz
 
-from models.enums import Direction, Action
+from models.enums import Action, Direction
 from position.position import Position
 from position.transaction import Transaction
 
@@ -37,13 +37,13 @@ def test_update_price_failure_with_earlier_timestamp():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
 
     # Update the market price
     new_price = Decimal("192.80")
     new_timestamp = pd.Timestamp("2020-06-16 14:00:00", tz=pytz.UTC)
-    with pytest.raises(Exception):
-        position.update_price(new_price, new_timestamp)
+
+    position.update_price(new_price, new_timestamp)
+    assert position.last_price_update == new_timestamp
 
 
 def test_update_price_failure_with_negative_price():
@@ -73,7 +73,7 @@ def test_update_price_failure_with_negative_price():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Update the market price
     new_price = Decimal("-192.80")
@@ -110,7 +110,7 @@ def test_basic_long_equities_position():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Update the market price
     new_price = Decimal("192.80")
@@ -118,7 +118,7 @@ def test_basic_long_equities_position():
     position.update_price(new_price, new_timestamp)
 
     assert position.price == new_price
-    assert position.timestamp == new_timestamp
+    assert position.last_price_update == new_timestamp
 
     assert position.buy_size == 100
     assert position.sell_size == 0
@@ -168,7 +168,7 @@ def test_position_long_twice():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Second long
     second_size = 60
@@ -189,7 +189,7 @@ def test_position_long_twice():
     position.transact(second_transaction)
 
     assert position.price == second_price
-    assert position.timestamp == second_timestamp
+    assert position.last_price_update == second_timestamp
 
     assert position.buy_size == 160
     assert position.sell_size == 0
@@ -239,7 +239,7 @@ def test_position_long_close():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Closing trade
     second_size = 100
@@ -260,7 +260,7 @@ def test_position_long_close():
     position.transact(second_transaction)
 
     assert position.price == second_price
-    assert position.timestamp == second_timestamp
+    assert position.last_price_update == second_timestamp
 
     assert position.buy_size == 100
     assert position.sell_size == 100
@@ -310,7 +310,7 @@ def test_position_long_and_short():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Short details and transaction
     second_size = 60
@@ -331,7 +331,7 @@ def test_position_long_and_short():
     position.transact(second_transaction)
 
     assert position.price == second_price
-    assert position.timestamp == second_timestamp
+    assert position.last_price_update == second_timestamp
 
     assert position.buy_size == 100
     assert position.sell_size == 60
@@ -437,7 +437,7 @@ def test_position_long_short_long_short_ending_long():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     assert position.buy_size == 1077
     assert position.sell_size == 916
@@ -486,7 +486,7 @@ def test_basic_short_equities_position():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Update the market price
     new_price = Decimal("159.43")
@@ -494,7 +494,7 @@ def test_basic_short_equities_position():
     position.update_price(new_price, new_timestamp)
 
     assert position.price == new_price
-    assert position.timestamp == new_timestamp
+    assert position.last_price_update == new_timestamp
 
     assert position.buy_size == 0
     assert position.sell_size == 100
@@ -546,7 +546,7 @@ def test_position_short_twice():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Second short
     second_size = 60
@@ -567,7 +567,7 @@ def test_position_short_twice():
     position.transact(second_transaction)
 
     assert position.price == second_price
-    assert position.timestamp == second_timestamp
+    assert position.last_price_update == second_timestamp
 
     assert position.buy_size == 0
     assert position.sell_size == 160
@@ -617,7 +617,7 @@ def test_position_short_close():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Closing trade
     second_size = 100
@@ -638,7 +638,7 @@ def test_position_short_close():
     position.transact(second_transaction)
 
     assert position.price == second_price
-    assert position.timestamp == second_timestamp
+    assert position.last_price_update == second_timestamp
 
     assert position.buy_size == 100
     assert position.sell_size == 100
@@ -688,7 +688,7 @@ def test_position_short_and_long():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     # Long details and transaction
     second_size = 60
@@ -709,7 +709,7 @@ def test_position_short_and_long():
     position.transact(second_transaction)
 
     assert position.price == second_price
-    assert position.timestamp == second_timestamp
+    assert position.last_price_update == second_timestamp
 
     assert position.buy_size == 60
     assert position.sell_size == 100
@@ -757,7 +757,7 @@ def test_position_short_long_short_long_ending_short():
     )
     position = Position.open_from_transaction(transaction)
 
-    # Second trade (first long)
+    # Second trade (second short)
     size = 477
     timestamp = pd.Timestamp("2020-06-16 16:00:00", tz=pytz.UTC)
     price = Decimal("117.875597")
@@ -775,7 +775,7 @@ def test_position_short_long_short_long_ending_short():
     )
     position.transact(transaction)
 
-    # Third trade (second short)
+    # Third trade (third short)
     size = 595
     timestamp = pd.Timestamp("2020-06-16 17:00:00", tz=pytz.UTC)
     price = Decimal("117.74")
@@ -793,7 +793,7 @@ def test_position_short_long_short_long_ending_short():
     )
     position.transact(transaction)
 
-    # Fourth trade (second long), now net short
+    # Fourth trade (fourth short), now net short
     size = 427
     timestamp = pd.Timestamp("2020-06-16 18:00:00", tz=pytz.UTC)
     price = Decimal("117.793115")
@@ -813,7 +813,7 @@ def test_position_short_long_short_long_ending_short():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     assert position.buy_size == 904
     assert position.sell_size == 1357
@@ -834,6 +834,211 @@ def test_position_short_long_short_long_ending_short():
     assert position.total_pnl == Decimal("-125.3209690000000000000000178")
 
 
+def test_position_limit_reached_long():
+    """
+    Tests that the properties on the Position
+    are calculated for four trades consisting
+    of a short, long, short and long ending net
+    short after all trades with varying quantities
+    and market prices.
+    """
+    # First trade (first long)
+    symbol = "AGG"
+    size = 762
+    timestamp = pd.Timestamp("2020-06-16 15:00:00", tz=pytz.UTC)
+    price = Decimal("117.74")
+    order_id = "100"
+    commission = Decimal("5.35")
+    transaction = Transaction(
+        symbol,
+        size=size,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        price=price,
+        order_id=order_id,
+        commission=commission,
+        timestamp=timestamp,
+    )
+    position = Position.open_from_transaction(transaction)
+
+    # Second trade (second long)
+    size = 765
+    timestamp = pd.Timestamp("2020-06-16 16:00:00", tz=pytz.UTC)
+    price = Decimal("117.875597")
+    order_id = "101"
+    commission = Decimal("2.31")
+    transaction = Transaction(
+        symbol,
+        size=size,
+        action=Action.SELL,
+        direction=Direction.LONG,
+        price=price,
+        order_id=order_id,
+        commission=commission,
+        timestamp=timestamp,
+    )
+    position.transact(transaction)
+
+    assert position.symbol == symbol
+    assert position.price == price
+    assert position.last_price_update == timestamp
+
+    assert position.buy_size == 762
+    assert position.sell_size == 762
+    assert position.avg_bought == Decimal("117.74")
+    assert position.avg_sold == Decimal("117.875597")
+    assert position.commission == Decimal("7.66")
+
+    assert position.direction == Direction.LONG
+    assert position.market_value == Decimal("0.000000")
+    assert position.avg_price == Decimal("0.0")
+    assert position.net_size == 0
+    assert position.total_bought == Decimal("89717.88")
+    assert position.total_sold == Decimal("89821.204914")
+    assert position.net_total == Decimal("103.324914")
+    assert position.net_incl_commission == Decimal("95.664914")
+    assert position.unrealised_pnl == Decimal("0.000000")
+    assert position.realised_pnl == Decimal("95.664914")
+    assert position.total_pnl == Decimal("95.664914")
+
+
+def test_position_limit_reached_short():
+    """
+    Tests that the properties on the Position
+    are calculated for four trades consisting
+    of a short, long, short and long ending net
+    short after all trades with varying quantities
+    and market prices.
+    """
+    # First trade (first short)
+    symbol = "AGG"
+    size = 762
+    timestamp = pd.Timestamp("2020-06-16 15:00:00", tz=pytz.UTC)
+    price = Decimal("117.74")
+    order_id = "100"
+    commission = Decimal("5.35")
+    transaction = Transaction(
+        symbol,
+        size=size,
+        action=Action.SELL,
+        direction=Direction.SHORT,
+        price=price,
+        order_id=order_id,
+        commission=commission,
+        timestamp=timestamp,
+    )
+    position = Position.open_from_transaction(transaction)
+
+    # Second trade (second short)
+    size = 765
+    timestamp = pd.Timestamp("2020-06-16 16:00:00", tz=pytz.UTC)
+    price = Decimal("117.875597")
+    order_id = "101"
+    commission = Decimal("2.31")
+    transaction = Transaction(
+        symbol,
+        size=size,
+        action=Action.BUY,
+        direction=Direction.SHORT,
+        price=price,
+        order_id=order_id,
+        commission=commission,
+        timestamp=timestamp,
+    )
+    position.transact(transaction)
+
+    assert position.symbol == symbol
+    assert position.price == price
+    assert position.last_price_update == timestamp
+
+    assert position.buy_size == 762
+    assert position.sell_size == 762
+    assert position.avg_bought == Decimal("117.875597")
+    assert position.avg_sold == Decimal("117.74")
+    assert position.commission == Decimal("7.66")
+
+    assert position.direction == Direction.SHORT
+    assert position.market_value == Decimal("0.000000")
+    assert position.avg_price == Decimal("0.0")
+    assert position.net_size == 0
+    assert position.total_bought == Decimal("89821.204914")
+    assert position.total_sold == Decimal("89717.88")
+    assert position.net_total == Decimal("-103.324914")
+    assert position.net_incl_commission == Decimal("-110.984914")
+    assert position.unrealised_pnl == Decimal("0.000000")
+    assert position.realised_pnl == Decimal("-110.984914")
+    assert position.total_pnl == Decimal("-110.984914")
+
+
+def test_position_direction_different_from_transaction():
+    """
+    Tests that the properties on the Position
+    are calculated for four trades consisting
+    of a short, long, short and long ending net
+    short after all trades with varying quantities
+    and market prices.
+    """
+    # First trade (first short)
+    symbol = "AGG"
+    size1 = 762
+    timestamp1 = pd.Timestamp("2020-06-16 15:00:00", tz=pytz.UTC)
+    price1 = Decimal("117.74")
+    order_id1 = "100"
+    commission1 = Decimal("5.35")
+    transaction = Transaction(
+        symbol,
+        size=size1,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        price=price1,
+        order_id=order_id1,
+        commission=commission1,
+        timestamp=timestamp1,
+    )
+    position = Position.open_from_transaction(transaction)
+
+    # Second trade (second short)
+    size2 = 765
+    timestamp2 = pd.Timestamp("2020-06-16 16:00:00", tz=pytz.UTC)
+    price2 = Decimal("117.875597")
+    order_id2 = "101"
+    commission2 = Decimal("2.31")
+    transaction = Transaction(
+        symbol,
+        size=size2,
+        action=Action.SELL,
+        direction=Direction.SHORT,
+        price=price2,
+        order_id=order_id2,
+        commission=commission2,
+        timestamp=timestamp2,
+    )
+    with pytest.raises(ValueError):
+        position.transact(transaction)
+
+    assert position.symbol == symbol
+    assert position.price == price1
+    assert position.last_price_update == timestamp1
+
+    assert position.buy_size == 762
+    assert position.sell_size == 0
+    assert position.avg_bought == Decimal("117.74")
+    assert position.avg_sold == Decimal("0.0")
+    assert position.commission == Decimal("5.35")
+
+    assert position.direction == Direction.LONG
+    assert position.market_value == Decimal("89717.88")
+    assert position.avg_price == Decimal("117.7470209973753280839895013")
+    assert position.net_size == 762
+    assert position.total_bought == Decimal("89717.88")
+    assert position.total_sold == Decimal("0.0")
+    assert position.net_total == Decimal("-89717.88")
+    assert position.net_incl_commission == Decimal("-89723.23")
+    assert position.unrealised_pnl == Decimal("-5.3499999999999999999999906")
+    assert position.realised_pnl == Decimal("0.0")
+    assert position.total_pnl == Decimal("-5.3499999999999999999999906")
+
+
 def test_transact_for_incorrect_symbol():
     """
     Tests that the 'transact' method, when provided
@@ -843,9 +1048,18 @@ def test_transact_for_incorrect_symbol():
     symbol1 = "AAPL"
     symbol2 = "AMZN"
 
-    position = Position(symbol1, price=Decimal("950.0"), buy_size=100, sell_size=0, direction=Direction.LONG,
-                        avg_bought=Decimal("950.0"), avg_sold=Decimal("0.0"), buy_commission=Decimal("1.0"),
-                        sell_commission=Decimal("0.0"), timestamp=pd.Timestamp("2020-06-16 15:00:00", tz=pytz.UTC))
+    position = Position(
+        symbol1,
+        price=Decimal("950.0"),
+        buy_size=100,
+        sell_size=0,
+        direction=Direction.LONG,
+        avg_bought=Decimal("950.0"),
+        avg_sold=Decimal("0.0"),
+        buy_commission=Decimal("1.0"),
+        sell_commission=Decimal("0.0"),
+        timestamp=pd.Timestamp("2020-06-16 15:00:00", tz=pytz.UTC),
+    )
 
     new_timestamp = pd.Timestamp("2020-06-16 16:00:00")
     transaction = Transaction(
@@ -879,9 +1093,18 @@ def test_transact_with_size_zero():
     sell_commission = Decimal("0.0")
     timestamp = pd.Timestamp("2020-06-16 15:00:00", tz=pytz.UTC)
 
-    position = Position(symbol, price=price, buy_size=buy_size, sell_size=sell_size, direction=Direction.LONG,
-                        avg_bought=avg_bought, avg_sold=avg_sold, buy_commission=buy_commission,
-                        sell_commission=sell_commission, timestamp=timestamp)
+    position = Position(
+        symbol,
+        price=price,
+        buy_size=buy_size,
+        sell_size=sell_size,
+        direction=Direction.LONG,
+        avg_bought=avg_bought,
+        avg_sold=avg_sold,
+        buy_commission=buy_commission,
+        sell_commission=sell_commission,
+        timestamp=timestamp,
+    )
 
     new_timestamp = pd.Timestamp("2020-06-16 16:00:00")
     transaction = Transaction(
@@ -899,7 +1122,7 @@ def test_transact_with_size_zero():
 
     assert position.symbol == symbol
     assert position.price == price
-    assert position.timestamp == timestamp
+    assert position.last_price_update == timestamp
 
     assert position.buy_size == buy_size
     assert position.sell_size == sell_size
@@ -918,3 +1141,65 @@ def test_transact_with_size_zero():
     assert position.unrealised_pnl == Decimal("-1.00")
     assert position.realised_pnl == Decimal("0.0")
     assert position.total_pnl == Decimal("-1.00")
+
+
+def test_neq_different_type():
+    symbol1 = "AAPL"
+    price1 = Decimal("950.0")
+    buy_size1 = 100
+    sell_size1 = 0
+    avg_bought1 = Decimal("950.0")
+    avg_sold1 = Decimal("0.0")
+    buy_commission1 = Decimal("1.0")
+    sell_commission1 = Decimal("0.0")
+    timestamp1 = pd.Timestamp("2020-06-16 15:00:00", tz=pytz.UTC)
+
+    position1 = Position(
+        symbol1,
+        price=price1,
+        buy_size=buy_size1,
+        sell_size=sell_size1,
+        direction=Direction.LONG,
+        avg_bought=avg_bought1,
+        avg_sold=avg_sold1,
+        buy_commission=buy_commission1,
+        sell_commission=sell_commission1,
+        timestamp=timestamp1,
+    )
+
+    position2 = Position(
+        symbol1,
+        price=price1,
+        buy_size=buy_size1,
+        sell_size=sell_size1,
+        direction=Direction.LONG,
+        avg_bought=avg_bought1,
+        avg_sold=avg_sold1,
+        buy_commission=buy_commission1,
+        sell_commission=sell_commission1,
+        timestamp=timestamp1,
+    )
+
+    symbol1 = "GOOGL"
+    price1 = Decimal("850.0")
+    buy_size1 = 150
+    sell_size1 = 2
+    avg_bought1 = Decimal("850.0")
+    avg_sold1 = Decimal("0.0")
+    buy_commission1 = Decimal("0.5")
+    sell_commission1 = Decimal("0.0")
+    position3 = Position(
+        symbol1,
+        price=price1,
+        buy_size=buy_size1,
+        sell_size=sell_size1,
+        direction=Direction.LONG,
+        avg_bought=avg_bought1,
+        avg_sold=avg_sold1,
+        buy_commission=buy_commission1,
+        sell_commission=sell_commission1,
+        timestamp=timestamp1,
+    )
+    assert position1 == position2
+    assert position1 != position3
+    assert position1 != object()

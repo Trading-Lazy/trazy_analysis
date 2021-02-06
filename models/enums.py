@@ -14,6 +14,14 @@ class Direction(Enum):
 class OrderStatus(Enum):
     CANCELLED = "CANCELLED"
     CREATED = "CREATED"
-    COMPLETE = "COMPLETE"
+    COMPLETED = "COMPLETED"
     EXPIRED = "EXPIRED"
     SUBMITTED = "SUBMITTED"
+
+
+class OrderType(Enum):
+    MARKET = "MARKET"
+    LIMIT = "LIMIT"
+    STOP = "STOP"
+    TARGET = "TARGET"
+    TRAILING_STOP = "TRAILING_STOP"

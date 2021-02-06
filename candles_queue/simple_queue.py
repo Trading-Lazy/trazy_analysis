@@ -13,6 +13,7 @@ LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
 )
 
+
 class SimpleQueue(CandlesQueue):
     def __init__(self, queue_name: str):
         super().__init__(queue_name)

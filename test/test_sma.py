@@ -3,8 +3,9 @@ from decimal import Decimal
 import pandas as pd
 
 from indicators.common import PriceType
+from indicators.indicators import IndicatorsManager
 from indicators.rolling_window import RollingWindowStream
-from indicators.sma import SmaFactory, SmaStream
+from indicators.sma import SmaManager, SmaStream
 from indicators.stream import StreamData
 
 SYMBOL1 = "IVV"
@@ -58,7 +59,8 @@ def test_sma_stream_handle_new_data_source_is_filled_rolling_window_stream():
 
 
 def test_sma_factory():
-    sma_factory = SmaFactory()
+    indicators_manager = IndicatorsManager()
+    sma_factory = SmaManager(indicators_manager)
     sma1 = sma_factory(
         SYMBOL1, period=5, time_unit=pd.offsets.Minute(5), price_type=PriceType.CLOSE
     )

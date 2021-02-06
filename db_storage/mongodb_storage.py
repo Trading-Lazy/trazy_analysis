@@ -9,14 +9,11 @@ from pymongo.results import DeleteResult, InsertOneResult
 import settings
 from db_storage.db_storage import DbStorage
 from logger import logger
-from models.order import Order
 from models.candle import Candle
-from settings import (
-    ORDERS_COLLECTION_NAME,
-    CANDLES_COLLECTION_NAME,
-    DATABASE_NAME,
-    DATABASE_URL,
-)
+from models.order import Order
+from models.signal import Signal
+from settings import (CANDLES_COLLECTION_NAME, DATABASE_NAME, DATABASE_URL, ORDERS_COLLECTION_NAME,
+                      SIGNALS_COLLECTION_NAME)
 
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
@@ -59,9 +56,7 @@ class MongoDbStorage(DbStorage):
             CANDLES_COLLECTION_NAME
         ]
         self.check_collection_name(ORDERS_COLLECTION_NAME)
-        self.collections_cache[ORDERS_COLLECTION_NAME] = self.db[
-            ORDERS_COLLECTION_NAME
-        ]
+        self.collections_cache[ORDERS_COLLECTION_NAME] = self.db[ORDERS_COLLECTION_NAME]
 
     def get_collection(self, collection_name: str) -> pymongo.collection.Collection:
         if collection_name in self.collections_cache:
@@ -160,42 +155,78 @@ class MongoDbStorage(DbStorage):
     def clean_all_candles(self) -> int:
         return self.clean_all_documents(CANDLES_COLLECTION_NAME)
 
-    def add_order(self, action: Order) -> str:
-        serializable_action = action.to_serializable_dict()
-        serializable_action["candle_timestamp"] = pd.Timestamp(
-            serializable_action["candle_timestamp"]
+    def add_signal(self, signal: Signal) -> str:
+        serializable_signal = signal.to_serializable_dict()
+        serializable_signal["root_candle_timestamp"] = pd.Timestamp(
+            serializable_signal["root_candle_timestamp"]
         )
-        serializable_action["timestamp"] = pd.Timestamp(
-            serializable_action["timestamp"]
+        serializable_signal["generation_time"] = pd.Timestamp(
+            serializable_signal["generation_time"]
         )
-        return self.add_document(serializable_action, ORDERS_COLLECTION_NAME)
+        return self.add_document(serializable_signal, SIGNALS_COLLECTION_NAME)
 
-    def get_order(self, id: str) -> Order:
-        action_dict: dict = self.get_document(id, ORDERS_COLLECTION_NAME)
-        if action_dict is None:
+    def get_signal(self, id: str) -> Signal:
+        signal_dict: dict = self.get_document(id, SIGNALS_COLLECTION_NAME)
+        if signal_dict is None:
             return None
-        return Order.from_serializable_dict(action_dict)
+        return Signal.from_serializable_dict(signal_dict)
 
-    def get_order_by_identifier(
-        self, symbol: str, strategy: str, candle_timestamp: pd.Timestamp
-    ) -> Order:
+    def get_signal_by_identifier(
+        self, symbol: str, strategy: str, root_candle_timestamp: pd.Timestamp
+    ) -> Signal:
         query = {
             "symbol": symbol,
             "strategy": strategy,
-            "candle_timestamp": candle_timestamp,
+            "root_candle_timestamp": root_candle_timestamp,
         }
-        action_dict = self.find_one(query, ORDERS_COLLECTION_NAME)
-        if action_dict is None:
+        signal_dict = self.find_one(query, SIGNALS_COLLECTION_NAME)
+        if signal_dict is None:
             return None
-        return Order.from_serializable_dict(action_dict)
+        return Signal.from_serializable_dict(signal_dict)
+
+    def get_all_signals(self) -> List[Signal]:
+        signals_in_dict = self.get_all_documents(SIGNALS_COLLECTION_NAME)
+        signals = []
+        for signal_dict in signals_in_dict:
+            signal = Signal.from_serializable_dict(signal_dict)
+            signals.append(signal)
+        return signals
+
+    def clean_all_signals(self) -> int:
+        return self.clean_all_documents(SIGNALS_COLLECTION_NAME)
+
+    def add_order(self, order: Order) -> str:
+        serializable_order = order.to_serializable_dict()
+        serializable_order["generation_time"] = pd.Timestamp(
+            serializable_order["generation_time"]
+        )
+        return self.add_document(serializable_order, ORDERS_COLLECTION_NAME)
+
+    def get_order(self, id: str) -> Order:
+        order_dict: dict = self.get_document(id, ORDERS_COLLECTION_NAME)
+        if order_dict is None:
+            return None
+        return Order.from_serializable_dict(order_dict)
+
+    def get_order_by_identifier(
+        self, signal_id: str, generation_time: pd.Timestamp
+    ) -> Order:
+        query = {
+            "signal_id": signal_id,
+            "generation_time": generation_time,
+        }
+        order_dict = self.find_one(query, ORDERS_COLLECTION_NAME)
+        if order_dict is None:
+            return None
+        return Order.from_serializable_dict(order_dict)
 
     def get_all_orders(self) -> List[Order]:
-        actions_in_dict = self.get_all_documents(ORDERS_COLLECTION_NAME)
-        actions = []
-        for action_dict in actions_in_dict:
-            action = Order.from_serializable_dict(action_dict)
-            actions.append(action)
-        return actions
+        orders_in_dict = self.get_all_documents(ORDERS_COLLECTION_NAME)
+        orders = []
+        for order_dict in orders_in_dict:
+            order = Order.from_serializable_dict(order_dict)
+            orders.append(order)
+        return orders
 
     def clean_all_orders(self) -> int:
         return self.clean_all_documents(ORDERS_COLLECTION_NAME)

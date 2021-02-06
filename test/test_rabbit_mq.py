@@ -1,6 +1,8 @@
 import time
 from unittest.mock import MagicMock, call, patch
 
+import pika
+
 import settings
 from candles_queue.rabbit_mq import RabbitMq
 
@@ -10,6 +12,8 @@ QUEUE_NAME3 = "candles3"
 QUEUE_NAME4 = "candles4"
 MESSAGE = "Rabbits like carrots"
 CONNECTION_URL = settings.CLOUDAMQP_URL
+CONNECTION = pika.BlockingConnection(pika.URLParameters(CONNECTION_URL))
+CHANNEL = CONNECTION.channel()
 
 
 @patch("pika.BlockingConnection")
@@ -46,6 +50,7 @@ def test_add_consumer():
         nonlocal received_message
         received_message = message
 
+    CHANNEL.queue_declare(queue=QUEUE_NAME1)
     rabbit_mq = RabbitMq(QUEUE_NAME1, CONNECTION_URL)
     rabbit_mq.add_consumer_no_retry(callback)
     rabbit_mq.push(MESSAGE)
@@ -53,6 +58,7 @@ def test_add_consumer():
     time.sleep(2)
 
     assert received_message == str.encode(MESSAGE)
+    CHANNEL.queue_delete(queue=QUEUE_NAME1)
 
 
 def test_add_consumer_with_ack():
@@ -65,8 +71,11 @@ def test_add_consumer_with_ack():
         number_of_retries += 1
         received_messages.append(message)
         if number_of_retries < 2:
-            raise Exception()
+            raise Exception(
+                "This exception was expected to be raised for the purpose of this test"
+            )
 
+    CHANNEL.queue_declare(queue=QUEUE_NAME2)
     rabbit_mq = RabbitMq(QUEUE_NAME2, CONNECTION_URL)
     rabbit_mq.flush()
     rabbit_mq.add_consumer(callback)
@@ -77,20 +86,23 @@ def test_add_consumer_with_ack():
     assert number_of_retries == 2
     for received_message in received_messages:
         assert received_message == str.encode(MESSAGE)
+    CHANNEL.queue_delete(queue=QUEUE_NAME2)
 
 
 def test_flush():
+    declared_queue = CHANNEL.queue_declare(queue=QUEUE_NAME3)
     rabbit_mq = RabbitMq(QUEUE_NAME3, CONNECTION_URL)
 
     rabbit_mq.push(MESSAGE)
     rabbit_mq.push(MESSAGE)
     rabbit_mq.flush()
     time.sleep(1)
-    declared_queue = rabbit_mq.push_channel.queue_declare(queue=QUEUE_NAME3)
     assert declared_queue.method.message_count == 0
+    CHANNEL.queue_delete(queue=QUEUE_NAME3)
 
 
 def test_size():
+    CHANNEL.queue_declare(queue=QUEUE_NAME4)
     rabbit_mq = RabbitMq(QUEUE_NAME4, CONNECTION_URL)
     rabbit_mq.flush()
 
@@ -101,3 +113,4 @@ def test_size():
     time.sleep(1)
     assert rabbit_mq.size() == 2
     rabbit_mq.flush()
+    CHANNEL.queue_delete(queue=QUEUE_NAME4)

@@ -3,19 +3,22 @@ import importlib
 import inspect
 import os
 from decimal import Decimal
-from typing import List, Set
-
 from pathlib import Path
+from typing import List, Set
 
 from bot.data_consumer import DataConsumer
 from bot.data_flow import DataFlow
-from broker.simulated_broker import SimulatedBroker
+from broker.degiro_broker import DegiroBroker
 from candles_queue.candles_queue import CandlesQueue
 from candles_queue.rabbit_mq import RabbitMq
+from common.clock import LiveClock
 from db_storage.mongodb_storage import MongoDbStorage
 from feed.feed import Feed, LiveFeed
 from market_data.live.live_data_handler import LiveDataHandler
 from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
+from order_manager.order_creator import OrderCreator
+from order_manager.order_manager import OrderManager
+from order_manager.position_sizer import PositionSizer
 from settings import CLOUDAMQP_URL, DATABASE_NAME, DATABASE_URL, RABBITMQ_QUEUE_NAME
 from strategy.strategies.reactive_sma_crossover_strategy import (
     ReactiveSmaCrossoverStrategy,
@@ -52,7 +55,7 @@ def get_strategies_classes(
 
 
 if __name__ == "__main__":
-    symbols = ["AAPL"]
+    symbols = ["SHIP"]
     candles_queue: CandlesQueue = RabbitMq(RABBITMQ_QUEUE_NAME, CLOUDAMQP_URL)
 
     live_data_handler: LiveDataHandler = TiingoLiveDataHandler()
@@ -60,8 +63,21 @@ if __name__ == "__main__":
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
     strategies = [ReactiveSmaCrossoverStrategy]
-    broker = SimulatedBroker()
-    data_consumer = DataConsumer(symbols, candles_queue, db_storage, broker, strategies, save_candles=True)
+    clock = LiveClock()
+    broker = DegiroBroker(clock)
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(
+        broker=broker, trailing_stop_order_pct=Decimal("0.15"), with_cover=True
+    )
+    order_manager = OrderManager(
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+        for_simulation=False,
+    )
+    data_consumer = DataConsumer(
+        symbols, candles_queue, db_storage, order_manager, strategies, save_candles=True
+    )
 
     data_flow = DataFlow(feed, data_consumer)
     data_flow.start()

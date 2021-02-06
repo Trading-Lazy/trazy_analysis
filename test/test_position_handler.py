@@ -3,7 +3,7 @@ from decimal import Decimal
 import pandas as pd
 import pytz
 
-from models.enums import Direction, Action
+from models.enums import Action, Direction
 from position.position_handler import PositionHandler
 from position.transaction import Transaction
 
@@ -153,10 +153,11 @@ def test_total_values_for_two_separate_transactions():
 
     # Symbol 1
     symbol1 = "AMZN"
+    size1 = 75
     timestamp1 = pd.Timestamp("2015-05-06 15:00:00", tz=pytz.UTC)
     trans_pos_1 = Transaction(
         symbol1,
-        size=75,
+        size=size1,
         action=Action.BUY,
         direction=Direction.LONG,
         price=Decimal("483.45"),
@@ -165,13 +166,15 @@ def test_total_values_for_two_separate_transactions():
         timestamp=timestamp1,
     )
     ph.transact_position(trans_pos_1)
+    assert ph.position_size(symbol1, Direction.LONG) == 75
 
     # Symbol 2
     symbol2 = "MSFT"
+    size2 = 250
     timestamp2 = pd.Timestamp("2015-05-07 15:00:00", tz=pytz.UTC)
     trans_pos_2 = Transaction(
         symbol2,
-        size=250,
+        size=size2,
         action=Action.BUY,
         direction=Direction.LONG,
         price=Decimal("142.58"),
@@ -180,9 +183,49 @@ def test_total_values_for_two_separate_transactions():
         timestamp=timestamp2,
     )
     ph.transact_position(trans_pos_2)
+    assert ph.position_size(symbol2, Direction.LONG) == size2
 
     # Check all total values
     assert ph.total_market_value() == Decimal("71903.75")
     assert ph.total_unrealised_pnl() == Decimal("-24.3199999999999999999999975")
     assert ph.total_realised_pnl() == Decimal("0.0")
     assert ph.total_pnl() == Decimal("-24.3199999999999999999999975")
+
+
+def test_neq_different_type():
+    ph1 = PositionHandler()
+    symbol1 = "AMZN"
+    size1 = 75
+    timestamp1 = pd.Timestamp("2015-05-06 15:00:00", tz=pytz.UTC)
+    trans_pos_1 = Transaction(
+        symbol1,
+        size=size1,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        price=Decimal("483.45"),
+        order_id="1",
+        commission=Decimal("15.97"),
+        timestamp=timestamp1,
+    )
+    ph1.transact_position(trans_pos_1)
+
+    ph2 = PositionHandler()
+    ph2.transact_position(trans_pos_1)
+    ph3 = PositionHandler()
+    symbol2 = "MSFT"
+    size2 = 250
+    timestamp2 = pd.Timestamp("2015-05-07 15:00:00", tz=pytz.UTC)
+    trans_pos_2 = Transaction(
+        symbol2,
+        size=size2,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        price=Decimal("142.58"),
+        order_id="2",
+        commission=Decimal("8.35"),
+        timestamp=timestamp2,
+    )
+    ph3.transact_position(trans_pos_2)
+    assert ph1 == ph2
+    assert ph1 != ph3
+    assert ph1 != object()

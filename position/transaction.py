@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-import numpy as np
 import pandas as pd
 
-from models.enums import Direction, Action
+from common.utils import generate_object_id
+from models.enums import Action, Direction
 
 
 class Transaction:
@@ -35,7 +35,8 @@ class Transaction:
         price: Decimal,
         order_id: str,
         commission=Decimal("0.0"),
-        timestamp: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
+        transaction_id: str = None,
     ):
         self.symbol = symbol
         self.size = size
@@ -43,6 +44,9 @@ class Transaction:
         self.direction = direction
         self.timestamp = timestamp
         self.price = price
+        if transaction_id is None:
+            transaction_id = generate_object_id()
+        self.transaction_id = transaction_id
         self.order_id = order_id
         self.commission = commission
 

@@ -3,14 +3,12 @@ from decimal import Decimal
 from math import floor
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 import settings
 from logger import logger
-from models.enums import Direction, Action
+from models.enums import Action, Direction
 from position.transaction import Transaction
-
 
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
@@ -31,19 +29,19 @@ class Position:
         The symbol symbol string.
     price : `Decimal`
         The initial price of the Position.
-    timestamp : `pd.Timestamp`
-        The time at which the Position was created.
-    size : `int`
+    buy_size : `int`
         The amount of the symbol bought.
-    size : `int`
+    sell_size : `int`
         The amount of the symbol sold.
-    avg : `Decimal`
+    direction: `Direction`
+        The position type LONG or SHORT
+    avg_bought : `Decimal`
         The initial price paid for buying assets.
-    avg : `Decimal`
+    avg_sell : `Decimal`
         The initial price paid for selling assets.
-    commission : `Decimal`
+    buy_commission : `Decimal`
         The commission spent on buying assets for this position.
-    commission : `Decimal`
+    sell_commission : `Decimal`
         The commission spent on selling assets for this position.
     """
 
@@ -54,11 +52,11 @@ class Position:
         buy_size: int,
         sell_size: int,
         direction: Direction,
-        avg_bought: Decimal,
-        avg_sold: Decimal,
-        buy_commission: Decimal,
-        sell_commission: Decimal,
-        timestamp: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        avg_bought: Decimal = Decimal("0.0"),
+        avg_sold: Decimal = Decimal("0.0"),
+        buy_commission: Decimal = Decimal("0.0"),
+        sell_commission: Decimal = Decimal("0.0"),
+        timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
     ) -> None:
         self.symbol = symbol
         self.price = price
@@ -69,7 +67,7 @@ class Position:
         self.avg_sold = avg_sold
         self.buy_commission = buy_commission
         self.sell_commission = sell_commission
-        self.timestamp = timestamp
+        self.last_price_update = timestamp
 
     @classmethod
     def open_from_transaction(cls, transaction: Transaction) -> "Position":
@@ -87,8 +85,8 @@ class Position:
         """
         symbol = transaction.symbol
         current_price = transaction.price
-        current_dt = transaction.timestamp
         direction = transaction.direction
+        timestamp = transaction.timestamp
 
         if transaction.action == Action.BUY:
             buy_size = transaction.size
@@ -115,27 +113,8 @@ class Position:
             avg_sold,
             buy_commission,
             sell_commission,
-            current_dt,
+            timestamp,
         )
-
-    def _check_set_dt(self, timestamp: pd.Timestamp) -> None:
-        """
-        Checks that the provided timestamp is valid and if so sets
-        the new current time of the Position.
-        Parameters
-        ----------
-        timestamp : `pd.Timestamp`
-            The timestamp to be checked and potentially used as
-            the new current time.
-        """
-        if timestamp is not None:
-            if timestamp < self.timestamp:
-                raise ValueError(
-                    'Supplied update time of "%s" is earlier than '
-                    'the current time of "%s".' % (timestamp, self.timestamp)
-                )
-            else:
-                self.timestamp = timestamp
 
     @property
     def market_value(self) -> Decimal:
@@ -258,7 +237,7 @@ class Position:
                     - ((Decimal(self.sell_size) / self.buy_size) * self.buy_commission)
                     - self.sell_commission
                 )
-        elif self.direction == Direction.SHORT:
+        else:  # self.direction == Direction.SHORT
             if self.buy_size == 0:
                 return Decimal("0.0")
             else:
@@ -267,8 +246,6 @@ class Position:
                     - ((Decimal(self.buy_size) / self.sell_size) * self.sell_commission)
                     - self.buy_commission
                 )
-        else:
-            return self.net_incl_commission
 
     @property
     def unrealised_pnl(self) -> Decimal:
@@ -294,19 +271,15 @@ class Position:
         """
         return self.realised_pnl + self.unrealised_pnl
 
-    def update_price(self, price, timestamp=None) -> Decimal:
+    def update_price(self, price, timestamp=pd.Timestamp.now("UTC")) -> Decimal:
         """
         Updates the Position's awareness of the current market price
-        of the symbol, with an optional timestamp.
+        of the symbol.
         Parameters
         ----------
         price : `Decimal`
             The current market price.
-        timestamp : `pd.Timestamp`, optional
-            The optional timestamp of the current market price.
         """
-        self._check_set_dt(timestamp)
-
         if price <= Decimal("0.0"):
             raise ValueError(
                 'Market price "%s" of symbol "%s" must be positive to '
@@ -314,6 +287,7 @@ class Position:
             )
         else:
             self.price = price
+            self.last_price_update = timestamp
 
     def _transact_buy(self, size: int, price: Decimal, commission: Decimal) -> None:
         """
@@ -333,7 +307,7 @@ class Position:
                 "ERROR: Position limit reached. Position size %s should be greater or equal to transaction size %s"
                 % (-self.net_size, size)
             )
-            size = self.net_size
+            size = -self.net_size
         self.avg_bought = ((self.avg_bought * self.buy_size) + (size * price)) / (
             self.buy_size + size
         )
@@ -407,9 +381,12 @@ class Position:
 
         # Update the current trade information
         self.update_price(transaction.price, transaction.timestamp)
-        self.timestamp = transaction.timestamp
 
     def __eq__(self, other: Any):
         if not isinstance(other, Position):
             return False
+        self_dict = self.__dict__.copy()
+        del self_dict["last_price_update"]
+        other_dict = other.__dict__.copy()
+        del other_dict["last_price_update"]
         return self.__dict__ == other.__dict__

@@ -103,3 +103,8 @@ def test_to_json():
 
 def test_copy():
     assert CANDLE1.copy() == CANDLE1
+
+
+def test_str():
+    expected_str = 'Candle(symbol="IVV",open=Decimal("25"),high=Decimal("25.5"),low=Decimal("24.8"),close=Decimal("25.3"),volume=100,timestamp=pd.Timestamp("2020-05-08 14:17:00+00:00"))'
+    assert str(CANDLE1) == expected_str

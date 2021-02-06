@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pandas as pd
 
-from models.enums import Direction, Action
+from models.enums import Action, Direction
 from position.transaction import Transaction
 
 TRANSACTION = Transaction(

@@ -2,8 +2,8 @@ import abc
 from typing import List
 
 from common.constants import ENCODING
+from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
-from market_data.common import RateLimitedSingletonMeta
 
 
 class DataHandler(metaclass=RateLimitedSingletonMeta):

@@ -1,8 +1,8 @@
-import copy
+from datetime import timedelta
 from typing import Dict, List
 
 import pandas as pd
-from apscheduler.schedulers.blocking import BlockingScheduler
+from rx import interval
 
 from candles_queue.candles_queue import CandlesQueue
 from common.types import CandleDataFrame
@@ -20,7 +20,7 @@ class Feed:
         self,
         candles_queue: CandlesQueue,
         candles: Dict[str, List[Candle]] = {},
-        **scheduler_kwargs
+        **scheduler_kwargs,
     ):
         self.symbols = None
         self.ids = None
@@ -28,10 +28,14 @@ class Feed:
         self.candles_queue = candles_queue
         self.candles = candles
         self.indexes = {}
+        self.completed = False
         for symbol in self.symbols:
             self.indexes[symbol] = 0
-        self.sched = BlockingScheduler()
-        self.scheduler_kwargs = scheduler_kwargs
+        if scheduler_kwargs:
+            self.interval = interval(timedelta(**scheduler_kwargs))
+        else:
+            self.interval = interval(timedelta(minutes=1))
+        self.disposables = {}
 
     def feed_queue(self, symbol):
         if self.indexes[symbol] < len(self.candles[symbol]):
@@ -41,25 +45,25 @@ class Feed:
             candle_json = candle.to_json()
             self.candles_queue.push(candle_json)
         else:
-            self.sched.remove_job(self.ids[symbol])
-            if len(self.sched.get_jobs()) == 0:
-                self.stop()
+            if symbol in self.disposables:
+                self.disposables[symbol].dispose()
+                del self.disposables[symbol]
+                if not self.disposables:
+                    self.stop()
 
     def start(self):
         for symbol in self.symbols:
-            self.sched.add_job(
-                self.feed_queue,
-                "interval",
-                **self.scheduler_kwargs,
-                id=self.ids[symbol],
-                args=[symbol]
+            self.disposables[symbol] = self.interval.subscribe(
+                eval(f'lambda _: self.feed_queue("{symbol}")', {"self": self})
             )
-        self.sched.start()
+        while not self.completed:
+            pass
 
     def stop(self) -> None:
-        self.sched.remove_all_jobs()
-        if self.sched.running:
-            self.sched.shutdown(wait=False)
+        for symbol in self.disposables:
+            self.disposables[symbol].dispose()
+        self.disposables = {}
+        self.completed = True
 
 
 class LiveFeed(Feed):
@@ -68,7 +72,7 @@ class LiveFeed(Feed):
         symbols: List[str],
         candles_queue: CandlesQueue,
         live_data_handler: LiveDataHandler,
-        **scheduler_kwargs
+        **scheduler_kwargs,
     ):
         super().__init__(candles_queue, candles={}, **scheduler_kwargs)
         self.set_symbols(symbols)
@@ -81,11 +85,10 @@ class LiveFeed(Feed):
         for candle in candles:
             self.candles_queue.push(candle.to_json())
 
+
 class OfflineFeed(Feed):
     def __init__(
-            self,
-            candles_queue: CandlesQueue,
-            candles: Dict[str, List[Candle]] = {}
+        self, candles_queue: CandlesQueue, candles: Dict[str, List[Candle]] = {}
     ):
         super().__init__(candles_queue, candles)
 
@@ -100,7 +103,6 @@ class OfflineFeed(Feed):
 
     def stop(self):
         pass
-
 
 
 class HistoricalFeed(OfflineFeed):
@@ -156,5 +158,6 @@ class CsvFeed(OfflineFeed):
         for symbol, csv_filename in csv_filenames.items():
             dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=sep)
             candle_dataframe = CandleDataFrame.from_dataframe(dataframe, symbol)
+            self.candle_dataframe = candle_dataframe
             candles[candle_dataframe.symbol] = candle_dataframe.to_candles()
         super().__init__(candles_queue, candles)

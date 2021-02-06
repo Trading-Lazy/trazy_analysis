@@ -8,18 +8,25 @@ import pytest
 from bson import ObjectId
 from pymongo.results import InsertOneResult
 
+from common.clock import SimulatedClock
 from db_storage.mongodb_storage import MongoDbStorage
-from models.order import Order
 from models.candle import Candle
-from models.enums import Action, Direction, OrderType
+from models.enums import Action, Direction
+from models.order import Order
+from models.signal import Signal
 from settings import (
-    ORDERS_COLLECTION_NAME,
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
     DATABASE_URL,
     DOCUMENTS_COLLECTION_NAME,
+    ORDERS_COLLECTION_NAME,
+    SIGNALS_COLLECTION_NAME,
 )
-from test.tools.tools import compare_orders_list, compare_candles_list
+from test.tools.tools import (
+    compare_candles_list,
+    compare_orders_list,
+    compare_signals_list,
+)
 
 DOC1_KEY = "key1"
 DOC1_VALUE = "value1"
@@ -63,9 +70,53 @@ CANDLE3: Candle = Candle(
     timestamp=pd.Timestamp("2020-05-08 14:37:00", tz="UTC"),
 )
 
-ORDER1: Order = Order(generation_time=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"))
+clock = SimulatedClock()
 
-ORDER2: Order = Order(generation_time=pd.Timestamp("2020-05-08 15:19:00", tz="UTC"))
+clock.update_time("AAPL", pd.Timestamp("2020-05-08 14:17:00", tz="UTC"))
+SIGNAL1: Signal = Signal(
+    symbol="AAPL",
+    action=Action.BUY,
+    direction=Direction.LONG,
+    confidence_level=Decimal("0.05"),
+    strategy="SmaCrossover",
+    root_candle_timestamp=pd.Timestamp("2020-05-08 14:16:00", tz="UTC"),
+    parameters={},
+    clock=clock,
+)
+
+clock = SimulatedClock()
+clock.update_time("AAPL", pd.Timestamp("2020-05-08 15:19:00", tz="UTC"))
+SIGNAL2: Signal = Signal(
+    symbol="AAPL",
+    action=Action.SELL,
+    direction=Direction.LONG,
+    confidence_level=Decimal("0.05"),
+    strategy="SmaCrossover",
+    root_candle_timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
+    parameters={},
+    clock=clock,
+)
+
+clock.update_time("AAPL", pd.Timestamp("2020-05-08 14:17:00", tz="UTC"))
+ORDER1: Order = Order(
+    symbol="AAPL",
+    action=Action.BUY,
+    direction=Direction.LONG,
+    size=100,
+    clock=clock,
+    signal_id="1",
+)
+
+clock = SimulatedClock()
+clock.update_time("AAPL", pd.Timestamp("2020-05-08 15:19:00", tz="UTC"))
+ORDER2: Order = Order(
+    symbol="AAPL",
+    action=Action.SELL,
+    direction=Direction.LONG,
+    size=100,
+    clock=clock,
+    signal_id="2",
+)
 
 MONGODB_STORAGE = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
@@ -517,22 +568,96 @@ def test_get_all_candles():
 
 
 @patch("db_storage.mongodb_storage.MongoDbStorage.add_document")
+def test_add_signal(add_document_mocked):
+    mongodb_storage = MongoDbStorage()
+
+    mongodb_storage.add_signal(SIGNAL1)
+
+    serializable_signal = SIGNAL1.to_serializable_dict()
+    serializable_signal["root_candle_timestamp"] = pd.Timestamp(
+        serializable_signal["root_candle_timestamp"]
+    )
+    serializable_signal["generation_time"] = pd.Timestamp(
+        serializable_signal["generation_time"]
+    )
+    add_document_calls = [call(serializable_signal, SIGNALS_COLLECTION_NAME)]
+    add_document_mocked.assert_has_calls(add_document_calls)
+
+
+def test_clean_all_signals():
+    MONGODB_STORAGE.add_signal(SIGNAL1)
+    collection = MONGODB_STORAGE.get_collection(SIGNALS_COLLECTION_NAME)
+    assert collection.count_documents({}) > 0
+    MONGODB_STORAGE.clean_all_signals()
+    assert collection.count_documents({}) == 0
+
+
+def test_get_signal():
+    MONGODB_STORAGE.clean_all_signals()
+
+    id = MONGODB_STORAGE.add_signal(SIGNAL1)
+    signal: Signal = MONGODB_STORAGE.get_signal(id)
+    assert signal == SIGNAL1
+
+    MONGODB_STORAGE.clean_all_signals()
+
+
+def test_get_signal_by_identifier():
+    MONGODB_STORAGE.clean_all_signals()
+
+    MONGODB_STORAGE.add_signal(SIGNAL1)
+    signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(
+        SIGNAL1.symbol, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
+    )
+    assert signal == SIGNAL1
+
+    MONGODB_STORAGE.clean_all_signals()
+
+
+def test_get_signal_by_identifier_non_existing_signal():
+    MONGODB_STORAGE.clean_all_signals()
+
+    signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(
+        SIGNAL1.symbol, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
+    )
+    assert signal is None
+
+
+def test_get_all_signals():
+    MONGODB_STORAGE.clean_all_signals()
+
+    MONGODB_STORAGE.add_signal(SIGNAL1)
+    MONGODB_STORAGE.add_signal(SIGNAL2)
+
+    signals = MONGODB_STORAGE.get_all_signals()
+    assert compare_signals_list(signals, [SIGNAL1, SIGNAL2])
+
+    MONGODB_STORAGE.clean_all_signals()
+
+
+def test_get_signal_non_existing_id():
+    MONGODB_STORAGE.clean_all_signals()
+
+    id = "5f262523794d9a0a2816645b"
+    signal: Signal = MONGODB_STORAGE.get_signal(id)
+    assert signal is None
+
+
+@patch("db_storage.mongodb_storage.MongoDbStorage.add_document")
 def test_add_order(add_document_mocked):
     mongodb_storage = MongoDbStorage()
 
     mongodb_storage.add_order(ORDER1)
 
     serializable_order = ORDER1.to_serializable_dict()
-    serializable_order["candle_timestamp"] = pd.Timestamp(
-        serializable_order["candle_timestamp"]
+    serializable_order["generation_time"] = pd.Timestamp(
+        serializable_order["generation_time"]
     )
-    serializable_order["timestamp"] = pd.Timestamp(serializable_order["timestamp"])
     add_document_calls = [call(serializable_order, ORDERS_COLLECTION_NAME)]
     add_document_mocked.assert_has_calls(add_document_calls)
 
 
 def test_clean_all_orders():
-
     MONGODB_STORAGE.add_order(ORDER1)
     collection = MONGODB_STORAGE.get_collection(ORDERS_COLLECTION_NAME)
     assert collection.count_documents({}) > 0
@@ -541,7 +666,6 @@ def test_clean_all_orders():
 
 
 def test_get_order():
-
     MONGODB_STORAGE.clean_all_orders()
 
     id = MONGODB_STORAGE.add_order(ORDER1)
@@ -552,12 +676,11 @@ def test_get_order():
 
 
 def test_get_order_by_identifier():
-
     MONGODB_STORAGE.clean_all_orders()
 
     MONGODB_STORAGE.add_order(ORDER1)
     order: Order = MONGODB_STORAGE.get_order_by_identifier(
-        ORDER1.symbol, ORDER1.signal_id, ORDER1.root_candle_timestamp
+        ORDER1.signal_id, ORDER1.generation_time
     )
     assert order == ORDER1
 
@@ -565,11 +688,10 @@ def test_get_order_by_identifier():
 
 
 def test_get_order_by_identifier_non_existing_order():
-
     MONGODB_STORAGE.clean_all_orders()
 
     order: Order = MONGODB_STORAGE.get_order_by_identifier(
-        ORDER1.symbol, ORDER1.signal_id, ORDER1.root_candle_timestamp
+        ORDER1.signal_id, ORDER1.generation_time
     )
     assert order is None
 

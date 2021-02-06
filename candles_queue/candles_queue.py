@@ -7,13 +7,13 @@ class CandlesQueue:
         self.queue_name = queue_name
 
     @abc.abstractmethod
-    def add_consumer_no_retry(self, callback: Callable[[str], None]) -> None:  # pragma: no cover
+    def add_consumer_no_retry(
+        self, callback: Callable[[str], None]
+    ) -> None:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_consumer(
-        self, callback: Callable[[str], None]
-    ) -> None:  # pragma: no cover
+    def add_consumer(self, callback: Callable[[str], None]) -> None:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
