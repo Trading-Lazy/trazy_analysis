@@ -3,10 +3,10 @@ from typing import List
 
 from requests.models import Response
 
-from common.helper import request
-from market_data.common import LOG, RateLimitedSingletonMeta
 from common.constants import ENCODING
-
+from common.helper import request
+from common.meta import RateLimitedSingletonMeta
+from market_data.common import LOG
 from market_data.data_handler import DataHandler
 from models.candle import Candle
 

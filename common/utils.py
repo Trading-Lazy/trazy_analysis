@@ -1,8 +1,11 @@
+import binascii
+import os
+import time
 from datetime import datetime
+from typing import Union
 
 import pandas as pd
 import pytz
-from pandas import DatetimeIndex
 from pandas.core.frame import DataFrame
 
 
@@ -19,7 +22,7 @@ def validate_dataframe_columns(df: DataFrame, required_columns: list) -> None:
         )
 
 
-def timestamp_to_utc(timestamp):
+def timestamp_to_utc(timestamp: Union[pd.Timestamp, pd.DatetimeIndex, datetime]):
     if isinstance(timestamp, pd.Timestamp) or isinstance(timestamp, pd.DatetimeIndex):
         if timestamp.tz is None:
             timestamp = timestamp.tz_localize("UTC")
@@ -35,3 +38,9 @@ def timestamp_to_utc(timestamp):
             )
         )
     return timestamp
+
+
+def generate_object_id() -> str:
+    timestamp = "{:x}".format(int(time.time()))
+    rest = binascii.b2a_hex(os.urandom(8)).decode("ascii")
+    return timestamp + rest

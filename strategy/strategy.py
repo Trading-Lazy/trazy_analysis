@@ -1,12 +1,16 @@
 import abc
 import os
+
 import logger
 import settings
-from broker.broker import Broker
+from common.clock import Clock
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from db_storage.db_storage import DbStorage
-from models.action import Action
+from indicators.indicators import IndicatorsManager
+from indicators.stream import StreamData
 from models.candle import Candle
+from models.signal import Signal
+from order_manager.order_manager import OrderManager
 
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
@@ -15,19 +19,28 @@ LOG = logger.get_root_logger(
 euronext_cal = EuronextExchangeCalendar()
 
 
-class Strategy:
-    def __init__(self, symbol: str, db_storage: DbStorage, broker: Broker):
+class Strategy(StreamData):
+    def __init__(
+        self,
+        symbol: str,
+        db_storage: DbStorage,
+        order_manager: OrderManager,
+        indicators_manager: IndicatorsManager = IndicatorsManager(),
+    ):
+        super().__init__()
         self.symbol = symbol
         self.db_storage = db_storage
-        self.broker = broker
+        self.order_manager = order_manager
+        self.indicators_manager = indicators_manager
         self.is_opened = False
         self.name = self.__class__.__name__
 
     @abc.abstractmethod
-    def compute_action(self, candle) -> Action:  # pragma: no cover
+    def generate_signal(self, candle) -> Signal:  # pragma: no cover
         raise NotImplementedError
 
-    def process_candle(self, candle: Candle):
-        action = self.compute_action(candle)
-        if action is not None:
-            self.db_storage.add_action(action)
+    def process_candle(self, candle: Candle, clock: Clock):
+        signal = self.generate_signal(candle, clock)
+        if signal is not None:
+            self.on_next(signal)
+            return signal

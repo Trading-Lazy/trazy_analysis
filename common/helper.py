@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -103,7 +104,8 @@ def find_start_interval_business_minute(
     )
 
     end = round_time(
-        end_timestamp, time_delta=timedelta(minutes=interval.interval_value),
+        end_timestamp,
+        time_delta=timedelta(minutes=interval.interval_value),
     )
     start_timestamp = timestamp_to_utc(end)
 
@@ -170,7 +172,7 @@ def calc_required_history_start_timestamp(
     time_unit: pd.offsets.DateOffset,
     period: int,
     business_calendar: MarketCalendar,
-    end_timestamp: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+    end_timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
 ) -> datetime:
     interval_unit = "day" if time_unit.name == "D" else "minute"
     interval = TimeInterval(interval_unit, time_unit.n)
@@ -194,7 +196,9 @@ def request(url: str) -> Response:
 
 
 def resample_candle_data(
-    df: CandleDataFrame, time_unit: pd.offsets.DateOffset, market_cal_df: DataFrame,
+    df: CandleDataFrame,
+    time_unit: pd.offsets.DateOffset,
+    market_cal_df: DataFrame,
 ) -> CandleDataFrame:
     symbol = df.symbol
     resample_label = "right"
@@ -211,7 +215,12 @@ def resample_candle_data(
     )
     df_close = df["close"].ffill()
     df = df.fillna(
-        {"open": df_close, "high": df_close, "low": df_close, "close": df_close,}
+        {
+            "open": df_close,
+            "high": df_close,
+            "low": df_close,
+            "close": df_close,
+        }
     )
 
     candle_dataframe = CandleDataFrame.from_dataframe(df, symbol)
@@ -231,3 +240,31 @@ def resample_candle_data(
         df_resampled = sqldf(s, locals())
         df_resampled = CandleDataFrame.from_dataframe(df_resampled, symbol)
     return df_resampled
+
+
+def get_or_create_nested_dict(nested_dict: dict, *keys) -> None:
+    """
+    Check if *keys (nested) exists in `element` (dict).
+    """
+    if not isinstance(nested_dict, dict):
+        raise AttributeError("keys_exists() expects dict as first argument.")
+    if len(keys) == 0:
+        raise AttributeError("keys_exists() expects at least two arguments, one given.")
+
+    _nested_dict = nested_dict
+    for key in keys:
+        try:
+            _nested_dict = _nested_dict[key]
+        except KeyError:
+            _nested_dict[key] = {}
+            _nested_dict = _nested_dict[key]
+
+
+def check_type(object, allowed_types: List[type]):
+    if object is None:
+        return
+    object_type = type(object)
+    if object_type not in allowed_types:
+        raise Exception(
+            "data type should be one of {} not {}".format(allowed_types, object_type)
+        )

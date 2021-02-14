@@ -8,8 +8,9 @@ from requests.models import Response
 
 from common.constants import ENCODING
 from common.helper import request
+from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
-from market_data.common import LOG, RateLimitedSingletonMeta, get_periods
+from market_data.common import LOG, get_periods
 from market_data.data_handler import DataHandler
 
 
@@ -122,7 +123,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         cls,
         ticker: str,
         start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        end: pd.Timestamp = pd.Timestamp.now("UTC"),
     ) -> Tuple[CandleDataFrame, List[Tuple[date, date]], Dict[Tuple[date, date], str]]:
         periods = get_periods(cls.MAX_DOWNLOAD_FRAME, start, end)
         (
@@ -144,8 +145,12 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         ticker: str,
         csv_filename: str,
         start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        end: pd.Timestamp = pd.Timestamp.now("UTC"),
         sep: str = ",",
     ) -> None:
-        (candle_dataframe, _, _,) = cls.request_ticker_data_in_range(ticker, start, end)
+        (
+            candle_dataframe,
+            _,
+            _,
+        ) = cls.request_ticker_data_in_range(ticker, start, end)
         candle_dataframe.to_csv(csv_filename, sep)

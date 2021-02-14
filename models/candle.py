@@ -13,7 +13,7 @@ class Candle:
         low: Decimal,
         close: Decimal,
         volume: int,
-        timestamp: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
     ):
         self.symbol: str = symbol
         self.open: Decimal = open

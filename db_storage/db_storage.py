@@ -3,8 +3,8 @@ from typing import List
 
 import pandas as pd
 
-from models.action import Action
 from models.candle import Candle
+from models.order import Order
 
 
 class DbStorage:
@@ -75,17 +75,45 @@ class DbStorage:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_action(self, action: Action) -> str:  # pragma: no cover
+    def add_signal(self, action: Order) -> str:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_action(self, id: str) -> Candle:  # pragma: no cover
+    def get_signal(self, id: str) -> Candle:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_all_actions(self) -> List[Action]:  # pragma: no cover
+    def get_signal_by_identifier(
+        self, symbol: str, strategy: str, candle_timestamp: pd.Timestamp
+    ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def clean_all_actions(self) -> int:  # pragma: no cover
+    def get_all_signals(self) -> List[Order]:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def clean_all_signals(self) -> int:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def add_order(self, action: Order) -> str:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_order(self, id: str) -> Candle:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_order_by_identifier(
+        self, symbol: str, strategy: str, candle_timestamp: pd.Timestamp
+    ) -> Candle:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_all_orders(self) -> List[Order]:  # pragma: no cover
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def clean_all_orders(self) -> int:  # pragma: no cover
         raise NotImplementedError

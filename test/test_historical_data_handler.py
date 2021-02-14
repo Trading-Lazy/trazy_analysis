@@ -65,7 +65,6 @@ AAPL_CANDLES2 = [
     ),
 ]
 AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2)
-
 AAPL_CANDLES3 = [
     Candle(
         symbol=AAPL_SYMBOL,

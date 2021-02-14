@@ -1,16 +1,15 @@
-from _pydecimal import Decimal
+from decimal import Decimal
 from typing import Any, Callable
 
 import pandas as pd
 from pandas_market_calendars import MarketCalendar
 from rx import Observable
 
-from common.decorators import Singleton
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
-from common.helper import round_time
+from common.helper import get_or_create_nested_dict, round_time
 from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc
-from indicators.common import PriceType, get_or_create_nested_dict
+from indicators.common import PriceType
 from indicators.stream import StreamData
 from models.candle import Candle
 
@@ -102,7 +101,9 @@ class TimeFramedCandleRollingWindowStream(RollingWindowStream):
         source_data: Observable = None,
     ):
         super().__init__(
-            period=period, prefill_list=prefill_list, source_data=source_data,
+            period=period,
+            prefill_list=prefill_list,
+            source_data=source_data,
         )
         self.time_unit = time_unit
         self.market_cal = market_cal
@@ -133,8 +134,7 @@ class TimeFramedCandleRollingWindowStream(RollingWindowStream):
             )
 
 
-@Singleton
-class RollingWindowFactory:
+class RollingWindowManager:
     def __init__(self):
         self.cache = {}
 
@@ -145,10 +145,10 @@ class RollingWindowFactory:
         return self.cache[symbol][period]
 
 
-@Singleton
-class TimeFramedCandleRollingWindowFactory:
-    def __init__(self):
+class TimeFramedCandleRollingWindowManager:
+    def __init__(self, indicators_manager: "IndicatorsManager"):
         self.cache = {}
+        self.indicators_manager = indicators_manager
 
     def __call__(
         self,
@@ -160,9 +160,7 @@ class TimeFramedCandleRollingWindowFactory:
         get_or_create_nested_dict(self.cache, symbol, period, time_unit)
 
         if market_cal.name not in self.cache[symbol][period][time_unit]:
-            from indicators.indicators import RollingWindow
-
-            rolling_window = RollingWindow(symbol)
+            rolling_window = self.indicators_manager.RollingWindow(symbol)
             self.cache[symbol][period][time_unit][
                 market_cal.name
             ] = TimeFramedCandleRollingWindowStream(
@@ -174,10 +172,10 @@ class TimeFramedCandleRollingWindowFactory:
         return self.cache[symbol][period][time_unit][market_cal.name]
 
 
-@Singleton
-class PriceRollingWindowFactory:
-    def __init__(self):
+class PriceRollingWindowManager:
+    def __init__(self, indicators_manager: "IndicatorsManager"):
         self.cache = {}
+        self.indicators_manager = indicators_manager
 
     def __call__(
         self,
@@ -190,10 +188,13 @@ class PriceRollingWindowFactory:
         get_or_create_nested_dict(self.cache, symbol, period, time_unit, price_type)
 
         if market_cal.name not in self.cache[symbol][period][time_unit][price_type]:
-            from indicators.indicators import TimeFramedCandleRollingWindow
-
-            candle_rolling_window = TimeFramedCandleRollingWindow(
-                symbol=symbol, period=period, time_unit=time_unit, market_cal=market_cal
+            candle_rolling_window = (
+                self.indicators_manager.TimeFramedCandleRollingWindow(
+                    symbol=symbol,
+                    period=period,
+                    time_unit=time_unit,
+                    market_cal=market_cal,
+                )
             )
             price_selector_function = get_price_selector_function(price_type)
             price_rolling_window = candle_rolling_window.map(price_selector_function)

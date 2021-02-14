@@ -1,10 +1,10 @@
-from _pydecimal import Decimal
+from decimal import Decimal
 
 import pandas as pd
 from rx import Observable
 
-from common.decorators import Singleton
-from indicators.common import PriceType, get_or_create_nested_dict
+from common.helper import get_or_create_nested_dict
+from indicators.common import PriceType
 from indicators.rolling_window import RollingWindowStream
 from indicators.stream import StreamData
 
@@ -16,7 +16,9 @@ class SmaStream(StreamData):
         self.oldest: Decimal = self.rolling_window_stream[-self.period + 1]
 
     def __init__(
-        self, period: int, source_data: StreamData = None,
+        self,
+        period: int,
+        source_data: StreamData = None,
     ):
         self.period = period
         self.sum: Decimal = 0
@@ -46,10 +48,10 @@ class SmaStream(StreamData):
         super().observe(self.rolling_window_stream)
 
 
-@Singleton
-class SmaFactory:
-    def __init__(self):
+class SmaManager:
+    def __init__(self, indicators_manager: "IndicatorsManager"):
         self.cache = {}
+        self.indicators_manager = indicators_manager
 
     def __call__(
         self,
@@ -61,9 +63,8 @@ class SmaFactory:
         get_or_create_nested_dict(self.cache, symbol, period, time_unit)
 
         if price_type not in self.cache[symbol][period][time_unit]:
-            from indicators.indicators import PriceRollingWindow
 
-            price_rolling_window = PriceRollingWindow(
+            price_rolling_window = self.indicators_manager.PriceRollingWindow(
                 symbol, period, time_unit, price_type
             )
             self.cache[symbol][period][time_unit][price_type] = SmaStream(

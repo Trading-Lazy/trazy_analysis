@@ -8,13 +8,7 @@ import pandas as pd
 from candles_queue.simple_queue import SimpleQueue
 from common.types import CandleDataFrame
 from db_storage.mongodb_storage import MongoDbStorage
-from feed.feed import (
-    CsvFeed,
-    Feed,
-    HistoricalFeed,
-    LiveFeed,
-    PandasFeed,
-    OfflineFeed)
+from feed.feed import CsvFeed, Feed, HistoricalFeed, LiveFeed, OfflineFeed, PandasFeed
 from market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
@@ -68,7 +62,9 @@ AAPL_CANDLES2 = [
     ),
 ]
 AAPL_CANDLES = AAPL_CANDLES1 + AAPL_CANDLES2
-AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES)
+AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
+    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES
+)
 
 GOOGL_SYMBOL = "GOOGL"
 GOOGL_CANDLES1 = [
@@ -112,14 +108,18 @@ GOOGL_CANDLES2 = [
     ),
 ]
 GOOGL_CANDLES = GOOGL_CANDLES1 + GOOGL_CANDLES2
-GOOGL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(symbol=GOOGL_SYMBOL, candles=GOOGL_CANDLES)
+GOOGL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
+    symbol=GOOGL_SYMBOL, candles=GOOGL_CANDLES
+)
 
 
 def test_feed():
     candles_queue = SimpleQueue(QUEUE_NAME)
 
     feed = Feed(
-        candles_queue, {AAPL_SYMBOL: AAPL_CANDLES1, GOOGL_SYMBOL: GOOGL_CANDLES1}
+        candles_queue,
+        {AAPL_SYMBOL: AAPL_CANDLES1, GOOGL_SYMBOL: GOOGL_CANDLES1},
+        seconds=1,
     )
 
     aapl_idx = 0
@@ -239,8 +239,16 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
     end = pd.Timestamp("2020-06-26T16:00:00+00:00")
 
     request_ticker_data_in_range_mocked.side_effect = [
-        (AAPL_CANDLE_DATAFRAME, set(), {},),
-        (GOOGL_CANDLE_DATAFRAME, set(), {},),
+        (
+            AAPL_CANDLE_DATAFRAME,
+            set(),
+            {},
+        ),
+        (
+            GOOGL_CANDLE_DATAFRAME,
+            set(),
+            {},
+        ),
     ]
     historical_feed = HistoricalFeed(
         [AAPL_SYMBOL, GOOGL_SYMBOL],

@@ -1,574 +1,635 @@
+import queue
 from decimal import Decimal
 
 import pandas as pd
 import pytest
+import pytz
 
-from broker.simulatedbroker import SimulatedBroker
+from bot.data_consumer import DataConsumer
+from bot.data_flow import DataFlow
+from broker.fixed_fee_model import FixedFeeModel
+from broker.simulated_broker import SimulatedBroker
+from candles_queue.candles_queue import CandlesQueue
+from candles_queue.simple_queue import SimpleQueue
+from common.clock import SimulatedClock
 from db_storage.mongodb_storage import MongoDbStorage
-from models.action import Action
+from feed.feed import CsvFeed, Feed
 from models.candle import Candle
-from models.enums import ActionType, PositionType
-from settings import DATABASE_NAME
-
-# disable logging into a file
-
-DB_STORAGE = MongoDbStorage(DATABASE_NAME)
-SYMBOL = "IVV"
-
-BUY_LONG_AMOUNT_OK = 5
-SELL_LONG_AMOUNT_OK = 3
-SELL_SHORT_AMOUNT_OK = 5
-BUY_SHORT_AMOUNT_OK = 3
-
-BUY_LONG_AMOUNT_KO = 3
-SELL_LONG_AMOUNT_KO = 5
-SELL_SHORT_AMOUNT_KO = 3
-BUY_SHORT_AMOUNT_KO = 5
-
-FUND = Decimal("1000")
-COMMISSION = Decimal("0.001")
-SIMULATED_BROKER = SimulatedBroker(FUND, COMMISSION)
-COST_ESTIMATE_BUY_OK = Decimal("300")
-COST_ESTIMATE_SELL = Decimal("400")
-COST_ESTIMATE_BUY_KO = Decimal("1500")
-TOTAL_COST_ESTIMATE_OK = Decimal("800")
-TOTAL_COST_ESTIMATE_KO = Decimal("1200")
-
-UNIT_COST_ESTIMATE = Decimal("100")
-
-STRATEGY_NAME = "strategy"
-ACTIONS = [
-    Action(
-        action_type=ActionType.BUY,
-        position_type=PositionType.LONG,
-        size=1,
-        confidence_level=1,
-        strategy=STRATEGY_NAME,
-        symbol=SYMBOL,
-        candle_timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
-        parameters={},
-    ),
-    Action(
-        action_type=ActionType.SELL,
-        position_type=PositionType.LONG,
-        size=1,
-        confidence_level=1,
-        strategy=STRATEGY_NAME,
-        symbol=SYMBOL,
-        candle_timestamp=pd.Timestamp("2020-05-08 14:24:00", tz="UTC"),
-        parameters={},
-    ),
-    Action(
-        action_type=ActionType.BUY,
-        position_type=PositionType.LONG,
-        size=1,
-        confidence_level=1,
-        strategy=STRATEGY_NAME,
-        symbol=SYMBOL,
-        candle_timestamp=pd.Timestamp("2020-05-08 14:24:56", tz="UTC"),
-        parameters={},
-    ),
-    Action(
-        action_type=ActionType.SELL,
-        position_type=PositionType.LONG,
-        size=1,
-        confidence_level=1,
-        strategy=STRATEGY_NAME,
-        symbol=SYMBOL,
-        candle_timestamp=pd.Timestamp("2020-05-08 14:35:00", tz="UTC"),
-        parameters={},
-    ),
-    Action(
-        action_type=ActionType.BUY,
-        position_type=PositionType.LONG,
-        size=1,
-        confidence_level=1,
-        strategy=STRATEGY_NAME,
-        symbol=SYMBOL,
-        candle_timestamp=pd.Timestamp("2020-05-08 14:41:00", tz="UTC"),
-        parameters={},
-    ),
-    Action(
-        action_type=ActionType.SELL,
-        position_type=PositionType.LONG,
-        size=1,
-        confidence_level=1,
-        strategy=STRATEGY_NAME,
-        symbol=SYMBOL,
-        candle_timestamp=pd.Timestamp("2020-05-08 14:41:58", tz="UTC"),
-        parameters={},
-    ),
-]
-
-CANDLES = [
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.1200"),
-        high=Decimal("94.1500"),
-        low=Decimal("94.0000"),
-        close=Decimal("94.1300"),
-        volume=7,
-        timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.0700"),
-        high=Decimal("94.1000"),
-        low=Decimal("93.9500"),
-        close=Decimal("94.0800"),
-        volume=91,
-        timestamp=pd.Timestamp("2020-05-08 14:24:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.0700"),
-        high=Decimal("94.1000"),
-        low=Decimal("93.9500"),
-        close=Decimal("94.0800"),
-        volume=0,
-        timestamp=pd.Timestamp("2020-05-08 14:24:56", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.1700"),
-        high=Decimal("94.1800"),
-        low=Decimal("94.0500"),
-        close=Decimal("94.1800"),
-        volume=0,
-        timestamp=pd.Timestamp("2020-05-08 14:35:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.1900"),
-        high=Decimal("94.2200"),
-        low=Decimal("94.0700"),
-        close=Decimal("94.2000"),
-        volume=0,
-        timestamp=pd.Timestamp("2020-05-08 14:41:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.1900"),
-        high=Decimal("94.2200"),
-        low=Decimal("94.0700"),
-        close=Decimal("94.2000"),
-        volume=7,
-        timestamp=pd.Timestamp("2020-05-08 14:41:58", tz="UTC"),
-    ),
-]
+from models.enums import Action, Direction, OrderType
+from models.order import Order
+from order_manager.order_creator import OrderCreator
+from order_manager.order_manager import OrderManager
+from order_manager.position_sizer import PositionSizer
+from portfolio.portfolio import Portfolio
+from settings import DATABASE_NAME, DATABASE_URL
+from strategy.strategies.reactive_sma_crossover_strategy import (
+    ReactiveSmaCrossoverStrategy,
+)
+from test.tools.tools import not_raises
 
 
-@pytest.fixture
-def simulation_fixture():
-    SIMULATED_BROKER.reset()
+def test_initial_settings_for_default_simulated_broker():
+    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
 
+    # Test a default SimulatedBroker
+    clock = SimulatedClock()
+    sb1 = SimulatedBroker(clock)
 
-def test_reset(simulation_fixture):
-    SIMULATED_BROKER.cash = Decimal("200")
-    SIMULATED_BROKER.commission = Decimal("0.001")
-    SIMULATED_BROKER.portfolio_value = Decimal("100")
-    SIMULATED_BROKER.portfolio_value = Decimal("2000")
-    SIMULATED_BROKER.last_transaction_price = Decimal("100")
-    SIMULATED_BROKER.last_transaction_price = {
-        PositionType.LONG: {
-            ActionType.BUY: Decimal("200"),
-            ActionType.SELL: Decimal("201"),
-        },
-        PositionType.SHORT: {
-            ActionType.SELL: Decimal("202"),
-            ActionType.BUY: Decimal("199"),
-        },
-    }
-    SIMULATED_BROKER.positions_sizes = {PositionType.LONG: 17, PositionType.SHORT: 13}
+    assert sb1.base_currency == "EUR"
+    assert sb1.cash_balances["USD"] == Decimal("0.0")
+    assert type(sb1.fee_model) == FixedFeeModel
 
-    SIMULATED_BROKER.reset()
+    tcb1 = {"EUR": Decimal("0.0"), "USD": Decimal("0.0")}
+    portfolio1 = Portfolio(timestamp=start_timestamp, currency=sb1.base_currency)
 
-    assert SIMULATED_BROKER.cash == Decimal("0")
-    assert SIMULATED_BROKER.commission == Decimal("0")
-    assert SIMULATED_BROKER.portfolio_value == Decimal("0")
-    assert SIMULATED_BROKER.last_transaction_price == {
-        PositionType.LONG: {
-            ActionType.BUY: Decimal("0"),
-            ActionType.SELL: Decimal("0"),
-        },
-        PositionType.SHORT: {
-            ActionType.SELL: Decimal("0"),
-            ActionType.BUY: Decimal("0"),
-        },
-    }
-    assert SIMULATED_BROKER.positions_sizes == {
-        PositionType.LONG: Decimal("0"),
-        PositionType.SHORT: Decimal("0"),
-    }
+    assert sb1.cash_balances == tcb1
+    assert sb1.portfolio == portfolio1
+    open_orders_queue1 = sb1.open_orders
+    assert open_orders_queue1.qsize() == 0
 
-
-def test_fund(simulation_fixture):
-    SIMULATED_BROKER.add_cash(1000)
-    assert SIMULATED_BROKER.cash == 1000
-    SIMULATED_BROKER.add_cash(1500)
-    assert SIMULATED_BROKER.cash == 2500
-
-
-def test_is_closed_position(simulation_fixture):
-    assert (
-        SIMULATED_BROKER.is_closed_position(PositionType.LONG, ActionType.BUY) == False
-    )
-    assert (
-        SIMULATED_BROKER.is_closed_position(PositionType.LONG, ActionType.SELL) == True
-    )
-    assert (
-        SIMULATED_BROKER.is_closed_position(PositionType.SHORT, ActionType.SELL)
-        == False
-    )
-    assert (
-        SIMULATED_BROKER.is_closed_position(PositionType.SHORT, ActionType.BUY) == True
+    # Test a SimulatedBroker with some parameters set
+    sb2 = SimulatedBroker(
+        clock=clock, base_currency="EUR", initial_funds=1e6, fee_model=FixedFeeModel()
     )
 
+    assert sb2.base_currency == "EUR"
+    assert sb2.cash_balances["EUR"] == 1e6
+    assert type(sb2.fee_model) == FixedFeeModel
 
-def test_validate_positions_sizes_buy_long_ok(simulation_fixture):
-    SIMULATED_BROKER.validate_positions_sizes(
-        PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_OK
+    tcb2 = {"EUR": 1000000.0, "USD": Decimal("0.0")}
+    portfolio2 = Portfolio(
+        timestamp=start_timestamp,
+        currency=sb2.base_currency,
     )
 
+    assert sb2.cash_balances == tcb2
+    assert sb2.portfolio == portfolio2
+    open_orders_queue2 = sb2.open_orders
+    assert open_orders_queue2.qsize() == 0
 
-def test_validate_positions_sizes_sell_long_ok(simulation_fixture):
-    SIMULATED_BROKER.positions_sizes[PositionType.LONG] = BUY_LONG_AMOUNT_OK
-    SIMULATED_BROKER.validate_positions_sizes(
-        PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_OK
+
+def test_bad_set_base_currency():
+    clock = SimulatedClock()
+    with pytest.raises(ValueError):
+        SimulatedBroker(clock=clock, base_currency="XYZ")
+
+
+def test_good_set_base_currency():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock, base_currency="EUR")
+    assert sb.base_currency == "EUR"
+
+
+def test_bad_set_initial_funds():
+    clock = SimulatedClock()
+    with pytest.raises(ValueError):
+        SimulatedBroker(clock=clock, initial_funds=Decimal("-56.34"))
+
+
+def test_good_set_initial_funds():
+    clock = SimulatedClock()
+    with not_raises(ValueError):
+        sb = SimulatedBroker(clock=clock, initial_funds=1e4)
+    sb.cash_balances["USD"] == 1e4
+
+
+def test_all_cases_of_set_broker_commission():
+    # Broker commission is None
+    clock = SimulatedClock()
+    sb1 = SimulatedBroker(clock=clock)
+    assert sb1.fee_model.__class__.__name__ == "FixedFeeModel"
+
+    # Broker commission is specified as a subclass
+    # of FeeModel abstract base class
+    bc2 = FixedFeeModel()
+    sb2 = SimulatedBroker(clock=clock, fee_model=bc2)
+    assert sb2.fee_model.__class__.__name__ == "FixedFeeModel"
+
+    # FeeModel is mis-specified and thus
+    # raises a TypeError
+    with pytest.raises(TypeError):
+        SimulatedBroker(clock=clock, fee_model="bad_fee_model")
+
+
+def test_set_cash_balances():
+    # Zero initial funds
+    clock = SimulatedClock()
+    sb1 = SimulatedBroker(clock=clock)
+    tcb1 = {"EUR": Decimal("0.0"), "USD": Decimal("0.0")}
+    sb1._set_cash_balances(initial_funds=Decimal("0.0"))
+    assert sb1.cash_balances == tcb1
+
+    # Non-zero initial funds
+    sb2 = SimulatedBroker(clock=clock, initial_funds=Decimal("12345.0"))
+    tcb2 = {"EUR": Decimal("12345.0"), "USD": Decimal("0.0")}
+    sb2._set_cash_balances(initial_funds=Decimal("12345.0"))
+    assert sb2.cash_balances == tcb2
+
+
+def test_set_initial_open_orders():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+    assert type(sb._set_initial_open_orders()) == queue.Queue
+    assert sb._set_initial_open_orders().qsize() == 0
+
+
+def test_subscribe_funds_to_account():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+
+    # Raising ValueError with negative amount
+    with pytest.raises(ValueError):
+        sb.subscribe_funds_to_account(Decimal("-4306.23"))
+
+    # Correctly setting cash_balances for a positive amount
+    sb.subscribe_funds_to_account(Decimal("165303.23"))
+    assert sb.cash_balances[sb.base_currency] == Decimal("165303.23")
+
+
+def test_withdraw_funds_from_account():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock, initial_funds=Decimal("1000000"))
+
+    # Raising ValueError with negative amount
+    with pytest.raises(ValueError):
+        sb.withdraw_funds_from_account(Decimal("-4306.23"))
+
+    # Raising ValueError for lack of cash
+    with pytest.raises(ValueError):
+        sb.withdraw_funds_from_account(Decimal("2000000"))
+
+    # Correctly setting cash_balances for a positive amount
+    sb.withdraw_funds_from_account(Decimal("300000"))
+    assert sb.cash_balances[sb.base_currency] == Decimal("700000")
+
+
+def test_get_account_cash_balance():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock, initial_funds=Decimal("1000.0"))
+
+    # If currency is None, return the cash balances
+    sbcb1 = sb.get_cash_balance()
+    tcb1 = {"EUR": Decimal("1000.0"), "USD": Decimal("0.0")}
+    assert sbcb1 == tcb1
+
+    # If the currency code isn't in the cash_balances
+    # dictionary, then raise ValueError
+    with pytest.raises(ValueError):
+        sb.get_cash_balance(currency="XYZ")
+
+    # Otherwise, return appropriate cash balance
+    assert sb.get_cash_balance(currency="EUR") == Decimal("1000.0")
+    assert sb.get_cash_balance(currency="USD") == Decimal("0.0")
+
+
+def test_get_account_total_market_value():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+
+    # Subscribe all necessary funds and create portfolios
+    sb.subscribe_funds_to_account(Decimal("300000.0"))
+    sb.subscribe_funds_to_portfolio(Decimal("100000.0"))
+
+    symbol1 = "AAA"
+    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    clock.update_time(symbol1, timestamp)
+    order1 = Order(
+        symbol=symbol1,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        size=100,
+        signal_id="1",
+        clock=clock,
+    )
+    candle1 = Candle(
+        symbol=symbol1,
+        open=Decimal("567.0"),
+        high=Decimal("567.0"),
+        low=Decimal("567.0"),
+        close=Decimal("567.0"),
+        volume=100,
+        timestamp=timestamp,
+    )
+    sb.submit_order(order1)
+    sb.submit_order(order1)
+    sb.update_price(candle1)
+    sb.execute_open_orders()
+
+    symbol2 = "BBB"
+    clock.update_time(symbol2, timestamp)
+    order2 = Order(
+        symbol=symbol2,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        size=100,
+        signal_id="1",
+        clock=clock,
+    )
+    candle2 = Candle(
+        symbol=symbol2,
+        open=Decimal("123.0"),
+        high=Decimal("123.0"),
+        low=Decimal("123.0"),
+        close=Decimal("123.0"),
+        volume=100,
+    )
+    sb.submit_order(order2)
+    sb.submit_order(order2)
+    sb.update_price(candle2)
+    sb.execute_open_orders()
+
+    # Check that the market value is correct
+    res_market_value = sb.get_portfolio_total_market_value()
+    test_market_value = Decimal("69000.0")
+    assert res_market_value == test_market_value
+
+
+def test_create_portfolio():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+
+    # If portfolio_id isn't in the dictionary, then check it
+    # was created correctly, along with the orders dictionary
+    assert isinstance(sb.portfolio, Portfolio)
+    assert isinstance(sb.open_orders, queue.Queue)
+
+
+def test_subscribe_funds_to_portfolio():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock, initial_funds=Decimal("0"))
+
+    # Raising ValueError with negative amount
+    with pytest.raises(ValueError):
+        sb.subscribe_funds_to_portfolio(Decimal("-4306.23"))
+
+    # Add in cash balance to the account
+    sb.subscribe_funds_to_account(Decimal("165303.23"))
+
+    # Raising ValueError if not enough cash
+    with pytest.raises(ValueError):
+        sb.subscribe_funds_to_portfolio(Decimal("200000.00"))
+
+    # If everything else worked, check balances are correct
+    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    assert sb.cash_balances[sb.base_currency] == Decimal("65303.23")
+    assert sb.portfolio.cash == Decimal("100000.00")
+
+
+def test_withdraw_funds_from_portfolio():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+
+    # Raising ValueError with negative amount
+    with pytest.raises(ValueError):
+        sb.withdraw_funds_from_portfolio(Decimal("-4306.23"))
+
+    # Add in cash balance to the account
+    sb.subscribe_funds_to_account(Decimal("165303.23"))
+    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
+
+    # Raising ValueError if not enough cash
+    with pytest.raises(ValueError):
+        sb.withdraw_funds_from_portfolio(Decimal("200000.00"))
+
+    # If everything else worked, check balances are correct
+    sb.withdraw_funds_from_portfolio(Decimal("50000.00"))
+    assert sb.cash_balances[sb.base_currency] == Decimal("115303.23")
+    assert sb.portfolio.cash == Decimal("50000.00")
+
+
+def test_get_portfolio_cash_balance():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+
+    # Raising ValueError if portfolio_id not in keys
+    assert sb.get_portfolio_cash_balance() == Decimal("0.0")
+
+    # Create fund transfers and portfolio
+    sb.subscribe_funds_to_account(Decimal("175000.0"))
+    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
+
+    # Check correct values obtained after cash transfers
+    assert sb.get_portfolio_cash_balance() == Decimal("100000.0")
+
+
+def test_get_portfolio_total_market_value():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+
+    # Raising KeyError if portfolio_id not in keys
+    assert sb.get_portfolio_total_market_value() == Decimal("0.0")
+
+    # Create fund transfers and portfolio
+    sb.subscribe_funds_to_account(Decimal("175000.0"))
+    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
+
+    # Check correct values obtained after cash transfers
+    assert sb.get_portfolio_total_equity() == Decimal("100000.0")
+
+
+def test_submit_order():
+    # Positive direction
+    symbol = "EQ:RDSB"
+    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    candle = Candle(
+        symbol=symbol,
+        open=Decimal("53.47"),
+        high=Decimal("53.47"),
+        low=Decimal("53.47"),
+        close=Decimal("53.47"),
+        volume=1,
+        timestamp=timestamp,
     )
 
+    clock = SimulatedClock()
+    clock.update_time(symbol, timestamp)
+    sbwp = SimulatedBroker(clock=clock)
+    sbwp.subscribe_funds_to_account(Decimal("175000.0"))
+    sbwp.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    sbwp.update_price(candle)
+    size = 1000
+    order = Order(
+        symbol=symbol,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        size=size,
+        signal_id="1",
+        clock=clock,
+    )
+    sbwp.submit_order(order)
+    sbwp.execute_open_orders()
 
-def test_validate_positions_sizes_sell_long_ko(simulation_fixture):
-    SIMULATED_BROKER.positions_sizes[PositionType.LONG] = BUY_LONG_AMOUNT_KO
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.validate_positions_sizes(
-            PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_KO
-        )
+    port = sbwp.portfolio
+    assert port.cash == Decimal("46530.0")
+    assert port.total_market_value == Decimal("53470.0")
+    assert port.total_equity == Decimal("100000.0")
+    assert port.pos_handler.positions[symbol][Direction.LONG].unrealised_pnl == Decimal(
+        "0.0"
+    )
+    assert port.pos_handler.positions[symbol][Direction.LONG].market_value == Decimal(
+        "53470.0"
+    )
+    assert port.pos_handler.positions[symbol][Direction.LONG].net_size == 1000
+
+    # Negative direction
+    sbwp = SimulatedBroker(clock=clock)
+    sbwp.subscribe_funds_to_account(Decimal("175000.0"))
+    sbwp.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    sbwp.update_price(candle)
+    size = 1000
+    order = Order(
+        symbol=symbol,
+        action=Action.SELL,
+        direction=Direction.SHORT,
+        size=size,
+        signal_id="1",
+        clock=clock,
+    )
+    sbwp.submit_order(order)
+    sbwp.execute_open_orders()
+
+    port = sbwp.portfolio
+    assert port.cash == Decimal("153470.00")
+    assert port.total_market_value == Decimal("-53470.00")
+    assert port.total_equity == Decimal("100000.0")
+    assert port.pos_handler.positions[symbol][
+        Direction.SHORT
+    ].unrealised_pnl == Decimal("0.0")
+    assert port.pos_handler.positions[symbol][Direction.SHORT].market_value == Decimal(
+        "-53470.00"
+    )
+    assert port.pos_handler.positions[symbol][Direction.SHORT].net_size == -1000
 
 
-def test_validate_positions_sizes_sell_short_ok(simulation_fixture):
-    SIMULATED_BROKER.validate_positions_sizes(
-        PositionType.SHORT, ActionType.SELL, SELL_SHORT_AMOUNT_OK
+def test_execute_market_order():
+    clock = SimulatedClock()
+    sb = SimulatedBroker(clock=clock)
+
+    # Subscribe all necessary funds and create portfolios
+    sb.subscribe_funds_to_account(Decimal("300000.0"))
+    sb.subscribe_funds_to_portfolio(Decimal("100000.0"))
+
+    symbol = "AAA"
+    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    clock.update_time(symbol, timestamp)
+    order = Order(
+        symbol=symbol,
+        action=Action.BUY,
+        direction=Direction.LONG,
+        size=100,
+        signal_id="1",
+        clock=clock,
+    )
+    candle = Candle(
+        symbol=symbol,
+        open=Decimal("567.0"),
+        high=Decimal("567.0"),
+        low=Decimal("567.0"),
+        close=Decimal("567.0"),
+        volume=100,
+        timestamp=timestamp,
+    )
+    sb.update_price(candle)
+    sb.execute_market_order(order)
+
+    # Check that the market value is correct
+    res_market_value = sb.get_portfolio_total_market_value()
+    test_market_value = Decimal("56700.0")
+    assert res_market_value == test_market_value
+
+    # test negative cash balance
+    sb.execute_market_order(order)
+    assert sb.get_portfolio_cash_balance() == Decimal("43300.0")
+
+
+def test_execute_limit_order():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = SimpleQueue("candles")
+
+    feed: Feed = CsvFeed(
+        {"AAPL": "test/data/aapl_candles_one_day_limit_order.csv"}, candles_queue
     )
 
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-def test_validate_positions_sizes_buy_short_ok(simulation_fixture):
-    SIMULATED_BROKER.positions_sizes[PositionType.SHORT] = SELL_SHORT_AMOUNT_OK
-    SIMULATED_BROKER.validate_positions_sizes(
-        PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_OK
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
+    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(
+        broker=broker,
+        fixed_order_type=OrderType.LIMIT,
+        limit_order_pct=Decimal("0.0004"),
+    )
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+    )
+    data_consumer = DataConsumer(
+        symbols, candles_queue, db_storage, order_manager, strategies
     )
 
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
 
-def test_validate_positions_sizes_buy_short_ko(simulation_fixture):
-    SIMULATED_BROKER.positions_sizes[PositionType.SHORT] = SELL_SHORT_AMOUNT_KO
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.validate_positions_sizes(
-            PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_KO
-        )
+    assert broker.get_portfolio_cash_balance() == Decimal("10012.845")
 
 
-def test_validate_cash_buy_ok(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-    SIMULATED_BROKER.validate_cash(ActionType.BUY, TOTAL_COST_ESTIMATE_OK)
+def test_execute_stop_order():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = SimpleQueue("candles")
 
-
-def test_validate_cash_buy_ko(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.validate_cash(ActionType.BUY, TOTAL_COST_ESTIMATE_KO)
-
-
-def test_validate_cash_sell_ok(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-    SIMULATED_BROKER.validate_cash(ActionType.SELL, TOTAL_COST_ESTIMATE_OK)
-
-
-def test_validate_transaction_buy_long_ok(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-    SIMULATED_BROKER.validate_transaction(
-        PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_OK, TOTAL_COST_ESTIMATE_OK
+    feed: Feed = CsvFeed(
+        {"AAPL": "test/data/aapl_candles_one_day_stop_order.csv"}, candles_queue
     )
 
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-def test_validate_transaction_buy_long_ko(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.validate_transaction(
-            PositionType.LONG,
-            ActionType.BUY,
-            BUY_LONG_AMOUNT_OK,
-            TOTAL_COST_ESTIMATE_KO,
-        )
-
-
-def test_validate_transaction_sell_long_ok(simulation_fixture):
-    SIMULATED_BROKER.positions_sizes[PositionType.LONG] = BUY_LONG_AMOUNT_OK
-    SIMULATED_BROKER.validate_transaction(
-        PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_OK, TOTAL_COST_ESTIMATE_OK
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
+    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(
+        broker=broker, fixed_order_type=OrderType.STOP, stop_order_pct=Decimal("0.0004")
+    )
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+    )
+    data_consumer = DataConsumer(
+        symbols, candles_queue, db_storage, order_manager, strategies
     )
 
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
 
-def test_validate_transaction_sell_long_ko(simulation_fixture):
-    SIMULATED_BROKER.positions_sizes[PositionType.LONG] = BUY_LONG_AMOUNT_KO
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.validate_transaction(
-            PositionType.LONG,
-            ActionType.SELL,
-            SELL_LONG_AMOUNT_KO,
-            TOTAL_COST_ESTIMATE_OK,
-        )
+    assert broker.get_portfolio_cash_balance() == Decimal("9996.01")
 
 
-def test_validate_transaction_sell_short_ok(simulation_fixture):
-    SIMULATED_BROKER.validate_transaction(
-        PositionType.SHORT,
-        ActionType.SELL,
-        SELL_SHORT_AMOUNT_OK,
-        TOTAL_COST_ESTIMATE_OK,
+def test_execute_target_order():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = SimpleQueue("candles")
+
+    feed: Feed = CsvFeed(
+        {"AAPL": "test/data/aapl_candles_one_day_target_order.csv"}, candles_queue
     )
 
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-def test_validate_transaction_sell_short_ko(simulation_fixture):
-    SIMULATED_BROKER.validate_transaction(
-        PositionType.SHORT,
-        ActionType.SELL,
-        SELL_SHORT_AMOUNT_OK,
-        TOTAL_COST_ESTIMATE_KO,
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
+    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(
+        broker=broker,
+        fixed_order_type=OrderType.TARGET,
+        target_order_pct=Decimal("0.0004"),
+    )
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+    )
+    data_consumer = DataConsumer(
+        symbols, candles_queue, db_storage, order_manager, strategies
     )
 
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
 
-def test_validate_transaction_buy_short_ok(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-    SIMULATED_BROKER.positions_sizes[PositionType.SHORT] = SELL_SHORT_AMOUNT_OK
-    SIMULATED_BROKER.validate_transaction(
-        PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_OK, TOTAL_COST_ESTIMATE_OK
+    assert broker.get_portfolio_cash_balance() == Decimal("9998.740")
+
+
+def test_execute_trailing_stop_order():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = SimpleQueue("candles")
+
+    feed: Feed = CsvFeed(
+        {"AAPL": "test/data/aapl_candles_one_day_trailing_stop_order.csv"},
+        candles_queue,
     )
 
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-def test_validate_transaction_buy_short_ko(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-    SIMULATED_BROKER.positions_sizes[PositionType.SHORT] = SELL_SHORT_AMOUNT_KO
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.validate_transaction(
-            PositionType.SHORT,
-            ActionType.BUY,
-            BUY_SHORT_AMOUNT_KO,
-            TOTAL_COST_ESTIMATE_OK,
-        )
-
-
-def test_update_shares_ok(simulation_fixture):
-
-    SIMULATED_BROKER.update_positions_sizes(
-        PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_OK
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
+    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(
+        broker=broker,
+        fixed_order_type=OrderType.TRAILING_STOP,
+        trailing_stop_order_pct=Decimal("0.0004"),
     )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.LONG] == BUY_LONG_AMOUNT_OK
-
-    SIMULATED_BROKER.update_positions_sizes(
-        PositionType.LONG, ActionType.SELL, SELL_LONG_AMOUNT_OK
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
-    assert (
-        SIMULATED_BROKER.positions_sizes[PositionType.LONG]
-        == BUY_LONG_AMOUNT_OK - SELL_LONG_AMOUNT_OK
+    data_consumer = DataConsumer(
+        symbols, candles_queue, db_storage, order_manager, strategies
     )
 
-    SIMULATED_BROKER.update_positions_sizes(
-        PositionType.SHORT, ActionType.SELL, SELL_SHORT_AMOUNT_OK
-    )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.SHORT] == -SELL_SHORT_AMOUNT_OK
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
 
-    SIMULATED_BROKER.update_positions_sizes(
-        PositionType.SHORT, ActionType.BUY, BUY_SHORT_AMOUNT_OK
-    )
-    assert (
-        SIMULATED_BROKER.positions_sizes[PositionType.SHORT]
-        == BUY_SHORT_AMOUNT_OK - SELL_SHORT_AMOUNT_OK
-    )
+    assert broker.get_portfolio_cash_balance() == Decimal("10009.345")
 
 
-def test_update_portfolio_value(simulation_fixture):
-    SIMULATED_BROKER.update_positions_sizes(
-        PositionType.LONG, ActionType.BUY, BUY_LONG_AMOUNT_OK
-    )
-    unit_cost_estimate = 10
-    SIMULATED_BROKER.update_portfolio_value(PositionType.LONG, unit_cost_estimate)
-    assert SIMULATED_BROKER.portfolio_value == BUY_LONG_AMOUNT_OK * unit_cost_estimate
+def test_execute_cover_order():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = SimpleQueue("candles")
 
-
-def test_update_cash_without_commission(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-
-    commission_amount = 0
-    SIMULATED_BROKER.update_cash(
-        ActionType.BUY, COST_ESTIMATE_BUY_OK, commission_amount
-    )
-    assert SIMULATED_BROKER.cash == FUND - COST_ESTIMATE_BUY_OK
-
-    SIMULATED_BROKER.update_cash(ActionType.SELL, 400, commission_amount)
-    assert SIMULATED_BROKER.cash == (FUND - COST_ESTIMATE_BUY_OK + COST_ESTIMATE_SELL)
-
-
-def test_update_cash_with_commission(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-
-    commission_amount = COST_ESTIMATE_BUY_OK * COMMISSION
-    SIMULATED_BROKER.update_cash(
-        ActionType.BUY, COST_ESTIMATE_BUY_OK, commission_amount
-    )
-    assert SIMULATED_BROKER.cash == FUND - COST_ESTIMATE_BUY_OK - commission_amount
-
-    SIMULATED_BROKER.update_cash(ActionType.SELL, 400, commission_amount)
-    assert SIMULATED_BROKER.cash == (
-        FUND - COST_ESTIMATE_BUY_OK + COST_ESTIMATE_SELL - 2 * commission_amount
+    feed: Feed = CsvFeed(
+        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, candles_queue
     )
 
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
+    db_storage.clean_all_orders()
+    db_storage.clean_all_candles()
 
-def test_compute_profit(simulation_fixture):
-    SIMULATED_BROKER.last_transaction_price = {
-        PositionType.LONG: {
-            ActionType.BUY: Decimal("200"),
-            ActionType.SELL: Decimal("201"),
-        },
-        PositionType.SHORT: {
-            ActionType.SELL: Decimal("250"),
-            ActionType.BUY: Decimal("150"),
-        },
-    }
-    assert SIMULATED_BROKER.compute_profit(PositionType.LONG) == Decimal("1")
-    assert SIMULATED_BROKER.compute_profit(PositionType.SHORT) == Decimal("100")
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
+    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(broker=broker, with_cover=True)
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+    )
+    data_consumer = DataConsumer(
+        symbols, candles_queue, db_storage, order_manager, strategies
+    )
 
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
 
-def test_position_buy_sell_long_ok(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-
-    SIMULATED_BROKER.submit_order(
-        SYMBOL,
-        PositionType.LONG,
-        ActionType.BUY,
-        UNIT_COST_ESTIMATE,
-        BUY_LONG_AMOUNT_OK,
-    )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.LONG] == BUY_LONG_AMOUNT_OK
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.LONG] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == FUND - SIMULATED_BROKER.portfolio_value
-
-    SIMULATED_BROKER.submit_order(
-        SYMBOL,
-        PositionType.LONG,
-        ActionType.SELL,
-        UNIT_COST_ESTIMATE,
-        SELL_LONG_AMOUNT_OK,
-    )
-    assert (
-        SIMULATED_BROKER.positions_sizes[PositionType.LONG]
-        == BUY_LONG_AMOUNT_OK - SELL_LONG_AMOUNT_OK
-    )
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.LONG] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == FUND - SIMULATED_BROKER.portfolio_value
+    assert broker.get_portfolio_cash_balance() == Decimal("10009.59")
 
 
-def test_position_buy_sell_long_ko(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
+def test_execute_bracket_order():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = SimpleQueue("candles")
 
-    SIMULATED_BROKER.submit_order(
-        SYMBOL,
-        PositionType.LONG,
-        ActionType.BUY,
-        UNIT_COST_ESTIMATE,
-        BUY_LONG_AMOUNT_KO,
+    feed: Feed = CsvFeed(
+        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, candles_queue
     )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.LONG] == BUY_LONG_AMOUNT_KO
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.LONG] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == FUND - SIMULATED_BROKER.portfolio_value
-    cash_before_call = SIMULATED_BROKER.cash
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.submit_order(
-            SYMBOL,
-            PositionType.LONG,
-            ActionType.SELL,
-            UNIT_COST_ESTIMATE,
-            SELL_LONG_AMOUNT_KO,
-        )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.LONG] == BUY_LONG_AMOUNT_KO
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.LONG] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == cash_before_call
 
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
+    db_storage.clean_all_orders()
+    db_storage.clean_all_candles()
 
-def test_position_sell_buy_short_ok(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
+    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(broker=broker, with_bracket=True)
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+    )
+    data_consumer = DataConsumer(
+        symbols, candles_queue, db_storage, order_manager, strategies
+    )
 
-    SIMULATED_BROKER.submit_order(
-        SYMBOL,
-        PositionType.SHORT,
-        ActionType.SELL,
-        UNIT_COST_ESTIMATE,
-        SELL_SHORT_AMOUNT_OK,
-    )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.SHORT] == -SELL_SHORT_AMOUNT_OK
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.SHORT] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == FUND - SIMULATED_BROKER.portfolio_value
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
 
-    SIMULATED_BROKER.submit_order(
-        SYMBOL,
-        PositionType.SHORT,
-        ActionType.BUY,
-        UNIT_COST_ESTIMATE,
-        BUY_SHORT_AMOUNT_OK,
-    )
-    assert (
-        SIMULATED_BROKER.positions_sizes[PositionType.SHORT]
-        == BUY_SHORT_AMOUNT_OK - SELL_SHORT_AMOUNT_OK
-    )
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.SHORT] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == FUND - SIMULATED_BROKER.portfolio_value
-
-
-def test_position_sell_buy_short_ko(simulation_fixture):
-    SIMULATED_BROKER.add_cash(FUND)
-
-    SIMULATED_BROKER.submit_order(
-        SYMBOL,
-        PositionType.SHORT,
-        ActionType.SELL,
-        UNIT_COST_ESTIMATE,
-        SELL_SHORT_AMOUNT_KO,
-    )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.SHORT] == -SELL_SHORT_AMOUNT_KO
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.SHORT] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == FUND - SIMULATED_BROKER.portfolio_value
-
-    with pytest.raises(Exception):
-        SIMULATED_BROKER.submit_order(
-            SYMBOL,
-            PositionType.SHORT,
-            ActionType.BUY,
-            UNIT_COST_ESTIMATE,
-            BUY_SHORT_AMOUNT_KO,
-        )
-    assert SIMULATED_BROKER.positions_sizes[PositionType.SHORT] == -SELL_SHORT_AMOUNT_KO
-    assert (
-        SIMULATED_BROKER.portfolio_value
-        == SIMULATED_BROKER.positions_sizes[PositionType.SHORT] * UNIT_COST_ESTIMATE
-    )
-    assert SIMULATED_BROKER.cash == FUND - SIMULATED_BROKER.portfolio_value
+    assert broker.get_portfolio_cash_balance() == Decimal("10007.175")

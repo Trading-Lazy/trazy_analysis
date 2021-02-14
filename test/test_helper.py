@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 from unittest.mock import call, patch
 
 import pandas as pd
@@ -14,6 +15,7 @@ from common.helper import (
     TimeInterval,
     calc_required_history_start_timestamp,
     ceil_time,
+    check_type,
     find_start_interval_business_date,
     find_start_interval_business_minute,
     request,
@@ -22,6 +24,7 @@ from common.helper import (
 )
 from common.types import CandleDataFrame
 from strategy.strategy import euronext_cal
+from test.tools.tools import not_raises
 
 SYMBOL = "IVV"
 MARKET_CAL = EuronextExchangeCalendar()
@@ -48,6 +51,12 @@ def test_process_interval_invalid_input():
     s = "1 month"
     with pytest.raises(Exception):
         TimeInterval.process_interval(s)
+
+
+def test_time_interval_str():
+    s = "1 day"
+    time_interval: TimeInterval = TimeInterval.process_interval(s)
+    assert str(time_interval) == s
 
 
 frozen_time = datetime(2020, 5, 17, 23, 21, 34, tzinfo=pytz.UTC)
@@ -400,3 +409,20 @@ def test_calc_time_range_30_minute_interval_on_non_business_hour():
         datetime(2020, 5, 1, 12, 0, tzinfo=timezone("UTC")),
     )
     assert start == datetime(2020, 4, 30, 14, 0, tzinfo=timezone("UTC"))
+
+
+@pytest.mark.parametrize(
+    "data, allowed_types, raise_exception",
+    [
+        (None, [int, float, bool], False),
+        (5, [int, float, bool], False),
+        (Decimal("2"), [int, float, bool], True),
+    ],
+)
+def test_check_type(data, allowed_types, raise_exception):
+    if raise_exception:
+        with pytest.raises(Exception):
+            check_type(data, allowed_types)
+    else:
+        with not_raises(Exception):
+            check_type(data, allowed_types)

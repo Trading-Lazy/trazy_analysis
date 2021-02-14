@@ -7,15 +7,7 @@ from rx import Observable, operators
 from rx.disposable import Disposable
 from rx.subject import Subject
 
-
-def check_data_type(data, allowed_types: List[type]):
-    if data is None:
-        return
-    data_type = type(data)
-    if data_type not in allowed_types:
-        raise Exception(
-            "data type should be one of {} not {}".format(allowed_types, data_type)
-        )
+from common.helper import check_type
 
 
 class StreamData(Subject):
@@ -54,7 +46,7 @@ class StreamData(Subject):
     def unary_operation(
         self, operation_function: Callable[[Any], Any], allowed_types: List[type],
     ) -> "StreamData":
-        check_data_type(self.data, allowed_types)
+        check_type(self.data, allowed_types)
         stream_data: StreamData = StreamData(
             source_data=self, transform=operation_function
         )
@@ -86,11 +78,11 @@ class StreamData(Subject):
         operation_function: Callable[[Any, Any], Any],
         allowed_types: List[type],
     ) -> "StreamData":
-        check_data_type(self.data, allowed_types)
+        check_type(self.data, allowed_types)
 
         other_is_stream = isinstance(other, StreamData)
         other_data = other.data if other_is_stream else other
-        check_data_type(other_data, allowed_types)
+        check_type(other_data, allowed_types)
 
         if other_is_stream:
             return self.binary_operation_stream(other, operation_function)

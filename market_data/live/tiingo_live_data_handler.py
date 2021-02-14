@@ -23,7 +23,6 @@ class TiingoLiveDataHandler(TiingoDataHandler, LiveDataHandler):
     @classmethod
     def generate_ticker_latest_data_url(cls, ticker: str) -> str:
         date_today = date.today()
-        #date_today = date(2020, 9, 4)
         return cls.BASE_URL_TICKER_LATEST_DATA.format(
             ticker, date_today, date_today, cls.API_TOKEN
         )

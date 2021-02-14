@@ -30,7 +30,7 @@ class CandleFetcher:
         self,
         symbol: str,
         start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        end: pd.Timestamp = pd.Timestamp.now("UTC"),
     ) -> List[Candle]:
         candles = self.db_storage.get_candles_in_range(
             symbol=symbol, start=start, end=end
@@ -41,8 +41,10 @@ class CandleFetcher:
         self,
         symbol: str,
         start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        end: pd.Timestamp = pd.Timestamp.now("UTC"),
     ) -> CandleDataFrame:
+        if self.db_storage is None:
+            return CandleDataFrame(symbol=symbol)
         candles = self.query_candles(symbol, start, end)
         df = CandleDataFrame.from_candle_list(symbol=symbol, candles=candles)
         return df
@@ -52,8 +54,10 @@ class CandleFetcher:
         self,
         symbol: str,
         start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        end: pd.Timestamp = pd.Timestamp.now("UTC"),
     ) -> CandleDataFrame:
+        if self.file_storage is None:
+            return CandleDataFrame(symbol=symbol)
         start_date = start.date()
         end_date = end.date()
         contents: List[CandleDataFrame] = []
@@ -95,7 +99,7 @@ class CandleFetcher:
         symbol: str,
         time_unit: pd.offsets.DateOffset,
         start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now(tz="UTC"),
+        end: pd.Timestamp = pd.Timestamp.now("UCT"),
     ) -> CandleDataFrame:
         df = self.fetch_candle_db_data(symbol, start, end)
         if df.empty or start <= df.iloc[0].name:

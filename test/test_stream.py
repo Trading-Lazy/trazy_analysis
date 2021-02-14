@@ -9,25 +9,7 @@ from rx import Observable
 from rx.subject import Subject
 
 from indicators.crossover import Crossover
-from indicators.stream import StreamData, check_data_type
-from test.tools.tools import not_raises
-
-
-@pytest.mark.parametrize(
-    "data, allowed_types, raise_exception",
-    [
-        (None, [int, float, bool], False),
-        (5, [int, float, bool], False),
-        (Decimal("2"), [int, float, bool], True),
-    ],
-)
-def test_check_data_type(data, allowed_types, raise_exception):
-    if raise_exception:
-        with pytest.raises(Exception):
-            check_data_type(data, allowed_types)
-    else:
-        with not_raises(Exception):
-            check_data_type(data, allowed_types)
+from indicators.stream import StreamData
 
 
 def test_stream_handle_new_data_default_transform():
