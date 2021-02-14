@@ -1,7 +1,6 @@
 import abc
+from datetime import datetime
 from typing import List
-
-import pandas as pd
 
 from models.candle import Candle
 from models.order import Order
@@ -54,19 +53,19 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_candle_by_identifier(
-        self, symbol: str, timestamp: pd.Timestamp
+        self, symbol: str, timestamp: datetime
     ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
     def candle_with_identifier_exists(
-        self, symbol: str, timestamp: pd.Timestamp
+        self, symbol: str, timestamp: datetime
     ) -> bool:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_candles_in_range(
-        self, symbol: str, start: pd.Timestamp, end: pd.Timestamp
+        self, symbol: str, start: datetime, end: datetime
     ) -> List[Candle]:  # pragma: no cover
         raise NotImplementedError
 
@@ -84,7 +83,7 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_signal_by_identifier(
-        self, symbol: str, strategy: str, candle_timestamp: pd.Timestamp
+        self, symbol: str, strategy: str, candle_timestamp: datetime
     ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 
@@ -106,7 +105,7 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_order_by_identifier(
-        self, symbol: str, strategy: str, candle_timestamp: pd.Timestamp
+        self, symbol: str, strategy: str, candle_timestamp: datetime
     ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 

@@ -1,6 +1,4 @@
-from decimal import Decimal
-
-import pandas as pd
+from datetime import datetime, timezone
 
 from common.utils import generate_object_id
 from models.enums import Action, Direction
@@ -16,13 +14,13 @@ class Transaction:
         The symbol symbol of the transaction
     size : `int`
         Whole number size of shares in the transaction
-    timestamp : `pd.Timestamp`
+    timestamp : `datetime`
         The date/time of the transaction
-    price : `Decimal`
+    price : `float`
         The transaction price carried out
     order_id : `str`
         The unique order identifier
-    commission : `Decimal`, optional
+    commission : `float`, optional
         The trading commission
     """
 
@@ -32,10 +30,10 @@ class Transaction:
         size: int,
         action,
         direction: Direction,
-        price: Decimal,
+        price: float,
         order_id: str,
-        commission=Decimal("0.0"),
-        timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
+        commission=0.0,
+        timestamp: datetime = datetime.now(timezone.utc),
         transaction_id: str = None,
     ):
         self.symbol = symbol
@@ -81,7 +79,7 @@ class Transaction:
         any commission costs.
         Returns
         -------
-        `Decimal`
+        `float`
             The transaction cost without commission.
         """
         if self.action == Action.SELL:
@@ -96,10 +94,10 @@ class Transaction:
         any commission costs.
         Returns
         -------
-        `Decimal`
+        `float`
             The transaction cost with commission.
         """
-        if self.commission == Decimal("0.0"):
+        if self.commission == 0.0:
             return self.cost_without_commission
         else:
             return self.cost_without_commission + self.commission

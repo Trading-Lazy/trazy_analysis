@@ -1,6 +1,6 @@
 """ wrapper around logging module """
-import os
 import logging
+import os
 
 
 def get_root_logger(logger_name, filename=None, stdout=True):

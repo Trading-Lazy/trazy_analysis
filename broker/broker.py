@@ -1,8 +1,9 @@
 import os
 import queue
 from abc import ABCMeta, abstractmethod
-from decimal import Decimal
 from typing import List, Union
+
+import numpy as np
 
 import settings
 from common.clock import Clock
@@ -46,7 +47,7 @@ class Broker:
         self.base_currency = self._set_base_currency(base_currency)
         self.clock = clock
         self.cash_balances = dict(
-            (currency, Decimal("0.0")) for currency in self.supported_currencies
+            (currency, 0) for currency in self.supported_currencies
         )
         self.open_orders = self._set_initial_open_orders()
         self.exit_orders = self._set_initial_exit_orders()
@@ -78,7 +79,7 @@ class Broker:
         else:
             return base_currency
 
-    def _set_initial_open_orders(self) -> dict:
+    def _set_initial_open_orders(self) -> queue.Queue():
         """
         Set the appropriate initial open orders dictionary.
         Returns
@@ -115,22 +116,22 @@ class Broker:
         raise NotImplementedError("Should implement has_opened_position()")
 
     @abstractmethod
-    def subscribe_funds_to_account(self, amount: Decimal) -> None:  # pragma: no cover
+    def subscribe_funds_to_account(self, amount: float) -> None:  # pragma: no cover
         raise NotImplementedError("Should implement subscribe_funds_to_account()")
 
     @abstractmethod
-    def withdraw_funds_from_account(self, amount: Decimal) -> None:  # pragma: no cover
+    def withdraw_funds_from_account(self, amount: float) -> None:  # pragma: no cover
         raise NotImplementedError("Should implement withdraw_funds_from_account()")
 
     @abstractmethod
     def get_cash_balance(
         self, currency: str = None
-    ) -> Union[dict, Decimal]:  # pragma: no cover
+    ) -> Union[dict, float]:  # pragma: no cover
         raise NotImplementedError("Should implement get_account_cash_balance()")
 
     @abstractmethod
     def max_entry_order_size(
-        self, symbol: str, direction: Direction, cash: Decimal = None
+        self, symbol: str, direction: Direction, cash: float = None
     ) -> int:  # pragma: no cover
         raise NotImplementedError("Should implement max_entry_order_size()")
 
@@ -148,29 +149,29 @@ class Broker:
         p = Portfolio(currency=self.base_currency)
         self.portfolio = p
         LOG.info(
-            "(%s) - portfolio creation: Portfolio created" % (self.clock.current_time())
+            "(%s) - portfolio creation: Portfolio created", self.clock.current_time()
         )
 
-    def get_portfolio_total_market_value(self) -> Decimal:
+    def get_portfolio_total_market_value(self) -> float:
         """
         Returns the current total market value of a Portfolio.
         Parameters
         ----------
         Returns
         -------
-        `Decimal`
+        `float`
             The total market value of the portfolio.
         """
         return self.portfolio.total_market_value
 
-    def get_portfolio_total_equity(self) -> Decimal:
+    def get_portfolio_total_equity(self) -> float:
         """
         Returns the current total equity of a Portfolio.
         Parameters
         ----------
         Returns
         -------
-        `Decimal`
+        `float`
             The total equity of the portfolio.
         """
         return self.portfolio.total_equity
@@ -189,7 +190,7 @@ class Broker:
         """
         return self.portfolio.portfolio_to_dict()
 
-    def get_portfolio_cash_balance(self) -> Decimal:
+    def get_portfolio_cash_balance(self) -> float:
         """
         Retrieve the cash balance of a sub-portfolio, if
         it exists. Otherwise raise a ValueError.
@@ -197,22 +198,22 @@ class Broker:
         ----------
         Returns
         -------
-        `Decimal`
+        `float`
             The cash balance of the portfolio.
         """
         return self.portfolio.cash
 
-    def subscribe_funds_to_portfolio(self, amount: Decimal) -> None:
+    def subscribe_funds_to_portfolio(self, amount: float) -> None:
         """
         Subscribe funds to a particular sub-portfolio, assuming
         it exists and the cash amount is positive. Otherwise raise
         a ValueError.
         Parameters
         ----------
-        amount : `Decimal`
+        amount : `float`
             The amount of cash to subscribe to the portfolio.
         """
-        if amount < Decimal("0.0"):
+        if amount < 0:
             raise ValueError(
                 "Cannot add negative amount: " "%s to a portfolio account." % amount
             )
@@ -226,11 +227,12 @@ class Broker:
         self.portfolio.subscribe_funds(amount)
         self.cash_balances[self.base_currency] -= amount
         LOG.info(
-            "(%s) - subscription: %s subscribed to portfolio"
-            % (self.clock.current_time(), amount)
+            "(%s) - subscription: %s subscribed to portfolio",
+            self.clock.current_time(),
+            amount,
         )
 
-    def withdraw_funds_from_portfolio(self, amount: Decimal) -> None:
+    def withdraw_funds_from_portfolio(self, amount: float) -> None:
         """
         Withdraw funds from the portfolio, assuming
         it exists, the cash amount is positive and there is
@@ -238,10 +240,10 @@ class Broker:
         withdraw. Otherwise raise a ValueError.
         Parameters
         ----------
-        amount : `Decimal`
+        amount : `float`
             The amount of cash to withdraw from the portfolio.
         """
-        if amount < Decimal("0.0"):
+        if amount < 0:
             raise ValueError(
                 "Cannot withdraw negative amount: "
                 "%s from a portfolio account." % amount
@@ -255,7 +257,7 @@ class Broker:
             )
         self.portfolio.withdraw_funds(amount)
         self.cash_balances[self.base_currency] += amount
-        LOG.info("withdrawal: %s withdrawn from portfolio" % (amount))
+        LOG.info("withdrawal: %s withdrawn from portfolio", amount)
 
     def handle_exit_order(self, order: Order):
         if not isinstance(order, Order) or order.is_entry_order:
@@ -304,10 +306,10 @@ class Broker:
         elif isinstance(order, MultipleOrder):
             LOG.info("Multiple order submitted")
         else:
-            LOG.info("Submitted order: %s, qty: %s" % (order.symbol, order.size))
+            LOG.info("Submitted order: %s, qty: %s", order.symbol, order.size)
 
     def max_entry_order_size(
-        self, symbol: str, direction: Direction, cash: Decimal = None
+        self, symbol: str, direction: Direction, cash: float = None
     ) -> int:
         if cash is None:
             cash = self.portfolio.cash
@@ -322,9 +324,11 @@ class Broker:
 
     def execute_open_orders(self) -> None:
         # Try to execute orders
-        orders = []
+        orders = np.empty(shape=self.open_orders.qsize(), dtype=Order)
+        index = 0
         while not self.open_orders.empty():
-            orders.append(self.open_orders.get())
+            orders[index] = self.open_orders.get()
+            index += 1
 
         for order in orders:
             now = self.clock.current_time(symbol=order.symbol)
@@ -332,8 +336,8 @@ class Broker:
                 self.execute_order(order)
             else:
                 LOG.info(
-                    "Order with order id (%s) either expired or has been canceled"
-                    % (order.order_id)
+                    "Order with order id (%s) either expired or has been canceled",
+                    order.order_id,
                 )
 
     def current_price(self, symbol: str):
@@ -345,5 +349,5 @@ class Broker:
             candle.symbol, candle.close, candle.timestamp
         )
 
-    def synchronize(self):
+    def synchronize(self):  # pragma: no cover
         pass

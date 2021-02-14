@@ -1,4 +1,4 @@
-import pandas as pd
+from datetime import datetime
 
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
@@ -11,7 +11,7 @@ from order_manager.order_creator import OrderCreator
 def test_create_order_from_signal():
     clock = SimulatedClock()
     symbol = "IVV"
-    timestamp = pd.Timestamp("2020-05-08 14:16:00+00:00")
+    timestamp = datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
     broker = SimulatedBroker(clock)
     order_creator = OrderCreator(broker=broker)

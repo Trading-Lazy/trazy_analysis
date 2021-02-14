@@ -2,8 +2,9 @@ import io
 import json
 import sys
 from datetime import date, datetime, timedelta
-from typing import List, Tuple
+from typing import Tuple
 
+import numpy as np
 import pandas as pd
 
 from common.types import CandleDataFrame
@@ -49,9 +50,11 @@ class IexCloudHistoricalDataHandler(HistoricalDataHandler):
         return ticker_url
 
     @classmethod
-    def parse_get_tickers_response(cls, tickers_response: str) -> List[str]:
+    def parse_get_tickers_response(cls, tickers_response: str) -> np.array:  # [str]
         raw_tickers = json.loads(tickers_response)
-        tickers = [raw_ticker["symbol"] for raw_ticker in raw_tickers]
+        tickers = np.array(
+            [raw_ticker["symbol"] for raw_ticker in raw_tickers], dtype="U6"
+        )
         return tickers
 
     @classmethod

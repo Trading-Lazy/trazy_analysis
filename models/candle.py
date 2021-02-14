@@ -1,25 +1,24 @@
 import json
-from decimal import Decimal
 
-import pandas as pd
+from datetime import datetime, timezone
 
 
 class Candle:
     def __init__(
         self,
         symbol: str,
-        open: Decimal,
-        high: Decimal,
-        low: Decimal,
-        close: Decimal,
+        open: float,
+        high: float,
+        low: float,
+        close: float,
         volume: int,
-        timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
+        timestamp: datetime = datetime.now(timezone.utc),
     ):
         self.symbol: str = symbol
-        self.open: Decimal = open
-        self.high: Decimal = high
-        self.low: Decimal = low
-        self.close: Decimal = close
+        self.open: float = open
+        self.high: float = high
+        self.low: float = low
+        self.close: float = close
         self.volume: int = volume
         from common.utils import timestamp_to_utc
 
@@ -29,13 +28,13 @@ class Candle:
     def from_serializable_dict(candle_dict: dict) -> "Candle":
         from common.utils import timestamp_to_utc
 
-        timestamp = timestamp_to_utc(pd.Timestamp(candle_dict["timestamp"]))
+        timestamp = timestamp_to_utc(candle_dict["timestamp"])
         candle: Candle = Candle(
             symbol=candle_dict["symbol"],
-            open=Decimal(candle_dict["open"]),
-            high=Decimal(candle_dict["high"]),
-            low=Decimal(candle_dict["low"]),
-            close=Decimal(candle_dict["close"]),
+            open=float(candle_dict["open"]),
+            high=float(candle_dict["high"]),
+            low=float(candle_dict["low"]),
+            close=float(candle_dict["close"]),
             volume=candle_dict["volume"],
             timestamp=timestamp,
         )
@@ -57,7 +56,9 @@ class Candle:
     @staticmethod
     def from_json(candle_json: str) -> "Candle":
         candle_dict = json.loads(candle_json)
-        candle_dict["timestamp"] = pd.Timestamp(candle_dict["timestamp"], tz="UTC")
+        candle_dict["timestamp"] = datetime.strptime(
+            candle_dict["timestamp"], "%Y-%m-%d %H:%M:%S%z"
+        )
         return Candle.from_serializable_dict(candle_dict)
 
     def to_serializable_dict(self) -> dict:
@@ -66,11 +67,14 @@ class Candle:
         dict["high"] = str(dict["high"])
         dict["low"] = str(dict["low"])
         dict["close"] = str(dict["close"])
-        dict["timestamp"] = str(dict["timestamp"])
         return dict
 
     def to_json(self) -> str:
-        return json.dumps(self.to_serializable_dict())
+        candle_dict = self.to_serializable_dict()
+        candle_dict["timestamp"] = candle_dict["timestamp"].strftime(
+            "%Y-%m-%d %H:%M:%S%z"
+        )
+        return json.dumps(candle_dict)
 
     def copy(self) -> "Candle":
         return Candle.from_dict(self.__dict__)
@@ -87,12 +91,12 @@ class Candle:
         return (
             "Candle("
             'symbol="{}",'
-            'open=Decimal("{}"),'
-            'high=Decimal("{}"),'
-            'low=Decimal("{}"),'
-            'close=Decimal("{}"),'
+            "open={},"
+            "high={},"
+            "low={},"
+            "close={},"
             "volume={},"
-            'timestamp=pd.Timestamp("{}"))'.format(
+            "timestamp={})".format(
                 self.symbol,
                 self.open,
                 self.high,

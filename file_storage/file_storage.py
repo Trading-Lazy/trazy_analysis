@@ -1,5 +1,6 @@
 import abc
-from typing import List
+
+import numpy as np
 
 from file_storage.common import DONE_DIR, ERROR_DIR, NONE_DIR, concat_path
 
@@ -10,7 +11,7 @@ class FileStorage:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def ls(self, path: str) -> List[str]:  # pragma: no cover
+    def ls(self, path: str) -> np.array:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod

@@ -1,5 +1,6 @@
 from datetime import date
 
+import numpy as np
 import pandas as pd
 from pandas._libs.tslibs.timestamps import Timestamp
 
@@ -42,11 +43,11 @@ def test_parse_get_tickers_response():
         "date": "2020-06-22",
         "isEnabled": true
     }]"""
-    expected_parsed_response = ["AAPL", "GOOGL", "AMZN"]
+    expected_parsed_response = np.array(["AAPL", "GOOGL", "AMZN"], dtype="U6")
     assert (
         IexCloudHistoricalDataHandler.parse_get_tickers_response(tickers_response)
         == expected_parsed_response
-    )
+    ).all()
 
 
 def test_ticker_data_is_none():

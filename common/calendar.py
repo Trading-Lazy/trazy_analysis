@@ -1,9 +1,11 @@
+from datetime import datetime
+
 import pandas as pd
 from pandas_market_calendars import MarketCalendar
 
 
 def is_business_day(
-    dt: pd.Timestamp,
+    dt: datetime,
     business_calendar: MarketCalendar = None,
     df_business_calendar: pd.DataFrame = None,
 ):
@@ -18,7 +20,7 @@ def is_business_day(
 
 
 def is_business_hour(
-    dt: pd.Timestamp,
+    dt: datetime,
     business_calendar: MarketCalendar = None,
     df_business_calendar: pd.DataFrame = None,
 ):

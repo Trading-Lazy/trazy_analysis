@@ -1,12 +1,10 @@
-from decimal import Decimal
-
 from broker.broker import Broker
 from models.multiple_order import BracketOrder, CoverOrder
 from models.order import Order
 
 
 class PositionSizer:
-    MAXIMUM_RISK_PER_TRADE = Decimal("0.10")
+    MAXIMUM_RISK_PER_TRADE = 0.10
 
     def __init__(self, broker: Broker):
         self.broker = broker

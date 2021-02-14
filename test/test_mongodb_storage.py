@@ -1,5 +1,5 @@
 import time
-from decimal import Decimal
+from datetime import datetime, timedelta
 from typing import List
 from unittest.mock import MagicMock, call, patch
 
@@ -42,62 +42,72 @@ DOC3 = {DOC3_KEY: DOC3_VALUE, DOC1_KEY: DOC1_VALUE}
 
 CANDLE1: Candle = Candle(
     symbol="AAPL",
-    open=Decimal("10.5"),
-    high=Decimal("10.9"),
-    low=Decimal("10.3"),
-    close=Decimal("10.6"),
+    open=10.5,
+    high=10.9,
+    low=10.3,
+    close=10.6,
     volume=100,
-    timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
+    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 
 CANDLE2: Candle = Candle(
     symbol="AAPL",
-    open=Decimal("10.4"),
-    high=Decimal("10.8"),
-    low=Decimal("10.4"),
-    close=Decimal("10.5"),
+    open=10.4,
+    high=10.8,
+    low=10.4,
+    close=10.5,
     volume=80,
-    timestamp=pd.Timestamp("2020-05-08 14:16:00", tz="UTC"),
+    timestamp=datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 
 CANDLE3: Candle = Candle(
     symbol="AAPL",
-    open=Decimal("10.8"),
-    high=Decimal("11.0"),
-    low=Decimal("10.7"),
-    close=Decimal("11.1"),
+    open=10.8,
+    high=11.0,
+    low=10.7,
+    close=11.1,
     volume=110,
-    timestamp=pd.Timestamp("2020-05-08 14:37:00", tz="UTC"),
+    timestamp=datetime.strptime("2020-05-08 14:37:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 
 clock = SimulatedClock()
 
-clock.update_time("AAPL", pd.Timestamp("2020-05-08 14:17:00", tz="UTC"))
+clock.update_time(
+    "AAPL", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+)
 SIGNAL1: Signal = Signal(
     symbol="AAPL",
     action=Action.BUY,
     direction=Direction.LONG,
-    confidence_level=Decimal("0.05"),
+    confidence_level=0.05,
     strategy="SmaCrossover",
-    root_candle_timestamp=pd.Timestamp("2020-05-08 14:16:00", tz="UTC"),
+    root_candle_timestamp=datetime.strptime(
+        "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    ),
     parameters={},
     clock=clock,
 )
 
 clock = SimulatedClock()
-clock.update_time("AAPL", pd.Timestamp("2020-05-08 15:19:00", tz="UTC"))
+clock.update_time(
+    "AAPL", datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
+)
 SIGNAL2: Signal = Signal(
     symbol="AAPL",
     action=Action.SELL,
     direction=Direction.LONG,
-    confidence_level=Decimal("0.05"),
+    confidence_level=0.05,
     strategy="SmaCrossover",
-    root_candle_timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
+    root_candle_timestamp=datetime.strptime(
+        "2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    ),
     parameters={},
     clock=clock,
 )
 
-clock.update_time("AAPL", pd.Timestamp("2020-05-08 14:17:00", tz="UTC"))
+clock.update_time(
+    "AAPL", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+)
 ORDER1: Order = Order(
     symbol="AAPL",
     action=Action.BUY,
@@ -108,7 +118,9 @@ ORDER1: Order = Order(
 )
 
 clock = SimulatedClock()
-clock.update_time("AAPL", pd.Timestamp("2020-05-08 15:19:00", tz="UTC"))
+clock.update_time(
+    "AAPL", datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
+)
 ORDER2: Order = Order(
     symbol="AAPL",
     action=Action.SELL,
@@ -545,8 +557,8 @@ def test_get_candles_in_range():
     start = time.time()
     candles: List[Candle] = MONGODB_STORAGE.get_candles_in_range(
         CANDLE1.symbol,
-        CANDLE1.timestamp - pd.offsets.Minute(1),
-        CANDLE1.timestamp + pd.offsets.Minute(1),
+        CANDLE1.timestamp - timedelta(minutes=1),
+        CANDLE1.timestamp + timedelta(minutes=1),
     )
     end = time.time()
     assert compare_candles_list(candles, [CANDLE2, CANDLE1])

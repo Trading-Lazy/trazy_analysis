@@ -1,7 +1,7 @@
-from decimal import Decimal
+from datetime import datetime
 from unittest.mock import call, patch
 
-import pandas as pd
+import numpy as np
 from freezegun import freeze_time
 from requests import Response
 
@@ -50,37 +50,46 @@ def test_request_ticker_lastest_candles_tiingo(
     )
     request_ticker_latest_data_mocked.return_value.content = str.encode(ticker_data)
 
-    expected_candles = [
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.92"),
-            high=Decimal("355.32"),
-            low=Decimal("354.09"),
-            close=Decimal("354.09"),
-            volume=1123,
-            timestamp=pd.Timestamp("2020-06-18 13:32:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.25"),
-            high=Decimal("354.59"),
-            low=Decimal("354.14"),
-            close=Decimal("354.59"),
-            volume=2613,
-            timestamp=pd.Timestamp("2020-06-19 13:33:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.22"),
-            high=Decimal("354.26"),
-            low=Decimal("353.95"),
-            close=Decimal("353.98"),
-            volume=1186,
-            timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
-        ),
-    ]
+    expected_candles = np.array(
+        [
+            Candle(
+                symbol="AAPL",
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     candles = TiingoLiveDataHandler.request_ticker_lastest_candles(SYMBOL, nb_candles=3)
-    assert expected_candles == candles
+    assert (expected_candles == candles).all()
 
 
 @patch("market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data")
@@ -100,55 +109,68 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
     )
     request_ticker_latest_data_mocked.return_value.content = str.encode(ticker_data)
 
-    expected_candles = [
-        Candle(
-            symbol="AAPL",
-            open=Decimal("355.15"),
-            high=Decimal("355.15"),
-            low=Decimal("353.74"),
-            close=Decimal("353.84"),
-            volume=3254,
-            timestamp=pd.Timestamp("2020-06-17 13:30:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.28"),
-            high=Decimal("354.96"),
-            low=Decimal("353.96"),
-            close=Decimal("354.78"),
-            volume=2324,
-            timestamp=pd.Timestamp("2020-06-18 13:31:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.92"),
-            high=Decimal("355.32"),
-            low=Decimal("354.09"),
-            close=Decimal("354.09"),
-            volume=1123,
-            timestamp=pd.Timestamp("2020-06-18 13:32:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.25"),
-            high=Decimal("354.59"),
-            low=Decimal("354.14"),
-            close=Decimal("354.59"),
-            volume=2613,
-            timestamp=pd.Timestamp("2020-06-19 13:33:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.22"),
-            high=Decimal("354.26"),
-            low=Decimal("353.95"),
-            close=Decimal("353.98"),
-            volume=1186,
-            timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
-        ),
-    ]
+    expected_candles = np.array(
+        [
+            Candle(
+                symbol="AAPL",
+                open=355.15,
+                high=355.15,
+                low=353.74,
+                close=353.84,
+                volume=3254,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.28,
+                high=354.96,
+                low=353.96,
+                close=354.78,
+                volume=2324,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     candles = TiingoLiveDataHandler.request_ticker_lastest_candles(SYMBOL, nb_candles=7)
-    assert expected_candles == candles
+    assert (expected_candles == candles).all()
 
 
 @patch("market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data")
@@ -161,9 +183,9 @@ def test_request_ticker_lastest_candles_ticker_data_is_none_tiingo(
     ticker_data = ",open,high,low,close,volume\n"
     request_ticker_latest_data_mocked.return_value.content = str.encode(ticker_data)
 
-    expected_candles = []
+    expected_candles = np.empty(shape=0, dtype=Candle)
     candles = TiingoLiveDataHandler.request_ticker_lastest_candles(SYMBOL, nb_candles=7)
-    assert expected_candles == candles
+    assert (expected_candles == candles).all()
 
 
 @patch("market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data")
@@ -176,53 +198,62 @@ def test_request_ticker_lastest_candles_error_tiingo(
     error_response = "Not Found"
     request_ticker_latest_data_mocked.return_value.content = str.encode(error_response)
 
-    expected_candles = []
+    expected_candles = np.empty(shape=0, dtype=Candle)
     candles = TiingoLiveDataHandler.request_ticker_lastest_candles(SYMBOL, nb_candles=7)
-    assert expected_candles == candles
+    assert (expected_candles == candles).all()
 
 
 @patch(
     "market_data.live.live_data_handler.LiveDataHandler.request_ticker_lastest_candles"
 )
 def test_request_ticker_lastest_candle(request_ticker_lastest_candles_mocked):
-    request_ticker_lastest_candles_mocked.return_value = [
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.92"),
-            high=Decimal("355.32"),
-            low=Decimal("354.09"),
-            close=Decimal("354.09"),
-            volume=1123,
-            timestamp=pd.Timestamp("2020-06-18 13:32:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.25"),
-            high=Decimal("354.59"),
-            low=Decimal("354.14"),
-            close=Decimal("354.59"),
-            volume=2613,
-            timestamp=pd.Timestamp("2020-06-19 13:33:00+00:00"),
-        ),
-        Candle(
-            symbol="AAPL",
-            open=Decimal("354.22"),
-            high=Decimal("354.26"),
-            low=Decimal("353.95"),
-            close=Decimal("353.98"),
-            volume=1186,
-            timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
-        ),
-    ]
+    request_ticker_lastest_candles_mocked.return_value = np.array(
+        [
+            Candle(
+                symbol="AAPL",
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="AAPL",
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
 
     expected_candle = Candle(
         symbol="AAPL",
-        open=Decimal("354.22"),
-        high=Decimal("354.26"),
-        low=Decimal("353.95"),
-        close=Decimal("353.98"),
+        open=354.22,
+        high=354.26,
+        low=353.95,
+        close=353.98,
         volume=1186,
-        timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
+        timestamp=datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
     assert expected_candle == LiveDataHandler.request_ticker_lastest_candle(SYMBOL)
 

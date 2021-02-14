@@ -1,7 +1,4 @@
-from decimal import Decimal
-
-import pandas as pd
-import pytz
+from datetime import datetime
 
 from common.clock import SimulatedClock
 from models.enums import Action, Direction, OrderStatus, OrderType
@@ -42,8 +39,12 @@ def test_add_on_complete_callback():
 
 
 def test_submit_order_base():
-    generation_time = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    submission_time = pd.Timestamp("2017-10-05 09:00:00", tz=pytz.UTC)
+    generation_time = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    submission_time = datetime.strptime(
+        "2017-10-05 09:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     order = OrderBase(generation_time=generation_time)
 
     order.submit(submission_time)
@@ -55,7 +56,7 @@ def test_submit_order_base():
 def test_submit_order():
     symbol = "BBB"
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
     order = Order(
         symbol=symbol,
@@ -74,7 +75,9 @@ def test_submit_order():
 
 
 def test_cancel_order_base():
-    generation_time = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    generation_time = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     order = OrderBase(generation_time=generation_time)
 
     order.cancel()
@@ -83,7 +86,9 @@ def test_cancel_order_base():
 
 
 def test_make_expired_order_base():
-    generation_time = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    generation_time = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     order = OrderBase(generation_time=generation_time)
 
     order.disable()
@@ -92,13 +97,21 @@ def test_make_expired_order_base():
 
 
 def test_time_in_force_order_base():
-    generation_time = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    submission_time = pd.Timestamp("2017-10-05 09:00:00", tz=pytz.UTC)
+    generation_time = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    submission_time = datetime.strptime(
+        "2017-10-05 09:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     order = OrderBase(generation_time=generation_time)
     order.submit(submission_time)
 
-    assert order.in_force(pd.Timestamp("2017-10-05 09:02:00", tz=pytz.UTC))
-    assert not order.in_force(pd.Timestamp("2017-10-05 09:07:00", tz=pytz.UTC))
+    assert order.in_force(
+        datetime.strptime("2017-10-05 09:02:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
+    assert not order.in_force(
+        datetime.strptime("2017-10-05 09:07:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
 
     assert order.status == OrderStatus.EXPIRED
 
@@ -106,7 +119,7 @@ def test_time_in_force_order_base():
 def test_time_in_force_order():
     symbol = "BBB"
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
     order = Order(
         symbol=symbol,
@@ -125,8 +138,12 @@ def test_time_in_force_order():
     assert order.type == OrderType.MARKET
 
     assert order.in_force()
-    assert order.in_force(pd.Timestamp("2017-10-05 08:03:00", tz=pytz.UTC))
-    assert not order.in_force(pd.Timestamp("2017-10-05 08:10:00", tz=pytz.UTC))
+    assert order.in_force(
+        datetime.strptime("2017-10-05 08:03:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
+    assert not order.in_force(
+        datetime.strptime("2017-10-05 08:10:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
 
     assert order.status == OrderStatus.EXPIRED
 
@@ -154,13 +171,15 @@ def test_from_serializable_dict():
         "size": 100,
         "status": "SUBMITTED",
         "generation_time": "2017-10-05 08:00:00+00:00",
-        "time_in_force": "<5 * Minutes>",
-        "submission_time": pd.Timestamp("2017-10-05 08:00:00+0000", tz="UTC"),
+        "time_in_force": "0:05:00",
+        "submission_time": datetime.strptime(
+            "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+        ),
     }
     order = Order.from_serializable_dict(serializable_dict)
     symbol = "AAA"
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
     expected_order = Order(
         symbol=symbol,
@@ -177,7 +196,7 @@ def test_from_serializable_dict():
 def test_to_serializable_dict():
     symbol = "AAA"
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
     order = Order(
         symbol=symbol,
@@ -196,8 +215,10 @@ def test_to_serializable_dict():
         "size": 100,
         "status": "SUBMITTED",
         "generation_time": "2017-10-05 08:00:00+00:00",
-        "time_in_force": "<5 * Minutes>",
-        "submission_time": pd.Timestamp("2017-10-05 08:00:00+0000", tz="UTC"),
+        "time_in_force": "0:05:00",
+        "submission_time": datetime.strptime(
+            "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+        ),
     }
     expected_dict == order.to_serializable_dict()
 
@@ -205,7 +226,7 @@ def test_to_serializable_dict():
 def test_eq_ne():
     symbol1 = "AAA"
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol1, timestamp)
     order1 = Order(
         symbol=symbol1,
@@ -241,7 +262,7 @@ def test_eq_ne():
 def test_limit_order():
     symbol = "AAA"
     clock = SimulatedClock()
-    limit = Decimal("15")
+    limit = 15
     limit_order = Order(
         symbol=symbol,
         action=Action.BUY,
@@ -259,7 +280,7 @@ def test_limit_order():
 def test_stop_order():
     symbol = "AAA"
     clock = SimulatedClock()
-    stop = Decimal("15")
+    stop = 15
     stop_order = Order(
         symbol=symbol,
         action=Action.BUY,
@@ -277,7 +298,7 @@ def test_stop_order():
 def test_trailing_stop_order():
     symbol = "AAA"
     clock = SimulatedClock()
-    stop_pct = Decimal("0.01")
+    stop_pct = 0.01
     trailing_stop_order = Order(
         symbol=symbol,
         action=Action.BUY,
@@ -295,7 +316,7 @@ def test_trailing_stop_order():
 def test_trailing_stop_order_eq():
     symbol = "AAA"
     clock = SimulatedClock()
-    stop_pct = Decimal("0.01")
+    stop_pct = 0.01
     trailing_stop_order1 = Order(
         symbol=symbol,
         action=Action.BUY,

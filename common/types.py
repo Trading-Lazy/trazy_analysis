@@ -1,6 +1,6 @@
-from decimal import Decimal
-from typing import List
+from datetime import timedelta
 
+import numpy as np
 import pandas as pd
 from pandas import DataFrame, DatetimeIndex
 from pandas_market_calendars import MarketCalendar
@@ -65,25 +65,25 @@ class CandleDataFrame(DataFrame):
         row = self.iloc[index]
         return Candle(
             symbol=self.symbol,
-            open=Decimal(row["open"]),
-            high=Decimal(row["high"]),
-            low=Decimal(row["low"]),
-            close=Decimal(row["close"]),
+            open=float(row["open"]),
+            high=float(row["high"]),
+            low=float(row["low"]),
+            close=float(row["close"]),
             volume=int(row["volume"]),
             timestamp=row.name,
         )
 
-    def to_candles(self) -> List[Candle]:
+    def to_candles(self) -> np.array:
         if self.symbol is None:
             raise Exception("CandleDataFrame symbol is not set")
         map_index_to_values = self.to_dict(orient="index")
-        candles = []
-        for timestamp in map_index_to_values:
+        candles = np.empty(shape=len(map_index_to_values), dtype=Candle)
+        for index, timestamp in enumerate(map_index_to_values):
             candle_dict = map_index_to_values[timestamp]
             candle_dict["symbol"] = self.symbol
             candle_dict["timestamp"] = timestamp
             candle = Candle.from_serializable_dict(candle_dict)
-            candles.append(candle)
+            candles[index] = candle
         return candles
 
     def append(self, *args, **kwargs) -> "CandleDataFrame":
@@ -94,8 +94,8 @@ class CandleDataFrame(DataFrame):
         return candle_dataframe
 
     @staticmethod
-    def from_candle_list(symbol: str, candles: List[Candle]):
-        if len(candles) == 0:
+    def from_candle_list(symbol: str, candles: np.array):  # [Candle]
+        if candles.size == 0:
             return CandleDataFrame(symbol=symbol)
         candles_data = [candle.to_serializable_dict() for candle in candles]
         return CandleDataFrame(symbol=symbol, candles_data=candles_data)
@@ -105,9 +105,7 @@ class CandleDataFrame(DataFrame):
         return CandleDataFrame(symbol=symbol, candles_data=df)
 
     @staticmethod
-    def concat(
-        candle_dataframes: List["CandleDataFrame"], symbol: str
-    ) -> "CandleDataFrame":
+    def concat(candle_dataframes: np.array, symbol: str) -> "CandleDataFrame":
         concatenated_candle_dataframe = pd.concat(
             candle_dataframes, verify_integrity=True
         )
@@ -116,7 +114,7 @@ class CandleDataFrame(DataFrame):
         return concatenated_candle_dataframe
 
     def aggregate(
-        self, time_unit: pd.offsets.DateOffset, market_cal: MarketCalendar
+        self, time_unit: timedelta, market_cal: MarketCalendar
     ) -> "CandleDataFrame":
         if self.empty:
             return CandleDataFrame(symbol=self.symbol)

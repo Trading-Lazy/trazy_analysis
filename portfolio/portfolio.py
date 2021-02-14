@@ -1,7 +1,6 @@
 import copy
 import os
-from datetime import datetime
-from decimal import Decimal
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -29,7 +28,7 @@ class Portfolio:
     ----------
     start_timestamp : datetime
         Portfolio creation datetime.
-    starting_cash : Decimal, optional
+    starting_cash : float, optional
         Starting cash of the portfolio. Defaults to 100,000 USD.
     currency: str, optional
         The portfolio denomination currency.
@@ -41,11 +40,11 @@ class Portfolio:
 
     def __init__(
         self,
-        starting_cash: Decimal = Decimal("0.0"),
+        starting_cash: float = 0.0,
         currency: str = "USD",
         portfolio_id: str = None,
         name: str = None,
-        timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
+        timestamp: datetime = datetime.now(timezone.utc),
     ) -> None:
         """
         Initialise the Portfolio object with a PositionHandler,
@@ -66,7 +65,7 @@ class Portfolio:
         self._initialise_portfolio_with_cash(timestamp)
 
     def _initialise_portfolio_with_cash(
-        self, timestamp: pd.Timestamp = pd.Timestamp.now("UTC")
+        self, timestamp: datetime = datetime.now(timezone.utc)
     ) -> None:
         """
         Initialise the portfolio with a (default) currency Cash Symbol
@@ -74,7 +73,7 @@ class Portfolio:
         """
         self.cash = copy.copy(self.starting_cash)
 
-        if self.starting_cash > Decimal("0.0"):
+        if self.starting_cash > 0.0:
             self.history.append(
                 PortfolioEvent.create_subscription(
                     self.starting_cash, self.starting_cash, timestamp
@@ -93,48 +92,48 @@ class Portfolio:
         )
 
     @property
-    def total_market_value(self) -> Decimal:
+    def total_market_value(self) -> float:
         """
         Obtain the total market value of the portfolio excluding cash.
         """
         return self.pos_handler.total_market_value()
 
     @property
-    def total_equity(self) -> Decimal:
+    def total_equity(self) -> float:
         """
         Obtain the total market value of the portfolio including cash.
         """
         return self.total_market_value + self.cash
 
     @property
-    def total_unrealised_pnl(self) -> Decimal:
+    def total_unrealised_pnl(self) -> float:
         """
         Calculate the sum of all the positions' unrealised P&Ls.
         """
         return self.pos_handler.total_unrealised_pnl()
 
     @property
-    def total_realised_pnl(self) -> Decimal:
+    def total_realised_pnl(self) -> float:
         """
         Calculate the sum of all the positions' realised P&Ls.
         """
         return self.pos_handler.total_realised_pnl()
 
     @property
-    def total_pnl(self) -> Decimal:
+    def total_pnl(self) -> float:
         """
         Calculate the sum of all the positions' total P&Ls.
         """
         return self.pos_handler.total_pnl()
 
     def subscribe_funds(
-        self, amount: Decimal, timestamp: pd.Timestamp = pd.Timestamp.now("UTC")
+        self, amount: float, timestamp: datetime = datetime.now(timezone.utc)
     ) -> None:
         """
         Credit funds to the portfolio.
         """
 
-        if amount < Decimal("0.0"):
+        if amount < 0.0:
             raise ValueError(
                 "Cannot credit negative amount: " "%s to the portfolio." % amount
             )
@@ -157,7 +156,7 @@ class Portfolio:
         )
 
     def withdraw_funds(
-        self, amount: Decimal, timestamp: pd.Timestamp = pd.Timestamp.now("UTC")
+        self, amount: float, timestamp: datetime = datetime.now(timezone.utc)
     ) -> None:
         """
         Withdraw funds from the portfolio if there is enough
@@ -227,7 +226,7 @@ class Portfolio:
                 type="symbol_transaction",
                 description=description,
                 debit=txn_total_cost,
-                credit=Decimal("0.0"),
+                credit=0.0,
                 balance=self.cash,
             )
             self.logger.info(
@@ -248,8 +247,8 @@ class Portfolio:
                 timestamp=txn.timestamp,
                 type="symbol_transaction",
                 description=description,
-                debit=Decimal("0.0"),
-                credit=-Decimal("1.0") * round(txn_total_cost, 2),
+                debit=0.0,
+                credit=-1.0 * round(txn_total_cost, 2),
                 balance=round(self.cash, 2),
             )
             self.logger.info(
@@ -261,7 +260,7 @@ class Portfolio:
                     txn.action.name,
                     direction,
                     self.portfolio_id,
-                    -Decimal("1.0") * txn_total_cost,
+                    -1.0 * txn_total_cost,
                     self.cash,
                 )
             )
@@ -291,7 +290,7 @@ class Portfolio:
         return holdings
 
     def update_market_value_of_symbol(
-        self, symbol: str, current_price: Decimal, timestamp=pd.Timestamp.now("UTC")
+        self, symbol: str, current_price: float, timestamp=datetime.now(timezone.utc)
     ) -> None:
         """
         Update the market value of the symbol to the current
@@ -300,7 +299,7 @@ class Portfolio:
         if symbol not in self.pos_handler.positions:
             return
         else:
-            if current_price < Decimal("0.0"):
+            if current_price < 0.0:
                 raise ValueError(
                     "Current trade price of %s is negative for "
                     "symbol %s. Cannot update position." % (current_price, symbol)

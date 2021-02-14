@@ -18,7 +18,10 @@ def test_validate_dataframe_columns_ok():
         "close",
         "volume",
     ]
-    df = pd.DataFrame({}, columns=required_columns,)
+    df = pd.DataFrame(
+        {},
+        columns=required_columns,
+    )
     validate_dataframe_columns(df, required_columns)
 
 
@@ -32,7 +35,10 @@ def test_validate_dataframe_columns_empty_columns_ko():
         "close",
         "volume",
     ]
-    df = pd.DataFrame({}, columns=[],)
+    df = pd.DataFrame(
+        {},
+        columns=[],
+    )
     with pytest.raises(Exception):
         validate_dataframe_columns(df, required_columns)
 
@@ -48,7 +54,8 @@ def test_validate_dataframe_columns_different_columns_len_ko():
         "volume",
     ]
     df = pd.DataFrame(
-        {}, columns=["timestamp", "symbol", "open", "high", "low", "close"],
+        {},
+        columns=["timestamp", "symbol", "open", "high", "low", "close"],
     )
     with pytest.raises(Exception):
         validate_dataframe_columns(df, required_columns)
@@ -65,7 +72,8 @@ def test_validate_dataframe_columns_different_values_ko():
         "volume",
     ]
     df = pd.DataFrame(
-        {}, columns=["timestamp", "symbol", "open", "high", "low", "close", "other"],
+        {},
+        columns=["timestamp", "symbol", "open", "high", "low", "close", "other"],
     )
     with pytest.raises(Exception):
         validate_dataframe_columns(df, required_columns)
@@ -93,18 +101,21 @@ def test_lists_equal_false_different_length():
     "timestamp, expected_utc_timestamp",
     [
         (
-            pd.Timestamp("2020-05-08 14:16:00"),
-            pd.Timestamp("2020-05-08 14:16:00+00:00"),
+            datetime.strptime("2020-05-08 14:16:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         ),
         (
-            pd.Timestamp("2020-05-08 14:16:00+00:00"),
-            pd.Timestamp("2020-05-08 14:16:00+00:00"),
+            datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         ),
         (
-            pd.Timestamp("2020-05-08 16:16:00+02:00"),
-            pd.Timestamp("2020-05-08 14:16:00+00:00"),
+            datetime.strptime("2020-05-08 16:16:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         ),
-        (datetime(2020, 5, 8, 14, 16), datetime(2020, 5, 8, 14, 16, tzinfo=pytz.UTC),),
+        (
+            datetime(2020, 5, 8, 14, 16),
+            datetime(2020, 5, 8, 14, 16, tzinfo=pytz.UTC),
+        ),
         (
             datetime(2020, 5, 8, 14, 16, tzinfo=pytz.UTC),
             datetime(2020, 5, 8, 14, 16, tzinfo=pytz.UTC),

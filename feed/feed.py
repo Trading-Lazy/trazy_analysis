@@ -1,29 +1,30 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
-import pandas as pd
+import numpy as np
+from pandas_market_calendars import MarketCalendar
 from rx import interval
 
 from candles_queue.candles_queue import CandlesQueue
-from common.types import CandleDataFrame
+from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
+from db_storage.db_storage import DbStorage
+from feed.loader import CsvLoader, ExternalStorageLoader, HistoricalDataLoader
+from file_storage.file_storage import FileStorage
 from market_data.historical.historical_data_handler import HistoricalDataHandler
 from market_data.live.live_data_handler import LiveDataHandler
-from models.candle import Candle
 
 
 class Feed:
     def set_symbols(self, symbols: List[str]):
         self.symbols = symbols
-        self.ids = {symbol: (str(id(self)) + symbol) for symbol in self.symbols}
 
     def __init__(
         self,
         candles_queue: CandlesQueue,
-        candles: Dict[str, List[Candle]] = {},
+        candles: Dict[str, np.array] = {},
         **scheduler_kwargs,
     ):
         self.symbols = None
-        self.ids = None
         self.set_symbols(candles.keys())
         self.candles_queue = candles_queue
         self.candles = candles
@@ -42,8 +43,7 @@ class Feed:
             index = self.indexes[symbol]
             candle = self.candles[symbol][index]
             self.indexes[symbol] += 1
-            candle_json = candle.to_json()
-            self.candles_queue.push(candle_json)
+            self.candles_queue.push(candle)
         else:
             if symbol in self.disposables:
                 self.disposables[symbol].dispose()
@@ -72,9 +72,10 @@ class LiveFeed(Feed):
         symbols: List[str],
         candles_queue: CandlesQueue,
         live_data_handler: LiveDataHandler,
+        candles: Dict[str, np.array] = {},
         **scheduler_kwargs,
     ):
-        super().__init__(candles_queue, candles={}, **scheduler_kwargs)
+        super().__init__(candles_queue, candles=candles, **scheduler_kwargs)
         self.set_symbols(symbols)
         self.live_data_handler = live_data_handler
 
@@ -83,26 +84,45 @@ class LiveFeed(Feed):
             symbol, nb_candles=2
         )
         for candle in candles:
-            self.candles_queue.push(candle.to_json())
+            self.candles_queue.push(candle)
 
 
 class OfflineFeed(Feed):
-    def __init__(
-        self, candles_queue: CandlesQueue, candles: Dict[str, List[Candle]] = {}
-    ):
+    def __init__(self, candles_queue: CandlesQueue, candles: Dict[str, np.array] = {}):
         super().__init__(candles_queue, candles)
 
     def start(self):
         for symbol in self.candles:
-            while self.indexes[symbol] < len(self.candles[symbol]):
-                index = self.indexes[symbol]
-                candle = self.candles[symbol][index]
-                self.indexes[symbol] += 1
-                candle_json = candle.to_json()
-                self.candles_queue.push(candle_json)
+            for candle in self.candles[symbol]:
+                self.candles_queue.push(candle)
 
     def stop(self):
         pass
+
+
+class ExternalStorageFeed(OfflineFeed):
+    def __init__(
+        self,
+        symbols: List[str],
+        candles_queue: CandlesQueue,
+        start: datetime,
+        end: datetime = datetime.now(timezone.utc),
+        db_storage: DbStorage = None,
+        file_storage: FileStorage = None,
+        market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
+    ):
+        external_storage_loader = ExternalStorageLoader(
+            symbols=symbols,
+            start=start,
+            end=end,
+            db_storage=db_storage,
+            file_storage=file_storage,
+            market_cal=market_cal,
+        )
+        external_storage_loader.load()
+        self.candle_dataframes = external_storage_loader.candle_dataframes
+        candles = external_storage_loader.candles
+        super().__init__(candles_queue, candles)
 
 
 class HistoricalFeed(OfflineFeed):
@@ -111,28 +131,24 @@ class HistoricalFeed(OfflineFeed):
         symbols: List[str],
         candles_queue: CandlesQueue,
         historical_data_handler: HistoricalDataHandler,
-        start: pd.Timestamp,
-        end: pd.Timestamp,
+        start: datetime,
+        end: datetime,
     ):
-        candles: Dict[str, List[Candle]] = {}
-        for symbol in symbols:
-            self.historical_data_handler = historical_data_handler
-            (
-                candle_dataframe,
-                _,
-                _,
-            ) = self.historical_data_handler.request_ticker_data_in_range(
-                symbol, start, end
-            )
-            candles[symbol] = candle_dataframe.to_candles()
-            self.candle_dataframe = candle_dataframe
+        historical_data_loader = HistoricalDataLoader(
+            symbols=symbols,
+            historical_data_handler=historical_data_handler,
+            start=start,
+            end=end,
+        )
+        historical_data_loader.load()
+        self.candle_dataframes = historical_data_loader.candle_dataframes
+        candles = historical_data_loader.candles
+
         super().__init__(candles_queue, candles)
 
 
 class PandasFeed(OfflineFeed):
-    def __init__(
-        self, candle_dataframes: List[CandleDataFrame], candles_queue: CandlesQueue
-    ):
+    def __init__(self, candle_dataframes: np.array, candles_queue: CandlesQueue):
         candles = {}
         for candle_dataframe in candle_dataframes:
             candles[candle_dataframe.symbol] = candle_dataframe.to_candles()
@@ -146,18 +162,9 @@ class CsvFeed(OfflineFeed):
         candles_queue: CandlesQueue,
         sep: str = ",",
     ):
-        dtype = {
-            "timestamp": str,
-            "open": str,
-            "high": str,
-            "low": str,
-            "close": str,
-            "volume": int,
-        }
-        candles = {}
-        for symbol, csv_filename in csv_filenames.items():
-            dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=sep)
-            candle_dataframe = CandleDataFrame.from_dataframe(dataframe, symbol)
-            self.candle_dataframe = candle_dataframe
-            candles[candle_dataframe.symbol] = candle_dataframe.to_candles()
+        csv_loader = CsvLoader(csv_filenames=csv_filenames, sep=sep)
+        csv_loader.load()
+        self.candle_dataframes = csv_loader.candle_dataframes
+        candles = csv_loader.candles
+
         super().__init__(candles_queue, candles)

@@ -1,4 +1,3 @@
-from decimal import Decimal
 from enum import Enum, auto
 
 
@@ -10,9 +9,9 @@ class PriceType(Enum):
     LAST = auto()
 
 
-def get_state(data: Decimal) -> "CrossoverState":
+def get_state(data: float) -> "CrossoverState":
     from indicators.crossover import CrossoverState
 
-    if data is None or data == Decimal("0"):
+    if data is None or data == 0:
         return CrossoverState.IDLE
-    return CrossoverState.POS if data > Decimal("0") else CrossoverState.NEG
+    return CrossoverState.POS if data > 0 else CrossoverState.NEG

@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from decimal import Decimal
 from unittest.mock import call, patch
 
 import pandas as pd
@@ -18,6 +17,7 @@ from common.helper import (
     check_type,
     find_start_interval_business_date,
     find_start_interval_business_minute,
+    parse_timedelta_str,
     request,
     resample_candle_data,
     round_time,
@@ -82,21 +82,6 @@ frozen_time = datetime(2020, 5, 17, 23, 21, 34, tzinfo=pytz.UTC)
             datetime(2020, 5, 17, 23, 30),
         ),
         (None, timedelta(minutes=10), datetime(2020, 5, 17, 23, 20, tzinfo=pytz.UTC)),
-        (
-            pd.Timestamp("2020-05-17 23:50:00"),
-            pd.offsets.Minute(60),
-            pd.Timestamp("2020-05-17 23:00:00"),
-        ),
-        (
-            pd.Timestamp("2020-05-17 23:31:00"),
-            pd.offsets.Minute(30),
-            pd.Timestamp("2020-05-17 23:30:00"),
-        ),
-        (
-            pd.Timestamp("2020-05-17 23:36:00"),
-            pd.offsets.Minute(10),
-            pd.Timestamp("2020-05-17 23:30:00"),
-        ),
     ],
 )
 def test_round_time(input, time_delta, expected_rounded_input):
@@ -149,7 +134,7 @@ def test_round_time(input, time_delta, expected_rounded_input):
         ),
         (
             pd.Timestamp("2020-05-17 23:31:00"),
-            pd.offsets.Minute(5),
+            timedelta(minutes=5),
             pd.Timestamp("2020-05-17 23:35:00"),
         ),
     ],
@@ -248,7 +233,7 @@ def test_resample_candle_data_interval_5_minute():
     df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
     df = df.drop(["timestamp"], axis=1)
     df = CandleDataFrame.from_dataframe(df, SYMBOL)
-    df = resample_candle_data(df, pd.offsets.Minute(5), business_cal)
+    df = resample_candle_data(df, timedelta(minutes=5), business_cal)
 
     expected_df_candles = {
         "timestamp": [
@@ -416,7 +401,7 @@ def test_calc_time_range_30_minute_interval_on_non_business_hour():
     [
         (None, [int, float, bool], False),
         (5, [int, float, bool], False),
-        (Decimal("2"), [int, float, bool], True),
+        (True, [int, float], True),
     ],
 )
 def test_check_type(data, allowed_types, raise_exception):
@@ -426,3 +411,19 @@ def test_check_type(data, allowed_types, raise_exception):
     else:
         with not_raises(Exception):
             check_type(data, allowed_types)
+
+
+def test_parse_timedelta_str():
+    timedelta_str1 = "1157 days, 9:46:39"
+    timedelta_str2 = "12:00:01.824952"
+    timedelta_str3 = "-1 day, 23:59:31.859767"
+    timedelta_str4 = "0:05:00"
+    timedelta1 = parse_timedelta_str(timedelta_str1)
+    timedelta2 = parse_timedelta_str(timedelta_str2)
+    timedelta3 = parse_timedelta_str(timedelta_str3)
+    timedelta4 = parse_timedelta_str(timedelta_str4)
+
+    assert timedelta1 == timedelta(days=1157, seconds=35199)
+    assert timedelta2 == timedelta(days=0, seconds=43201, microseconds=824952)
+    assert timedelta3 == timedelta(days=-1, seconds=86371, microseconds=859767)
+    assert timedelta4 == timedelta(minutes=5)
