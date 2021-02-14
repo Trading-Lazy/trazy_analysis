@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -44,10 +45,6 @@ def round_time(dt=None, time_delta=timedelta(minutes=1)):
     """
     if dt == None:
         dt = datetime.now(timezone.utc)
-    if isinstance(dt, pd.Timestamp):
-        return pd.Timestamp(
-            round_time(dt.to_pydatetime(), pd.Timedelta(time_delta).to_pytimedelta())
-        )
     round_to = time_delta.total_seconds()
     seconds = dt.timestamp()
 
@@ -169,10 +166,10 @@ def find_start_interval_business_date(
 
 
 def calc_required_history_start_timestamp(
-    time_unit: pd.offsets.DateOffset,
+    time_unit: timedelta,
     period: int,
     business_calendar: MarketCalendar,
-    end_timestamp: pd.Timestamp = pd.Timestamp.now("UTC"),
+    end_timestamp: datetime = datetime.now(timezone.utc),
 ) -> datetime:
     interval_unit = "day" if time_unit.name == "D" else "minute"
     interval = TimeInterval(interval_unit, time_unit.n)
@@ -197,7 +194,7 @@ def request(url: str) -> Response:
 
 def resample_candle_data(
     df: CandleDataFrame,
-    time_unit: pd.offsets.DateOffset,
+    time_unit: timedelta,
     market_cal_df: DataFrame,
 ) -> CandleDataFrame:
     symbol = df.symbol
@@ -268,3 +265,16 @@ def check_type(object, allowed_types: List[type]):
         raise Exception(
             "data type should be one of {} not {}".format(allowed_types, object_type)
         )
+
+
+def parse_timedelta_str(timedelta_str) -> timedelta:
+    if "day" in timedelta_str:
+        match = re.match(
+            r"(?P<days>[-\d]+) day[s]*, (?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d[\.\d+]*)",
+            timedelta_str,
+        )
+    else:
+        match = re.match(
+            r"(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d[\.\d+]*)", timedelta_str
+        )
+    return timedelta(**{key: float(val) for key, val in match.groupdict().items()})

@@ -1,9 +1,9 @@
 from unittest.mock import call, patch
 
+import numpy as np
 import pytest
 from pathlib import Path
 
-from common.utils import lists_equal
 from file_storage.common import PATH_SEPARATOR
 from file_storage.meganz_file_storage import MegaExtended, MegaNzFileStorage
 
@@ -76,8 +76,8 @@ def test_exists_false(find_mocked, mega_extended_fixture):
 @patch("file_storage.meganz_file_storage.MegaExtended.find")
 def test_ls_not_existing_dir(find_mocked, mega_extended_fixture):
     find_mocked.return_value = None
-    expected_list = []
-    assert MEGA_NZ_STORAGE.ls(FILE_NAME) == expected_list
+    expected_list = np.array([], dtype="U256")
+    assert (MEGA_NZ_STORAGE.ls(FILE_NAME) == expected_list).all()
     find_calls = [call(FILE_NAME, exclude_deleted=True)]
     find_mocked.assert_has_calls(find_calls)
 
@@ -150,8 +150,8 @@ def test_ls_existing_dir(find_mocked, get_files_in_node_mocked, mega_extended_fi
         },
     }
 
-    expected_list = ["NONE", "DONE", "ERROR", "terminated.txt"]
-    assert lists_equal(MEGA_NZ_STORAGE.ls(DIR1), expected_list)
+    expected_list = np.array(["NONE", "ERROR", "DONE", "terminated.txt"], dtype="U256")
+    assert (MEGA_NZ_STORAGE.ls(DIR1) == expected_list).all()
 
     find_calls = [call(DIR1, exclude_deleted=True)]
     find_mocked.assert_has_calls(find_calls)

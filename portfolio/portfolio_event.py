@@ -1,6 +1,4 @@
-from decimal import Decimal
-
-import pandas as pd
+from datetime import datetime, timezone
 
 
 class PortfolioEvent:
@@ -15,22 +13,22 @@ class PortfolioEvent:
         The type of portfolio event, e.g. 'subscription', 'withdrawal'.
     description ; `str`
         Human-readable portfolio event type.
-    debit : `Decimal`
+    debit : `float`
         A debit to the cash balance of the portfolio.
-    credit : `Decimal`
+    credit : `float`
         A credit to the cash balance of the portfolio.
-    balance : `Decimal`
+    balance : `float`
         The current cash balance of the portfolio.
     """
 
     def __init__(
         self,
-        timestamp: pd.Timestamp,
+        timestamp: datetime,
         type: str,
         description: str,
-        debit: Decimal,
-        credit: Decimal,
-        balance: Decimal,
+        debit: float,
+        credit: float,
+        balance: float,
     ) -> None:
         self.timestamp = timestamp
         self.type = type
@@ -65,27 +63,27 @@ class PortfolioEvent:
 
     @classmethod
     def create_subscription(
-        cls, credit: Decimal, balance, timestamp: pd.Timestamp = pd.Timestamp.now("UTC")
+        cls, credit: float, balance, timestamp: datetime = datetime.now(timezone.utc)
     ):
         return cls(
             timestamp,
             type="subscription",
             description="SUBSCRIPTION",
-            debit=Decimal("0.0"),
+            debit=0.0,
             credit=round(credit, 2),
             balance=round(balance, 2),
         )
 
     @classmethod
     def create_withdrawal(
-        cls, debit, balance, timestamp: pd.Timestamp = pd.Timestamp.now("UTC")
+        cls, debit, balance, timestamp: datetime = datetime.now(timezone.utc)
     ):
         return cls(
             timestamp,
             type="withdrawal",
             description="WITHDRAWAL",
             debit=round(debit, 2),
-            credit=Decimal("0.0"),
+            credit=0.0,
             balance=round(balance, 2),
         )
 

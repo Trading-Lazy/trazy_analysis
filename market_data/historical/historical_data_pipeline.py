@@ -32,7 +32,9 @@ ONE_HOUR_IN_SECONDS = 3600
 
 class HistoricalDataPipeline:
     def __init__(
-        self, historical_data_handler: HistoricalDataHandler, file_storage: FileStorage,
+        self,
+        historical_data_handler: HistoricalDataHandler,
+        file_storage: FileStorage,
     ) -> None:
         self.historical_data_handler = historical_data_handler
         self.file_storage = file_storage
@@ -63,23 +65,21 @@ class HistoricalDataPipeline:
         ]
         if not avalaible_dates_for_download:
             return []
-        LOG.info(
-            "Avalaible dates for download: {}".format(avalaible_dates_for_download)
-        )
+        LOG.info("Avalaible dates for download: %s", avalaible_dates_for_download)
         non_terminated_downloads = [
             date_dir[0:8]
             for date_dir in avalaible_dates_for_download
             if TERMINATION_FILE
             not in self.file_storage.ls("{}/{}".format(DATASETS_DIR, date_dir))
         ]
-        LOG.info("Non terminated downloads: {}".format(non_terminated_downloads))
+        LOG.info("Non terminated downloads: %s", non_terminated_downloads)
 
         # start date
         last_date = datetime.strptime(
             max(avalaible_dates_for_download)[0:8], DATE_DIR_FORMAT
         ).date()
         start_date = last_date + timedelta(days=1)
-        LOG.info("Start date: {}".format(start_date))
+        LOG.info("Start date: %s", start_date)
 
         todo_dates = [
             (start_date + timedelta(days=i)).strftime(DATE_DIR_FORMAT)
@@ -180,7 +180,7 @@ class HistoricalDataPipeline:
         todo_dates = self.get_todo_dates(date_today)
         if not todo_dates:
             return
-        LOG.info("Todo dates: {}".format(todo_dates))
+        LOG.info("Todo dates: %s", todo_dates)
 
         # prepare file_storage and create all needed directories
         self.file_storage.create_all_dates_directories(DATASETS_DIR, todo_dates)
@@ -193,7 +193,7 @@ class HistoricalDataPipeline:
         periods: List[Tuple[date, date]] = get_periods(
             self.historical_data_handler.MAX_DOWNLOAD_FRAME, start, end
         )
-        LOG.info("Periods: {}".format(periods))
+        LOG.info("Periods: %s", periods)
 
         # get tickers
         tickers = self.historical_data_handler.get_tickers_list()

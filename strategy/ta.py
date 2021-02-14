@@ -1,8 +1,6 @@
 # Author: Peter Bakker
 # https://www.quantopian.com/posts/technical-analysis-indicators-without-talib-code
-import numpy
 import pandas as pd
-import math as m
 
 
 # Moving Average

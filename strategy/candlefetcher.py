@@ -1,11 +1,12 @@
 import io
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import pandas as pd
 from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
+from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
 from common.constants import DATE_DIR_FORMAT
 from common.helper import resample_candle_data
 from common.types import CandleDataFrame
@@ -20,7 +21,7 @@ class CandleFetcher:
         self,
         db_storage: DbStorage,
         file_storage: FileStorage,
-        market_cal: MarketCalendar,
+        market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
     ):
         self.db_storage = db_storage
         self.file_storage = file_storage
@@ -29,8 +30,8 @@ class CandleFetcher:
     def query_candles(
         self,
         symbol: str,
-        start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now("UTC"),
+        start: datetime,
+        end: datetime = datetime.now(timezone.utc),
     ) -> List[Candle]:
         candles = self.db_storage.get_candles_in_range(
             symbol=symbol, start=start, end=end
@@ -40,8 +41,8 @@ class CandleFetcher:
     def fetch_candle_db_data(
         self,
         symbol: str,
-        start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now("UTC"),
+        start: datetime,
+        end: datetime = datetime.now(timezone.utc),
     ) -> CandleDataFrame:
         if self.db_storage is None:
             return CandleDataFrame(symbol=symbol)
@@ -53,8 +54,8 @@ class CandleFetcher:
     def fetch_candle_historical_data(
         self,
         symbol: str,
-        start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now("UTC"),
+        start: datetime,
+        end: datetime = datetime.now(timezone.utc),
     ) -> CandleDataFrame:
         if self.file_storage is None:
             return CandleDataFrame(symbol=symbol)
@@ -92,21 +93,23 @@ class CandleFetcher:
             return CandleDataFrame(symbol=symbol)
 
         merged_df = CandleDataFrame.concat(contents, symbol)
-        return merged_df.loc[start:end]
+        start_str = start.strftime("%Y-%m-%d %H:%M:%S%z")
+        end_str = end.strftime("%Y-%m-%d %H:%M:%S%z")
+        return merged_df.loc[start_str:end_str]
 
     def fetch(
         self,
         symbol: str,
         time_unit: pd.offsets.DateOffset,
-        start: pd.Timestamp,
-        end: pd.Timestamp = pd.Timestamp.now("UCT"),
+        start: datetime,
+        end: datetime = datetime.now(timezone.utc),
     ) -> CandleDataFrame:
         df = self.fetch_candle_db_data(symbol, start, end)
         if df.empty or start <= df.iloc[0].name:
             if df.empty:
                 historical_df_end = end
             else:
-                historical_df_end = df.iloc[0].name - pd.offsets.Minute(1)
+                historical_df_end = df.iloc[0].name - timedelta(minutes=1)
             historical_df = self.fetch_candle_historical_data(
                 symbol, start, historical_df_end
             )

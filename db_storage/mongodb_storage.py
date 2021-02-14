@@ -1,6 +1,8 @@
 import os
+from datetime import datetime
 from typing import List
 
+import numpy as np
 import pandas as pd
 import pymongo
 from bson import ObjectId
@@ -12,8 +14,13 @@ from logger import logger
 from models.candle import Candle
 from models.order import Order
 from models.signal import Signal
-from settings import (CANDLES_COLLECTION_NAME, DATABASE_NAME, DATABASE_URL, ORDERS_COLLECTION_NAME,
-                      SIGNALS_COLLECTION_NAME)
+from settings import (
+    CANDLES_COLLECTION_NAME,
+    DATABASE_NAME,
+    DATABASE_URL,
+    ORDERS_COLLECTION_NAME,
+    SIGNALS_COLLECTION_NAME,
+)
 
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
@@ -116,40 +123,40 @@ class MongoDbStorage(DbStorage):
     def candle_with_id_exists(self, id: str) -> bool:
         return self.get_candle(id) is not None
 
-    def get_candle_by_identifier(self, symbol: str, timestamp: pd.Timestamp) -> Candle:
+    def get_candle_by_identifier(self, symbol: str, timestamp: datetime) -> Candle:
         query = {"symbol": symbol, "timestamp": timestamp}
         candle_dict = self.find_one(query, CANDLES_COLLECTION_NAME)
         if candle_dict is None:
             return None
         return Candle.from_serializable_dict(candle_dict)
 
-    def candle_with_identifier_exists(
-        self, symbol: str, timestamp: pd.Timestamp
-    ) -> bool:
+    def candle_with_identifier_exists(self, symbol: str, timestamp: datetime) -> bool:
         return self.get_candle_by_identifier(symbol, timestamp) is not None
 
     def get_candles_in_range(
-        self, symbol: str, start: pd.Timestamp, end: pd.Timestamp
-    ) -> Candle:
+        self, symbol: str, start: datetime, end: datetime
+    ) -> np.array:  # [Candle]
         query = {
             "symbol": symbol,
             "$and": [{"timestamp": {"$gte": start}}, {"timestamp": {"$lte": end}}],
         }
-        cursor = self.find(query, CANDLES_COLLECTION_NAME).sort(
-            [("timestamp", pymongo.ASCENDING)]
+        cursor = list(
+            self.find(query, CANDLES_COLLECTION_NAME).sort(
+                [("timestamp", pymongo.ASCENDING)]
+            )
         )
-        candles = []
-        for candle_dict in cursor:
+        candles = np.empty(shape=len(cursor), dtype=Candle)
+        for index, candle_dict in enumerate(cursor):
             candle = Candle.from_serializable_dict(candle_dict)
-            candles.append(candle)
+            candles[index] = candle
         return candles
 
-    def get_all_candles(self) -> List[Candle]:
+    def get_all_candles(self) -> np.array:  # [Candle]
         candles_in_dict = self.get_all_documents(CANDLES_COLLECTION_NAME)
-        candles: List[Candle] = []
-        for candle_dict in candles_in_dict:
+        candles: np.array = np.empty(shape=len(candles_in_dict), dtype=Candle)
+        for index, candle_dict in enumerate(candles_in_dict):
             candle = Candle.from_serializable_dict(candle_dict)
-            candles.append(candle)
+            candles[index] = candle
         return candles
 
     def clean_all_candles(self) -> int:
@@ -172,7 +179,7 @@ class MongoDbStorage(DbStorage):
         return Signal.from_serializable_dict(signal_dict)
 
     def get_signal_by_identifier(
-        self, symbol: str, strategy: str, root_candle_timestamp: pd.Timestamp
+        self, symbol: str, strategy: str, root_candle_timestamp: datetime
     ) -> Signal:
         query = {
             "symbol": symbol,
@@ -184,12 +191,12 @@ class MongoDbStorage(DbStorage):
             return None
         return Signal.from_serializable_dict(signal_dict)
 
-    def get_all_signals(self) -> List[Signal]:
+    def get_all_signals(self) -> np.array:  # [Signal]
         signals_in_dict = self.get_all_documents(SIGNALS_COLLECTION_NAME)
-        signals = []
-        for signal_dict in signals_in_dict:
+        signals = np.empty(shape=len(signals_in_dict), dtype=Signal)
+        for index, signal_dict in enumerate(signals_in_dict):
             signal = Signal.from_serializable_dict(signal_dict)
-            signals.append(signal)
+            signals[index] = signal
         return signals
 
     def clean_all_signals(self) -> int:
@@ -209,7 +216,7 @@ class MongoDbStorage(DbStorage):
         return Order.from_serializable_dict(order_dict)
 
     def get_order_by_identifier(
-        self, signal_id: str, generation_time: pd.Timestamp
+        self, signal_id: str, generation_time: datetime
     ) -> Order:
         query = {
             "signal_id": signal_id,
@@ -220,12 +227,12 @@ class MongoDbStorage(DbStorage):
             return None
         return Order.from_serializable_dict(order_dict)
 
-    def get_all_orders(self) -> List[Order]:
+    def get_all_orders(self) -> np.array:  # [Order]
         orders_in_dict = self.get_all_documents(ORDERS_COLLECTION_NAME)
-        orders = []
-        for order_dict in orders_in_dict:
+        orders = np.empty(shape=len(orders_in_dict), dtype=Order)
+        for index, order_dict in enumerate(orders_in_dict):
             order = Order.from_serializable_dict(order_dict)
-            orders.append(order)
+            orders[index] = order
         return orders
 
     def clean_all_orders(self) -> int:

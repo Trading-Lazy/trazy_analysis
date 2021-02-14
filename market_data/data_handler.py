@@ -1,6 +1,8 @@
 import abc
 from typing import List
 
+import numpy as np
+
 from common.constants import ENCODING
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
@@ -65,10 +67,10 @@ class DataHandler(metaclass=RateLimitedSingletonMeta):
         raise NotImplementedError
 
     @classmethod
-    def get_tickers_list(cls) -> List[str]:
+    def get_tickers_list(cls) -> np.array:  # [str]
         response = cls.request(cls.BASE_URL_GET_TICKERS_LIST.format(cls.API_TOKEN))
         if response:
             tickers_response = response.content.decode(ENCODING)
             return cls.parse_get_tickers_response(tickers_response)
         else:
-            return []
+            return np.empty([], dtype="U6")

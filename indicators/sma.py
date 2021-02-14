@@ -1,57 +1,90 @@
-from decimal import Decimal
-
+import numpy as np
 import pandas as pd
-from rx import Observable
 
 from common.helper import get_or_create_nested_dict
 from indicators.common import PriceType
-from indicators.rolling_window import RollingWindowStream
+from indicators.rolling_window import PriceRollingWindowManager, RollingWindowStream
 from indicators.stream import StreamData
 
 
-class SmaStream(StreamData):
+class SmaStream(RollingWindowStream):
+    instances = 0
+    count = 0
+
     def initialize_sum(self):
-        self.sum: Decimal = sum(self.rolling_window_stream.window, 0)
-        self.data = self.sum / self.period
-        self.oldest: Decimal = self.rolling_window_stream[-self.period + 1]
+        ret = np.cumsum(self.rolling_window_stream.window, dtype=float)
+        if self.period + 1 > len(ret):
+            cum_sum_before = 0.0
+        else:
+            cum_sum_before = ret[-1 - self.period]
+        self.sum = ret[-1] - cum_sum_before
+        ret[self.period :] = ret[self.period :] - ret[: -self.period]
+        moving_averages = ret[self.period - 1 :] / self.period
+        super().prefill(moving_averages)
+        if self.rolling_window_stream.filled():
+            self.oldest = self.rolling_window_stream[-self.period + 1]
 
     def __init__(
         self,
         period: int,
         source_data: StreamData = None,
+        dtype: type = None,
+        preload=False,
     ):
+        SmaStream.instances += 1
         self.period = period
-        self.sum: Decimal = 0
-        self.oldest: Decimal = 0
+        self.sum: float = 0.0
+        self.oldest: float = 0.0
         self.rolling_window_stream = None
-        super().__init__(source_data=source_data)
+        self.dtype = dtype
+        if issubclass(type(source_data), RollingWindowStream) and (
+            not source_data.ready or source_data.size >= self.period
+        ):
+            self.rolling_window_stream = source_data
+            size = self.rolling_window_stream.size
+        else:
+            self.rolling_window_stream = RollingWindowStream(
+                size=self.period,
+                source_data=source_data,
+                dtype=self.dtype,
+                preload=False,
+            )
+            size = self.period
+        super().__init__(
+            size=size,
+            source_data=self.rolling_window_stream,
+            dtype=float,
+            preload=preload,
+        )
         if self.rolling_window_stream.filled():
             self.initialize_sum()
 
-    def _handle_new_data(self, new_data: Decimal) -> None:
-        self.sum += new_data - self.oldest
-        if self.rolling_window_stream.filled():
-            self.data = self.sum / self.period
-            self.oldest = self.rolling_window_stream[-self.period + 1]
-        self.on_next(self.data)
-
-    def observe(self, observable: Observable):
-        if (
-            issubclass(type(observable), RollingWindowStream)
-            and observable.period >= self.period
-        ):
-            self.rolling_window_stream = observable
+    def handle_new_data(self, new_data: float) -> None:
+        SmaStream.count += 1
+        if not self.preload:
+            self.sum += new_data - self.oldest
+            if self.rolling_window_stream.nb_elts >= self.period:
+                self.data = self.sum / self.period
+                self.oldest = self.rolling_window_stream[-self.period + 1]
+                super().handle_new_data(self.data)
+                return
+            self.on_next(self.data)
         else:
-            self.rolling_window_stream = RollingWindowStream(
-                period=self.period, source_data=observable
-            )
-        super().observe(self.rolling_window_stream)
+            if self.index < self.period:
+                self.data = None
+                self.on_next(self.data)
+                self.index += 1
+            else:
+                super().handle_new_data(new_data)
 
 
 class SmaManager:
-    def __init__(self, indicators_manager: "IndicatorsManager"):
+    def __init__(
+        self, price_rolling_window_manager: PriceRollingWindowManager, preload=True
+    ):
         self.cache = {}
-        self.indicators_manager = indicators_manager
+        self.price_rolling_window_manager = price_rolling_window_manager
+        self.preload = preload
 
     def __call__(
         self,
@@ -63,11 +96,22 @@ class SmaManager:
         get_or_create_nested_dict(self.cache, symbol, period, time_unit)
 
         if price_type not in self.cache[symbol][period][time_unit]:
-
-            price_rolling_window = self.indicators_manager.PriceRollingWindow(
+            price_rolling_window = self.price_rolling_window_manager(
                 symbol, period, time_unit, price_type
             )
             self.cache[symbol][period][time_unit][price_type] = SmaStream(
-                period, price_rolling_window
+                period, price_rolling_window, dtype=float, preload=self.preload
             )
         return self.cache[symbol][period][time_unit][price_type]
+
+    def warmup(self):
+        for symbol in self.cache:
+            for period in self.cache[symbol]:
+                for time_unit in self.cache[symbol][period]:
+                    for price_type in self.cache[symbol][period][time_unit]:
+                        sma_stream = self.cache[symbol][period][time_unit][price_type]
+                        sma_stream.set_size(sma_stream.rolling_window_stream.size)
+                        if self.preload:
+                            self.cache[symbol][period][time_unit][
+                                price_type
+                            ].initialize_sum()

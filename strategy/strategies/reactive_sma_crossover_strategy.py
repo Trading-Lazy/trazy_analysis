@@ -1,6 +1,4 @@
-from decimal import Decimal
-
-import pandas as pd
+from datetime import timedelta
 
 from common.clock import Clock
 from db_storage.db_storage import DbStorage
@@ -25,25 +23,25 @@ class ReactiveSmaCrossoverStrategy(Strategy):
         self.short_sma = self.indicators_manager.Sma(
             symbol,
             period=9,
-            time_unit=pd.offsets.Minute(1),
+            time_unit=timedelta(minutes=1),
         )
         self.long_sma = self.indicators_manager.Sma(
             symbol,
             period=65,
-            time_unit=pd.offsets.Minute(1),
+            time_unit=timedelta(minutes=1),
         )
         self.crossover = Crossover(self.short_sma, self.long_sma)
 
     def generate_signal(self, candle: Candle, clock: Clock) -> Signal:
-        LOG.info("short_sma = {}".format(self.short_sma.data))
-        LOG.info("long_sma = {}".format(self.long_sma.data))
-        LOG.info("crossover = {}".format(self.crossover.data))
-        LOG.info("crossover state = {}".format(self.crossover.state.name))
+        LOG.info("short_sma = %s", self.short_sma.data)
+        LOG.info("long_sma = %s", self.long_sma.data)
+        LOG.info("crossover = %s", self.crossover.data)
+        LOG.info("crossover state = %s", self.crossover.state.name)
         if self.crossover > 0:
             signal = Signal(
                 action=Action.BUY,
                 direction=Direction.LONG,
-                confidence_level=Decimal("1.0"),
+                confidence_level=1.0,
                 strategy=self.name,
                 symbol=candle.symbol,
                 root_candle_timestamp=candle.timestamp,
@@ -55,7 +53,7 @@ class ReactiveSmaCrossoverStrategy(Strategy):
             signal = Signal(
                 action=Action.SELL,
                 direction=Direction.LONG,
-                confidence_level=Decimal("1.0"),
+                confidence_level=1.0,
                 strategy=self.name,
                 symbol=candle.symbol,
                 root_candle_timestamp=candle.timestamp,

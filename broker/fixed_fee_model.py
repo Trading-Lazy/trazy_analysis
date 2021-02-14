@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from broker.fee_model import FeeModel
 
 
@@ -10,15 +8,15 @@ class FixedFeeModel(FeeModel):
 
     def __init__(
         self,
-        fixed_commission: Decimal = Decimal("0.0"),
-        fixed_tax: Decimal = Decimal("0.0"),
+        fixed_commission: float = 0.0,
+        fixed_tax: float = 0.0,
     ) -> None:
         self.fixed_commission = fixed_commission
         self.fixed_tax = fixed_tax
 
     def _calc_commission(
-        self, symbol: str, size: int, consideration: Decimal, broker: "Broker" = None
-    ) -> Decimal:
+        self, symbol: str, size: int, consideration: float, broker: "Broker" = None
+    ) -> float:
         """
         Returns zero commission.
         Parameters
@@ -28,20 +26,20 @@ class FixedFeeModel(FeeModel):
         size : `int`
             The size of symbols (needed for InteractiveBrokers
             style calculations).
-        consideration : `Decimal`
+        consideration : `float`
             Price times size of the order.
         broker : `Broker`, optional
             An optional Broker reference.
         Returns
         -------
-        `Decimal`
+        `float`
             The zero-cost commission.
         """
         return self.fixed_commission
 
     def _calc_tax(
-        self, symbol: str, size: int, consideration: Decimal, broker: "Broker" = None
-    ) -> Decimal:
+        self, symbol: str, size: int, consideration: float, broker: "Broker" = None
+    ) -> float:
         """
         Returns zero tax.
         Parameters
@@ -51,13 +49,13 @@ class FixedFeeModel(FeeModel):
         size : `int`
             The size of symbols (needed for InteractiveBrokers
             style calculations).
-        consideration : `Decimal`
+        consideration : `float`
             Price times size of the order.
         broker : `Broker`, optional
             An optional Broker reference.
         Returns
         -------
-        `Decimal`
+        `float`
             The zero-cost tax.
         """
         return self.fixed_tax

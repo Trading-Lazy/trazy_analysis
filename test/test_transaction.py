@@ -1,6 +1,6 @@
-from decimal import Decimal
+from datetime import datetime
 
-import pandas as pd
+import pytest
 
 from models.enums import Action, Direction
 from position.transaction import Transaction
@@ -10,10 +10,10 @@ TRANSACTION = Transaction(
     size=168,
     action=Action.BUY,
     direction=Direction.LONG,
-    price=Decimal("56.18"),
+    price=56.18,
     order_id="153",
-    commission=Decimal("5.3"),
-    timestamp=pd.Timestamp("2015-05-06"),
+    commission=5.3,
+    timestamp=datetime(2015, 5, 6),
 )
 
 
@@ -30,8 +30,8 @@ def test_transaction_representation():
 
 
 def test_cost_without_commission():
-    assert TRANSACTION.cost_without_commission == Decimal("9438.24")
+    assert TRANSACTION.cost_without_commission == 9438.24
 
 
 def test_cost_with_commission():
-    assert TRANSACTION.cost_with_commission == Decimal("9443.54")
+    assert TRANSACTION.cost_with_commission == pytest.approx(9443.54, 0.001)

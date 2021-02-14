@@ -1,6 +1,6 @@
-import pandas as pd
+from datetime import datetime
+
 import pytest
-import pytz
 
 from common.clock import SimulatedClock
 from models.enums import Action, Direction, OrderStatus, OrderType
@@ -175,7 +175,7 @@ def test_oco_order():
 
 def test_homogeneous_sequential_order():
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     clock.update(symbol, timestamp)
     symbol1 = "AAA"
@@ -229,7 +229,7 @@ def test_homogeneous_sequential_order():
 
 def test_homogeneous_sequential_order_multiple_order():
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     clock.update(symbol, timestamp)
     symbol1 = "AAA"
@@ -294,7 +294,7 @@ def test_homogeneous_sequential_order_multiple_order():
 
 def test_homogeneous_sequential_order_different_symbols():
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     clock.update(symbol, timestamp)
     symbol1 = "BBB"
@@ -324,7 +324,7 @@ def test_homogeneous_sequential_order_different_symbols():
 
 def test_homogeneous_sequential_order_different_symbols_multiple_order():
     clock = SimulatedClock()
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     clock.update(symbol, timestamp)
     symbol1 = "AAA"

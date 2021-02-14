@@ -1,19 +1,18 @@
 import queue
-from decimal import Decimal
+from datetime import datetime
 
-import pandas as pd
 import pytest
-import pytz
 
 from bot.data_consumer import DataConsumer
 from bot.data_flow import DataFlow
 from broker.fixed_fee_model import FixedFeeModel
 from broker.simulated_broker import SimulatedBroker
 from candles_queue.candles_queue import CandlesQueue
-from candles_queue.simple_queue import SimpleQueue
+from candles_queue.fake_queue import FakeQueue
 from common.clock import SimulatedClock
 from db_storage.mongodb_storage import MongoDbStorage
 from feed.feed import CsvFeed, Feed
+from indicators.indicators import IndicatorsManager
 from models.candle import Candle
 from models.enums import Action, Direction, OrderType
 from models.order import Order
@@ -29,17 +28,19 @@ from test.tools.tools import not_raises
 
 
 def test_initial_settings_for_default_simulated_broker():
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
 
     # Test a default SimulatedBroker
     clock = SimulatedClock()
     sb1 = SimulatedBroker(clock)
 
     assert sb1.base_currency == "EUR"
-    assert sb1.cash_balances["USD"] == Decimal("0.0")
+    assert sb1.cash_balances["USD"] == 0.0
     assert type(sb1.fee_model) == FixedFeeModel
 
-    tcb1 = {"EUR": Decimal("0.0"), "USD": Decimal("0.0")}
+    tcb1 = {"EUR": float("0.0"), "USD": float("0.0")}
     portfolio1 = Portfolio(timestamp=start_timestamp, currency=sb1.base_currency)
 
     assert sb1.cash_balances == tcb1
@@ -56,7 +57,7 @@ def test_initial_settings_for_default_simulated_broker():
     assert sb2.cash_balances["EUR"] == 1e6
     assert type(sb2.fee_model) == FixedFeeModel
 
-    tcb2 = {"EUR": 1000000.0, "USD": Decimal("0.0")}
+    tcb2 = {"EUR": 1000000.0, "USD": float("0.0")}
     portfolio2 = Portfolio(
         timestamp=start_timestamp,
         currency=sb2.base_currency,
@@ -83,7 +84,7 @@ def test_good_set_base_currency():
 def test_bad_set_initial_funds():
     clock = SimulatedClock()
     with pytest.raises(ValueError):
-        SimulatedBroker(clock=clock, initial_funds=Decimal("-56.34"))
+        SimulatedBroker(clock=clock, initial_funds=float("-56.34"))
 
 
 def test_good_set_initial_funds():
@@ -115,14 +116,14 @@ def test_set_cash_balances():
     # Zero initial funds
     clock = SimulatedClock()
     sb1 = SimulatedBroker(clock=clock)
-    tcb1 = {"EUR": Decimal("0.0"), "USD": Decimal("0.0")}
-    sb1._set_cash_balances(initial_funds=Decimal("0.0"))
+    tcb1 = {"EUR": 0.0, "USD": 0.0}
+    sb1._set_cash_balances(initial_funds=0.0)
     assert sb1.cash_balances == tcb1
 
     # Non-zero initial funds
-    sb2 = SimulatedBroker(clock=clock, initial_funds=Decimal("12345.0"))
-    tcb2 = {"EUR": Decimal("12345.0"), "USD": Decimal("0.0")}
-    sb2._set_cash_balances(initial_funds=Decimal("12345.0"))
+    sb2 = SimulatedBroker(clock=clock, initial_funds=12345.0)
+    tcb2 = {"EUR": 12345.0, "USD": 0.0}
+    sb2._set_cash_balances(initial_funds=12345.0)
     assert sb2.cash_balances == tcb2
 
 
@@ -139,37 +140,37 @@ def test_subscribe_funds_to_account():
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
-        sb.subscribe_funds_to_account(Decimal("-4306.23"))
+        sb.subscribe_funds_to_account(-4306.23)
 
     # Correctly setting cash_balances for a positive amount
-    sb.subscribe_funds_to_account(Decimal("165303.23"))
-    assert sb.cash_balances[sb.base_currency] == Decimal("165303.23")
+    sb.subscribe_funds_to_account(165303.23)
+    assert sb.cash_balances[sb.base_currency] == 165303.23
 
 
 def test_withdraw_funds_from_account():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock, initial_funds=Decimal("1000000"))
+    sb = SimulatedBroker(clock=clock, initial_funds=1000000)
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
-        sb.withdraw_funds_from_account(Decimal("-4306.23"))
+        sb.withdraw_funds_from_account(-4306.23)
 
     # Raising ValueError for lack of cash
     with pytest.raises(ValueError):
-        sb.withdraw_funds_from_account(Decimal("2000000"))
+        sb.withdraw_funds_from_account(2000000)
 
     # Correctly setting cash_balances for a positive amount
-    sb.withdraw_funds_from_account(Decimal("300000"))
-    assert sb.cash_balances[sb.base_currency] == Decimal("700000")
+    sb.withdraw_funds_from_account(300000)
+    assert sb.cash_balances[sb.base_currency] == 700000
 
 
 def test_get_account_cash_balance():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock, initial_funds=Decimal("1000.0"))
+    sb = SimulatedBroker(clock=clock, initial_funds=1000.0)
 
     # If currency is None, return the cash balances
     sbcb1 = sb.get_cash_balance()
-    tcb1 = {"EUR": Decimal("1000.0"), "USD": Decimal("0.0")}
+    tcb1 = {"EUR": 1000.0, "USD": 0.0}
     assert sbcb1 == tcb1
 
     # If the currency code isn't in the cash_balances
@@ -178,8 +179,8 @@ def test_get_account_cash_balance():
         sb.get_cash_balance(currency="XYZ")
 
     # Otherwise, return appropriate cash balance
-    assert sb.get_cash_balance(currency="EUR") == Decimal("1000.0")
-    assert sb.get_cash_balance(currency="USD") == Decimal("0.0")
+    assert sb.get_cash_balance(currency="EUR") == 1000.0
+    assert sb.get_cash_balance(currency="USD") == 0.0
 
 
 def test_get_account_total_market_value():
@@ -187,11 +188,11 @@ def test_get_account_total_market_value():
     sb = SimulatedBroker(clock=clock)
 
     # Subscribe all necessary funds and create portfolios
-    sb.subscribe_funds_to_account(Decimal("300000.0"))
-    sb.subscribe_funds_to_portfolio(Decimal("100000.0"))
+    sb.subscribe_funds_to_account(300000.0)
+    sb.subscribe_funds_to_portfolio(100000.0)
 
     symbol1 = "AAA"
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update_time(symbol1, timestamp)
     order1 = Order(
         symbol=symbol1,
@@ -203,10 +204,10 @@ def test_get_account_total_market_value():
     )
     candle1 = Candle(
         symbol=symbol1,
-        open=Decimal("567.0"),
-        high=Decimal("567.0"),
-        low=Decimal("567.0"),
-        close=Decimal("567.0"),
+        open=567.0,
+        high=567.0,
+        low=567.0,
+        close=567.0,
         volume=100,
         timestamp=timestamp,
     )
@@ -227,10 +228,10 @@ def test_get_account_total_market_value():
     )
     candle2 = Candle(
         symbol=symbol2,
-        open=Decimal("123.0"),
-        high=Decimal("123.0"),
-        low=Decimal("123.0"),
-        close=Decimal("123.0"),
+        open=123.0,
+        high=123.0,
+        low=123.0,
+        close=123.0,
         volume=100,
     )
     sb.submit_order(order2)
@@ -240,7 +241,7 @@ def test_get_account_total_market_value():
 
     # Check that the market value is correct
     res_market_value = sb.get_portfolio_total_market_value()
-    test_market_value = Decimal("69000.0")
+    test_market_value = 69000.0
     assert res_market_value == test_market_value
 
 
@@ -256,23 +257,23 @@ def test_create_portfolio():
 
 def test_subscribe_funds_to_portfolio():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock, initial_funds=Decimal("0"))
+    sb = SimulatedBroker(clock=clock, initial_funds=0)
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
-        sb.subscribe_funds_to_portfolio(Decimal("-4306.23"))
+        sb.subscribe_funds_to_portfolio(-4306.23)
 
     # Add in cash balance to the account
-    sb.subscribe_funds_to_account(Decimal("165303.23"))
+    sb.subscribe_funds_to_account(165303.23)
 
     # Raising ValueError if not enough cash
     with pytest.raises(ValueError):
-        sb.subscribe_funds_to_portfolio(Decimal("200000.00"))
+        sb.subscribe_funds_to_portfolio(200000.00)
 
     # If everything else worked, check balances are correct
-    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
-    assert sb.cash_balances[sb.base_currency] == Decimal("65303.23")
-    assert sb.portfolio.cash == Decimal("100000.00")
+    sb.subscribe_funds_to_portfolio(100000.00)
+    assert sb.cash_balances[sb.base_currency] == pytest.approx(65303.23, 0.001)
+    assert sb.portfolio.cash == 100000.00
 
 
 def test_withdraw_funds_from_portfolio():
@@ -281,20 +282,20 @@ def test_withdraw_funds_from_portfolio():
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
-        sb.withdraw_funds_from_portfolio(Decimal("-4306.23"))
+        sb.withdraw_funds_from_portfolio(-4306.23)
 
     # Add in cash balance to the account
-    sb.subscribe_funds_to_account(Decimal("165303.23"))
-    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    sb.subscribe_funds_to_account(165303.23)
+    sb.subscribe_funds_to_portfolio(100000.00)
 
     # Raising ValueError if not enough cash
     with pytest.raises(ValueError):
-        sb.withdraw_funds_from_portfolio(Decimal("200000.00"))
+        sb.withdraw_funds_from_portfolio(200000.00)
 
     # If everything else worked, check balances are correct
-    sb.withdraw_funds_from_portfolio(Decimal("50000.00"))
-    assert sb.cash_balances[sb.base_currency] == Decimal("115303.23")
-    assert sb.portfolio.cash == Decimal("50000.00")
+    sb.withdraw_funds_from_portfolio(50000.00)
+    assert sb.cash_balances[sb.base_currency] == pytest.approx(115303.23, 0.001)
+    assert sb.portfolio.cash == 50000.00
 
 
 def test_get_portfolio_cash_balance():
@@ -302,14 +303,14 @@ def test_get_portfolio_cash_balance():
     sb = SimulatedBroker(clock=clock)
 
     # Raising ValueError if portfolio_id not in keys
-    assert sb.get_portfolio_cash_balance() == Decimal("0.0")
+    assert sb.get_portfolio_cash_balance() == 0.0
 
     # Create fund transfers and portfolio
-    sb.subscribe_funds_to_account(Decimal("175000.0"))
-    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    sb.subscribe_funds_to_account(175000.0)
+    sb.subscribe_funds_to_portfolio(100000.00)
 
     # Check correct values obtained after cash transfers
-    assert sb.get_portfolio_cash_balance() == Decimal("100000.0")
+    assert sb.get_portfolio_cash_balance() == 100000.0
 
 
 def test_get_portfolio_total_market_value():
@@ -317,26 +318,26 @@ def test_get_portfolio_total_market_value():
     sb = SimulatedBroker(clock=clock)
 
     # Raising KeyError if portfolio_id not in keys
-    assert sb.get_portfolio_total_market_value() == Decimal("0.0")
+    assert sb.get_portfolio_total_market_value() == 0.0
 
     # Create fund transfers and portfolio
-    sb.subscribe_funds_to_account(Decimal("175000.0"))
-    sb.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    sb.subscribe_funds_to_account(175000.0)
+    sb.subscribe_funds_to_portfolio(100000.00)
 
     # Check correct values obtained after cash transfers
-    assert sb.get_portfolio_total_equity() == Decimal("100000.0")
+    assert sb.get_portfolio_total_equity() == 100000.0
 
 
 def test_submit_order():
     # Positive direction
     symbol = "EQ:RDSB"
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     candle = Candle(
         symbol=symbol,
-        open=Decimal("53.47"),
-        high=Decimal("53.47"),
-        low=Decimal("53.47"),
-        close=Decimal("53.47"),
+        open=53.47,
+        high=53.47,
+        low=53.47,
+        close=53.47,
         volume=1,
         timestamp=timestamp,
     )
@@ -344,8 +345,8 @@ def test_submit_order():
     clock = SimulatedClock()
     clock.update_time(symbol, timestamp)
     sbwp = SimulatedBroker(clock=clock)
-    sbwp.subscribe_funds_to_account(Decimal("175000.0"))
-    sbwp.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    sbwp.subscribe_funds_to_account(175000.0)
+    sbwp.subscribe_funds_to_portfolio(100000.00)
     sbwp.update_price(candle)
     size = 1000
     order = Order(
@@ -360,21 +361,17 @@ def test_submit_order():
     sbwp.execute_open_orders()
 
     port = sbwp.portfolio
-    assert port.cash == Decimal("46530.0")
-    assert port.total_market_value == Decimal("53470.0")
-    assert port.total_equity == Decimal("100000.0")
-    assert port.pos_handler.positions[symbol][Direction.LONG].unrealised_pnl == Decimal(
-        "0.0"
-    )
-    assert port.pos_handler.positions[symbol][Direction.LONG].market_value == Decimal(
-        "53470.0"
-    )
+    assert port.cash == 46530.0
+    assert port.total_market_value == 53470.0
+    assert port.total_equity == 100000.0
+    assert port.pos_handler.positions[symbol][Direction.LONG].unrealised_pnl == 0.0
+    assert port.pos_handler.positions[symbol][Direction.LONG].market_value == 53470.0
     assert port.pos_handler.positions[symbol][Direction.LONG].net_size == 1000
 
     # Negative direction
     sbwp = SimulatedBroker(clock=clock)
-    sbwp.subscribe_funds_to_account(Decimal("175000.0"))
-    sbwp.subscribe_funds_to_portfolio(Decimal("100000.00"))
+    sbwp.subscribe_funds_to_account(175000.0)
+    sbwp.subscribe_funds_to_portfolio(100000.00)
     sbwp.update_price(candle)
     size = 1000
     order = Order(
@@ -389,15 +386,11 @@ def test_submit_order():
     sbwp.execute_open_orders()
 
     port = sbwp.portfolio
-    assert port.cash == Decimal("153470.00")
-    assert port.total_market_value == Decimal("-53470.00")
-    assert port.total_equity == Decimal("100000.0")
-    assert port.pos_handler.positions[symbol][
-        Direction.SHORT
-    ].unrealised_pnl == Decimal("0.0")
-    assert port.pos_handler.positions[symbol][Direction.SHORT].market_value == Decimal(
-        "-53470.00"
-    )
+    assert port.cash == 153470.00
+    assert port.total_market_value == -53470.00
+    assert port.total_equity == 100000.0
+    assert port.pos_handler.positions[symbol][Direction.SHORT].unrealised_pnl == 0.0
+    assert port.pos_handler.positions[symbol][Direction.SHORT].market_value == -53470.00
     assert port.pos_handler.positions[symbol][Direction.SHORT].net_size == -1000
 
 
@@ -406,11 +399,11 @@ def test_execute_market_order():
     sb = SimulatedBroker(clock=clock)
 
     # Subscribe all necessary funds and create portfolios
-    sb.subscribe_funds_to_account(Decimal("300000.0"))
-    sb.subscribe_funds_to_portfolio(Decimal("100000.0"))
+    sb.subscribe_funds_to_account(300000.0)
+    sb.subscribe_funds_to_portfolio(100000.0)
 
     symbol = "AAA"
-    timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update_time(symbol, timestamp)
     order = Order(
         symbol=symbol,
@@ -422,10 +415,10 @@ def test_execute_market_order():
     )
     candle = Candle(
         symbol=symbol,
-        open=Decimal("567.0"),
-        high=Decimal("567.0"),
-        low=Decimal("567.0"),
-        close=Decimal("567.0"),
+        open=567.0,
+        high=567.0,
+        low=567.0,
+        close=567.0,
         volume=100,
         timestamp=timestamp,
     )
@@ -434,17 +427,17 @@ def test_execute_market_order():
 
     # Check that the market value is correct
     res_market_value = sb.get_portfolio_total_market_value()
-    test_market_value = Decimal("56700.0")
+    test_market_value = 56700.0
     assert res_market_value == test_market_value
 
     # test negative cash balance
     sb.execute_market_order(order)
-    assert sb.get_portfolio_cash_balance() == Decimal("43300.0")
+    assert sb.get_portfolio_cash_balance() == 43300.0
 
 
 def test_execute_limit_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = SimpleQueue("candles")
+    candles_queue: CandlesQueue = FakeQueue("candles")
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_limit_order.csv"}, candles_queue
@@ -454,30 +447,36 @@ def test_execute_limit_order():
 
     strategies = [ReactiveSmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
-    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
         broker=broker,
         fixed_order_type=OrderType.LIMIT,
-        limit_order_pct=Decimal("0.0004"),
+        limit_order_pct=0.0004,
     )
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
+    indicators_manager = IndicatorsManager(preload=False)
     data_consumer = DataConsumer(
-        symbols, candles_queue, db_storage, order_manager, strategies
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=db_storage,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_classes=strategies,
     )
 
     data_flow = DataFlow(feed, data_consumer)
     data_flow.start()
 
-    assert broker.get_portfolio_cash_balance() == Decimal("10012.845")
+    assert broker.get_portfolio_cash_balance() == pytest.approx(10012.845, 0.0001)
 
 
 def test_execute_stop_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = SimpleQueue("candles")
+    candles_queue: CandlesQueue = FakeQueue("candles")
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_stop_order.csv"}, candles_queue
@@ -487,28 +486,34 @@ def test_execute_stop_order():
 
     strategies = [ReactiveSmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
-    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
-        broker=broker, fixed_order_type=OrderType.STOP, stop_order_pct=Decimal("0.0004")
+        broker=broker, fixed_order_type=OrderType.STOP, stop_order_pct=0.0004
     )
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
+    indicators_manager = IndicatorsManager(preload=False)
     data_consumer = DataConsumer(
-        symbols, candles_queue, db_storage, order_manager, strategies
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=db_storage,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_classes=strategies,
     )
 
     data_flow = DataFlow(feed, data_consumer)
     data_flow.start()
 
-    assert broker.get_portfolio_cash_balance() == Decimal("9996.01")
+    assert broker.get_portfolio_cash_balance() == 9996.01
 
 
 def test_execute_target_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = SimpleQueue("candles")
+    candles_queue: CandlesQueue = FakeQueue("candles")
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_target_order.csv"}, candles_queue
@@ -518,64 +523,76 @@ def test_execute_target_order():
 
     strategies = [ReactiveSmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
-    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
         broker=broker,
         fixed_order_type=OrderType.TARGET,
-        target_order_pct=Decimal("0.0004"),
+        target_order_pct=0.0004,
     )
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
+    indicators_manager = IndicatorsManager(preload=False)
     data_consumer = DataConsumer(
-        symbols, candles_queue, db_storage, order_manager, strategies
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=db_storage,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_classes=strategies,
     )
 
     data_flow = DataFlow(feed, data_consumer)
     data_flow.start()
 
-    assert broker.get_portfolio_cash_balance() == Decimal("9998.740")
+    assert broker.get_portfolio_cash_balance() == pytest.approx(9998.74, 0.001)
 
 
 def test_execute_trailing_stop_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = SimpleQueue("candles")
+    candles_queue: CandlesQueue = FakeQueue("candles")
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_trailing_stop_order.csv"},
-        candles_queue,
+        candles_queue=candles_queue,
     )
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
     strategies = [ReactiveSmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
-    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
         broker=broker,
         fixed_order_type=OrderType.TRAILING_STOP,
-        trailing_stop_order_pct=Decimal("0.0004"),
+        trailing_stop_order_pct=0.0004,
     )
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
+    indicators_manager = IndicatorsManager(preload=False)
     data_consumer = DataConsumer(
-        symbols, candles_queue, db_storage, order_manager, strategies
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=db_storage,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_classes=strategies,
     )
 
     data_flow = DataFlow(feed, data_consumer)
     data_flow.start()
 
-    assert broker.get_portfolio_cash_balance() == Decimal("10009.345")
+    assert broker.get_portfolio_cash_balance() == pytest.approx(10009.345, 0.0001)
 
 
 def test_execute_cover_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = SimpleQueue("candles")
+    candles_queue: CandlesQueue = FakeQueue("candles")
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, candles_queue
@@ -587,26 +604,32 @@ def test_execute_cover_order():
 
     strategies = [ReactiveSmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
-    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker, with_cover=True)
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
+    indicators_manager = IndicatorsManager(preload=False)
     data_consumer = DataConsumer(
-        symbols, candles_queue, db_storage, order_manager, strategies
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=db_storage,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_classes=strategies,
     )
 
     data_flow = DataFlow(feed, data_consumer)
     data_flow.start()
 
-    assert broker.get_portfolio_cash_balance() == Decimal("10009.59")
+    assert broker.get_portfolio_cash_balance() == pytest.approx(10009.59, 0.001)
 
 
 def test_execute_bracket_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = SimpleQueue("candles")
+    candles_queue: CandlesQueue = FakeQueue("candles")
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, candles_queue
@@ -618,18 +641,24 @@ def test_execute_bracket_order():
 
     strategies = [ReactiveSmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
-    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker, with_bracket=True)
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
+    indicators_manager = IndicatorsManager(preload=False)
     data_consumer = DataConsumer(
-        symbols, candles_queue, db_storage, order_manager, strategies
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=db_storage,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_classes=strategies,
     )
 
     data_flow = DataFlow(feed, data_consumer)
     data_flow.start()
 
-    assert broker.get_portfolio_cash_balance() == Decimal("10007.175")
+    assert broker.get_portfolio_cash_balance() == 10007.175

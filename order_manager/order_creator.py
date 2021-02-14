@@ -1,5 +1,4 @@
 import os
-from decimal import Decimal
 
 import pandas as pd
 
@@ -22,10 +21,10 @@ class OrderCreator:
         self,
         broker: Broker,
         fixed_order_type: OrderType = OrderType.MARKET,
-        limit_order_pct=Decimal("0.005"),
-        stop_order_pct=Decimal("0.05"),
-        target_order_pct=Decimal("0.01"),
-        trailing_stop_order_pct=Decimal("0.005"),
+        limit_order_pct=0.005,
+        stop_order_pct=0.05,
+        target_order_pct=0.01,
+        trailing_stop_order_pct=0.005,
         with_cover=False,
         with_bracket=False,
     ):
@@ -38,41 +37,41 @@ class OrderCreator:
         self.with_cover = with_cover
         self.with_bracket = with_bracket
 
-    def find_best_limit(self, signal: Signal, action: Action) -> Decimal:
+    def find_best_limit(self, signal: Signal, action: Action) -> float:
         current_price = self.broker.current_price(signal.symbol)
         if action == Action.BUY:
             best_limit = current_price - self.limit_order_pct * current_price
         else:
             best_limit = current_price + self.limit_order_pct * current_price
-        LOG.info(f"Current price: {current_price}")
-        LOG.info(f"Best limit found: {best_limit}")
+        LOG.info("Current price: %s", current_price)
+        LOG.info("Best limit found: %s", best_limit)
         return best_limit
 
-    def find_best_stop(self, signal: Signal, action: Action) -> Decimal:
+    def find_best_stop(self, signal: Signal, action: Action) -> float:
         current_price = self.broker.current_price(signal.symbol)
         if action == Action.BUY:
             best_stop_or_target = current_price + self.stop_order_pct * current_price
         else:
             best_stop_or_target = current_price - self.stop_order_pct * current_price
-        LOG.info(f"Current price: {current_price}")
-        LOG.info(f"Best stop/target found: {best_stop_or_target}")
+        LOG.info("Current price: %s", current_price)
+        LOG.info("Best stop/target found: %s", best_stop_or_target)
         return best_stop_or_target
 
     def find_best_target(
         self,
         signal: Signal,
         action: Action,
-    ) -> Decimal:
+    ) -> float:
         current_price = self.broker.current_price(signal.symbol)
         if action == Action.BUY:
             best_stop_or_target = current_price - self.target_order_pct * current_price
         else:
             best_stop_or_target = current_price + self.target_order_pct * current_price
-        LOG.info(f"Current price: {current_price}")
-        LOG.info(f"Best stop/target found: {best_stop_or_target}")
+        LOG.info("Current price: %s", current_price)
+        LOG.info("Best stop/target found: %s", best_stop_or_target)
         return best_stop_or_target
 
-    def find_best_trailing_stop(self, signal: Signal, action: Action) -> Decimal:
+    def find_best_trailing_stop(self, signal: Signal, action: Action) -> float:
         return self.trailing_stop_order_pct
 
     def find_best_order_type(self, signal: Signal) -> OrderType:

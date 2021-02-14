@@ -53,7 +53,8 @@ class TiingoDataHandler(DataHandler):
             parse_dates=True,
             usecols=cls.TICKER_DATA_RESPONSE_USED_COLUMNS,
             dtype=cls.TICKER_DATA_RESPONSE_USED_COLUMNS_DTYPE,
-            index_col=0,
+            index_col="date",
         )
+        df.index = pd.to_datetime(df.index, utc=True)
         candle_df = CandleDataFrame.from_dataframe(df, symbol)
         return candle_df

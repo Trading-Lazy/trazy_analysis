@@ -1,8 +1,7 @@
-from decimal import Decimal
-
-import pandas as pd
+from datetime import datetime, timedelta, timezone
 
 from common.clock import Clock
+from common.helper import parse_timedelta_str
 from models.enums import Action, Direction
 from models.utils import is_closed_position
 
@@ -13,13 +12,13 @@ class Signal:
         symbol: str,
         action: Action,
         direction: Direction,
-        confidence_level: Decimal,
+        confidence_level: float,
         strategy: str,
-        root_candle_timestamp: pd.Timestamp,
+        root_candle_timestamp: datetime,
         parameters: dict,
         clock: Clock = None,
-        time_in_force: pd.DateOffset = pd.offsets.Minute(5),
-        generation_time: pd.Timestamp = None,
+        time_in_force: timedelta = timedelta(minutes=5),
+        generation_time: datetime = None,
     ):
         self.symbol = symbol
         self.action = action
@@ -34,11 +33,9 @@ class Signal:
         elif self.clock is not None:
             self.generation_time = self.clock.current_time(symbol=symbol)
         else:
-            self.generation_time = pd.Timestamp.now("UTC")
+            self.generation_time = datetime.now(timezone.utc)
         self.time_in_force = time_in_force
-        self.signal_id = (
-            symbol + "-" + strategy + "-" + str(root_candle_timestamp)
-        )
+        self.signal_id = symbol + "-" + strategy + "-" + str(root_candle_timestamp)
 
     @staticmethod
     def from_serializable_dict(signal_dict: dict) -> "Signal":
@@ -46,11 +43,12 @@ class Signal:
             symbol=signal_dict["symbol"],
             action=Action[signal_dict["action"]],
             direction=Direction[signal_dict["direction"]],
-            confidence_level=Decimal(signal_dict["confidence_level"]),
+            confidence_level=float(signal_dict["confidence_level"]),
             strategy=signal_dict["strategy"],
             root_candle_timestamp=signal_dict["root_candle_timestamp"],
             parameters=signal_dict["parameters"],
             generation_time=signal_dict["generation_time"],
+            time_in_force=parse_timedelta_str(signal_dict["time_in_force"]),
         )
         return signal
 
@@ -67,7 +65,7 @@ class Signal:
         return dict
 
     @property
-    def expiration_time(self) -> pd.Timestamp:
+    def expiration_time(self) -> datetime:
         return self.generation_time + self.time_in_force
 
     def in_force(self, timestamp=None) -> bool:

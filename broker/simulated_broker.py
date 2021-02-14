@@ -1,5 +1,4 @@
 import os
-from decimal import Decimal
 from typing import Dict, List, Union
 
 import settings
@@ -28,7 +27,7 @@ class SimulatedBroker(Broker):
     ----------
     base_currency : `str`, optional
         The currency denomination of the brokerage account.
-    initial_funds : `Decimal`, optional
+    initial_funds : `float`, optional
         An initial amount of cash to add to the broker account.
     fee_model : `FeeModel`, optional
         The commission/fee model used to simulate fees/taxes.
@@ -40,7 +39,7 @@ class SimulatedBroker(Broker):
         clock: Clock,
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
-        initial_funds: Decimal = Decimal("0.0"),
+        initial_funds: float = 0.0,
         fee_model: FeeModel = FixedFeeModel(),
     ) -> None:
         self._check_initial_funds(initial_funds)
@@ -55,39 +54,39 @@ class SimulatedBroker(Broker):
 
         LOG.info("Initialising simulated broker...")
 
-    def _check_initial_funds(self, initial_funds: Decimal) -> Decimal:
+    def _check_initial_funds(self, initial_funds: float) -> float:
         """
         Check and set the initial funds for the broker
         master account. Raise ValueError if the
         amount is negative.
         Parameters
         ----------
-        initial_funds : `Decimal`
+        initial_funds : `float`
             The initial cash provided to the Broker.
         Returns
         -------
-        `Decimal`
+        `float`
             The checked initial funds.
         """
-        if initial_funds < Decimal("0.0"):
+        if initial_funds < 0.0:
             raise ValueError(
                 "Could not create the SimulatedBroker entity as the "
                 "provided initial funds of '%s' were "
                 "negative." % initial_funds
             )
 
-    def _set_cash_balances(self, initial_funds: Decimal) -> Dict[str, Decimal]:
+    def _set_cash_balances(self, initial_funds: float) -> Dict[str, float]:
         """
         Set the appropriate cash balances in the various
         supported currencies, depending upon the availability
         of initial funds.
         Returns
         -------
-        `dict{str: Decimal}`
+        `dict{str: float}`
             The mapping of cash currency strings to
             amount stored by broker in local currency.
         """
-        if initial_funds > Decimal("0.0"):
+        if initial_funds > 0.0:
             self.cash_balances[self.base_currency] = initial_funds
 
     def _set_fee_model(self, fee_model: FeeModel) -> FeeModel:
@@ -117,23 +116,23 @@ class SimulatedBroker(Broker):
         positions = portfolio.pos_handler.positions
         return symbol in positions and direction in positions[symbol]
 
-    def subscribe_funds_to_account(self, amount: Decimal) -> None:
+    def subscribe_funds_to_account(self, amount: float) -> None:
         """
         Subscribe an amount of cash in the base currency
         to the broker master cash account.
         Parameters
         ----------
-        amount : `Decimal`
+        amount : `float`
             The amount of cash to subscribe to the master account.
         """
-        if amount < Decimal("0.0"):
+        if amount < 0.0:
             raise ValueError(
                 "Cannot credit negative amount: " "'%s' to the broker account." % amount
             )
         self.cash_balances[self.base_currency] += amount
-        LOG.info("Subscription: %s subscribed to broker" % (amount))
+        LOG.info("Subscription: %s subscribed to broker", amount)
 
-    def withdraw_funds_from_account(self, amount: Decimal) -> None:
+    def withdraw_funds_from_account(self, amount: float) -> None:
         """
         Withdraws an amount of cash in the base currency
         from the broker master cash account, assuming an
@@ -141,7 +140,7 @@ class SimulatedBroker(Broker):
         cash is present, a ValueError is raised.
         Parameters
         ----------
-        amount : `Decimal`
+        amount : `float`
             The amount of cash to withdraw from the master account.
         """
         if amount < 0:
@@ -157,9 +156,9 @@ class SimulatedBroker(Broker):
                 % (amount, self.cash_balances[self.base_currency])
             )
         self.cash_balances[self.base_currency] -= amount
-        LOG.info("Withdrawal: %s withdrawn from broker" % (amount))
+        LOG.info("Withdrawal: %s withdrawn from broker", amount)
 
-    def get_cash_balance(self, currency: str = None) -> Union[dict, Decimal]:
+    def get_cash_balance(self, currency: str = None) -> Union[dict, float]:
         """
         Retrieve the cash dictionary of the account, or
         if a currency is provided, the cash value itself.
@@ -180,7 +179,7 @@ class SimulatedBroker(Broker):
             )
         return self.cash_balances[currency]
 
-    def get_portfolio_cash_balance(self) -> Decimal:
+    def get_portfolio_cash_balance(self) -> float:
         """
         Retrieve the cash balance of a sub-portfolio, if
         it exists. Otherwise raise a ValueError.
@@ -188,7 +187,7 @@ class SimulatedBroker(Broker):
         ----------
         Returns
         -------
-        `Decimal`
+        `float`
             The cash balance of the portfolio.
         """
         return self.portfolio.cash
@@ -218,8 +217,10 @@ class SimulatedBroker(Broker):
             LOG.error(
                 "WARNING: Estimated transaction size of %s exceeds "
                 "available cash of %s. Order id %s"
-                "with a negative cash balance."
-                % (est_total_cost, total_cash, order.order_id)
+                "with a negative cash balance.",
+                est_total_cost,
+                total_cash,
+                order.order_id,
             )
             return
 
@@ -238,16 +239,14 @@ class SimulatedBroker(Broker):
         self.portfolio.transact_symbol(txn)
         LOG.info(
             "(%s) - executed order: %s, qty: %s, price: %s, "
-            "consideration: %s, commission: %s, total: %s"
-            % (
-                current_timestamp,
-                order.symbol,
-                order.size,
-                price,
-                consideration,
-                total_commission,
-                consideration + total_commission,
-            )
+            "consideration: %s, commission: %s, total: %s",
+            current_timestamp,
+            order.symbol,
+            order.size,
+            price,
+            consideration,
+            total_commission,
+            consideration + total_commission,
         )
         order.complete()
         if (
@@ -308,8 +307,8 @@ class SimulatedBroker(Broker):
             else:
                 trailing_stop_order.stop = max(trailing_stop_order.stop, stop)
 
-        LOG.info("stop: {}".format(stop))
-        LOG.info("last stop: {}".format(trailing_stop_order.stop))
+        LOG.info("stop: %s", stop)
+        LOG.info("last stop: %s", trailing_stop_order.stop)
         if (
             trailing_stop_order.action == Action.BUY
             and price >= trailing_stop_order.stop

@@ -1,7 +1,7 @@
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
-import pandas as pd
+import numpy as np
 import pytest
 
 from common.helper import get_or_create_nested_dict
@@ -86,40 +86,42 @@ def test_rate_limited_singleton_meta():
 
 
 def test_get_periods():
-    start = pd.Timestamp("2020-06-11T20:00:00+00:00")
-    end = pd.Timestamp("2020-06-26T16:00:00+00:00")
+    start = datetime.strptime("2020-06-11 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     download_frame = timedelta(days=3)
     periods = get_periods(download_frame, start, end)
 
-    expected_periods = [
-        (date(2020, 6, 11), date(2020, 6, 13)),
-        (date(2020, 6, 14), date(2020, 6, 16)),
-        (date(2020, 6, 17), date(2020, 6, 19)),
-        (date(2020, 6, 20), date(2020, 6, 22)),
-        (date(2020, 6, 23), date(2020, 6, 25)),
-        (date(2020, 6, 26), date(2020, 6, 26)),
-    ]
-    assert periods == expected_periods
+    expected_periods = np.array(
+        [
+            (date(2020, 6, 11), date(2020, 6, 13)),
+            (date(2020, 6, 14), date(2020, 6, 16)),
+            (date(2020, 6, 17), date(2020, 6, 19)),
+            (date(2020, 6, 20), date(2020, 6, 22)),
+            (date(2020, 6, 23), date(2020, 6, 25)),
+            (date(2020, 6, 26), date(2020, 6, 26)),
+        ]
+    )
+    assert (periods == expected_periods).all()
 
 
 def test_get_periods_start_date_after_end_date():
-    start = pd.Timestamp("2020-06-26T16:00:00+00:00")
-    end = pd.Timestamp("2020-06-11T20:00:00+00:00")
+    start = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-11 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     download_frame = timedelta(days=3)
     periods = get_periods(download_frame, start, end)
 
-    expected_periods = []
-    assert periods == expected_periods
+    expected_periods = np.empty([])
+    assert (periods == expected_periods).all()
 
 
 def test_get_periods_single_date():
-    start = pd.Timestamp("2020-06-26T16:00:00+00:00")
-    end = pd.Timestamp("2020-06-26T20:00:00+00:00")
+    start = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-26 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     download_frame = timedelta(days=3)
     periods = get_periods(download_frame, start, end)
 
-    expected_periods = [(date(2020, 6, 26), date(2020, 6, 26))]
-    assert periods == expected_periods
+    expected_periods = np.array([(date(2020, 6, 26), date(2020, 6, 26))])
+    assert (periods == expected_periods).all()
 
 
 def test_get_state():

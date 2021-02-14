@@ -1,6 +1,6 @@
-from typing import List
+from datetime import datetime, timedelta, timezone
 
-import pandas as pd
+import numpy as np
 
 from common.clock import Clock
 from models.enums import OrderStatus, OrderType
@@ -11,10 +11,10 @@ from models.utils import is_closed_position, is_open_position
 class MultipleOrder(OrderBase):
     def __init__(
         self,
-        orders: List[OrderBase],
+        orders: np.array,  # [OrderBase]
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
-        time_in_force: str = pd.offsets.Minute(5),
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: str = timedelta(minutes=5),
     ):
         self.orders = orders
         super().__init__(status, generation_time, time_in_force)
@@ -43,7 +43,7 @@ class MultipleOrder(OrderBase):
     def completed_orders(self):
         return [order for order in self.orders if order.status == OrderStatus.COMPLETED]
 
-    def submit(self, submission_time: pd.Timestamp = pd.Timestamp.now("UTC")) -> None:
+    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         super().submit(submission_time)
         for order in self.orders:
             order.submit(submission_time)
@@ -57,10 +57,10 @@ class MultipleOrder(OrderBase):
 class SequentialOrder(MultipleOrder):
     def __init__(
         self,
-        orders: List[OrderBase],
+        orders: np.array,  # [OrderBase]
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
-        time_in_force: str = pd.offsets.Minute(5),
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: str = timedelta(minutes=5),
     ):
         super().__init__(orders, status, generation_time, time_in_force)
 
@@ -78,7 +78,7 @@ class SequentialOrder(MultipleOrder):
             )
         return self.orders[0]
 
-    def submit(self, submission_time: pd.Timestamp = pd.Timestamp.now("UTC")) -> None:
+    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         first_order = self.get_first_order()
         first_order.submit(submission_time)
 
@@ -86,10 +86,10 @@ class SequentialOrder(MultipleOrder):
 class OcoOrder(MultipleOrder):
     def __init__(
         self,
-        orders: List[OrderBase],
+        orders: np.array,  # [OrderBase]
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
-        time_in_force: str = pd.offsets.Minute(5),
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: str = timedelta(minutes=5),
     ):
         super().__init__(orders, status, generation_time, time_in_force)
 
@@ -110,7 +110,7 @@ class OcoOrder(MultipleOrder):
 
 
 class HomogeneousSequentialOrder(SequentialOrder):
-    def check_orders_symbol(self, orders: List[OrderBase]):
+    def check_orders_symbol(self, orders: np.array):
         for order in orders:
             if isinstance(order, MultipleOrder):
                 self.check_orders_symbol(order.orders)
@@ -125,18 +125,18 @@ class HomogeneousSequentialOrder(SequentialOrder):
     def __init__(
         self,
         symbol: str,
-        orders: List[OrderBase],
+        orders: np.array,  # [OrderBase]
         clock: Clock = None,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
-        time_in_force: str = pd.offsets.Minute(5),
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: str = timedelta(minutes=5),
     ):
         self.symbol = symbol
         self.clock = clock
         self.check_orders_symbol(orders)
         super().__init__(orders, status, generation_time, time_in_force)
 
-    def submit(self, submission_time: pd.Timestamp = pd.Timestamp.now("UTC")) -> None:
+    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         if self.clock is not None:
             submission_time = self.clock.current_time(symbol=self.symbol)
         first_order = self.get_first_order()
@@ -152,8 +152,8 @@ class CoverOrder(HomogeneousSequentialOrder):
         stop_order: Order,
         clock: Clock = None,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
-        time_in_force: Order = pd.offsets.Minute(5),
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: Order = timedelta(minutes=5),
     ):
         # check allowed orders types
         initiation_order_allowed_types = [OrderType.MARKET, OrderType.LIMIT]
@@ -198,8 +198,8 @@ class BracketOrder(HomogeneousSequentialOrder):
         stop_order: Order,
         clock: Clock = None,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
-        time_in_force: pd.offsets.DateOffset = pd.offsets.Minute(5),
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: timedelta = timedelta(minutes=5),
     ):
         # check allowed orders
         initiation_order_allowed_types = [OrderType.MARKET, OrderType.LIMIT]
