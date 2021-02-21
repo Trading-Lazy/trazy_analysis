@@ -34,7 +34,7 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
     @classmethod
     def request_ticker_latest_data(cls, ticker: str) -> Response:
         latest_data_points_url = cls.generate_ticker_latest_data_url(ticker)
-        LOG.info("Url for {}: {}".format(ticker, latest_data_points_url))
+        LOG.info("Url for %s: %s", ticker, latest_data_points_url)
         return request(latest_data_points_url)
 
     @classmethod
@@ -56,14 +56,13 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
                 start = max(-nb_candles, -len(latest_candles))
                 return latest_candles[start:]
             else:
-                LOG.info(
-                    "No available data for ticker {} latest candles".format(ticker)
-                )
+                LOG.info("No available data for ticker %s latest candles", ticker)
                 return []
         else:
             LOG.info(
-                "Ticker {} latest candles request error status_code = {}, message = {}".format(
-                    ticker, response.status_code, data
-                )
+                "Ticker %s latest candles request error status_code = %s, message = %s",
+                ticker,
+                response.status_code,
+                data,
             )
         return []

@@ -1,7 +1,5 @@
-from decimal import Decimal
+from datetime import datetime
 from unittest.mock import call, patch
-
-import pandas as pd
 
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
@@ -21,15 +19,13 @@ def test_process_check_signals(
 ):
     clock = SimulatedClock()
     symbol = "IVV"
-    timestamp = pd.Timestamp("2020-05-08 14:16:00+00:00")
+    timestamp = datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
-    broker = SimulatedBroker(clock, initial_funds=Decimal("10000"))
-    broker.subscribe_funds_to_portfolio(Decimal("10000"))
+    broker = SimulatedBroker(clock, initial_funds=10000.0)
+    broker.subscribe_funds_to_portfolio(10000.0)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(
-        broker, position_sizer, order_creator, for_simulation=False
-    )
+    order_manager = OrderManager(broker, position_sizer, order_creator)
     signal = Signal(
         symbol=symbol,
         action=Action.BUY,

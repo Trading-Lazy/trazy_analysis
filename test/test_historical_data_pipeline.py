@@ -1,8 +1,7 @@
 from datetime import date, datetime, timedelta
-from decimal import Decimal
 from unittest.mock import call, patch
 
-import pandas as pd
+import numpy as np
 from freezegun import freeze_time
 
 from common.constants import DATE_DIR_FORMAT
@@ -32,53 +31,66 @@ STATUS_CODE_KO = 404
 @patch("file_storage.meganz_file_storage.MegaNzFileStorage.write")
 def test_write_candle_dataframe_in_file_storage(write_mocked):
     ticker = "aapl"
-    candles = [
-        Candle(
-            symbol="aapl",
-            open=Decimal("355.15"),
-            high=Decimal("355.15"),
-            low=Decimal("353.74"),
-            close=Decimal("353.84"),
-            volume=3254,
-            timestamp=pd.Timestamp("2020-06-17 13:30:00+00:00"),
-        ),
-        Candle(
-            symbol="aapl",
-            open=Decimal("354.28"),
-            high=Decimal("354.96"),
-            low=Decimal("353.96"),
-            close=Decimal("354.78"),
-            volume=2324,
-            timestamp=pd.Timestamp("2020-06-18 13:31:00+00:00"),
-        ),
-        Candle(
-            symbol="aapl",
-            open=Decimal("354.92"),
-            high=Decimal("355.32"),
-            low=Decimal("354.09"),
-            close=Decimal("354.09"),
-            volume=1123,
-            timestamp=pd.Timestamp("2020-06-18 13:32:00+00:00"),
-        ),
-        Candle(
-            symbol="aapl",
-            open=Decimal("354.25"),
-            high=Decimal("354.59"),
-            low=Decimal("354.14"),
-            close=Decimal("354.59"),
-            volume=2613,
-            timestamp=pd.Timestamp("2020-06-19 13:33:00+00:00"),
-        ),
-        Candle(
-            symbol="aapl",
-            open=Decimal("354.22"),
-            high=Decimal("354.26"),
-            low=Decimal("353.95"),
-            close=Decimal("353.98"),
-            volume=1186,
-            timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
-        ),
-    ]
+    candles = np.array(
+        [
+            Candle(
+                symbol="aapl",
+                open=355.15,
+                high=355.15,
+                low=353.74,
+                close=353.84,
+                volume=3254,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="aapl",
+                open=354.28,
+                high=354.96,
+                low=353.96,
+                close=354.78,
+                volume=2324,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="aapl",
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="aapl",
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="aapl",
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     candle_dataframe = CandleDataFrame.from_candle_list(symbol=ticker, candles=candles)
     historical_data_pipeline = HistoricalDataPipeline(
         TIINGO_HISTORICAL_DATA_HANDLER, STORAGE
@@ -334,71 +346,98 @@ def test_get_all_tickers_for_all_periods(
     write_candle_dataframe_in_file_storage_mocked,
     handle_states_mocked,
 ):
-    aapl_candles = [
-        Candle(
-            symbol="aapl",
-            open=Decimal("355.15"),
-            high=Decimal("355.15"),
-            low=Decimal("353.74"),
-            close=Decimal("353.84"),
-            volume=3254,
-            timestamp=pd.Timestamp("2020-06-17 13:30:00+00:00"),
-        ),
-        Candle(
-            symbol="aapl",
-            open=Decimal("354.28"),
-            high=Decimal("354.96"),
-            low=Decimal("353.96"),
-            close=Decimal("354.78"),
-            volume=2324,
-            timestamp=pd.Timestamp("2020-06-18 13:31:00+00:00"),
-        ),
-    ]
-    aapl_candle_dataframe = CandleDataFrame.from_candle_list(symbol="aapl", candles=aapl_candles)
+    aapl_candles = np.array(
+        [
+            Candle(
+                symbol="aapl",
+                open=355.15,
+                high=355.15,
+                low=353.74,
+                close=353.84,
+                volume=3254,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="aapl",
+                open=354.28,
+                high=354.96,
+                low=353.96,
+                close=354.78,
+                volume=2324,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
+    aapl_candle_dataframe = CandleDataFrame.from_candle_list(
+        symbol="aapl", candles=aapl_candles
+    )
 
-    googl_candles = [
-        Candle(
-            symbol="googl",
-            open=Decimal("354.92"),
-            high=Decimal("355.32"),
-            low=Decimal("354.09"),
-            close=Decimal("354.09"),
-            volume=1123,
-            timestamp=pd.Timestamp("2020-06-18 13:32:00+00:00"),
-        ),
-        Candle(
-            symbol="googl",
-            open=Decimal("354.25"),
-            high=Decimal("354.59"),
-            low=Decimal("354.14"),
-            close=Decimal("354.59"),
-            volume=2613,
-            timestamp=pd.Timestamp("2020-06-19 13:33:00+00:00"),
-        ),
-    ]
-    googl_candle_dataframe = CandleDataFrame.from_candle_list(symbol="googl", candles=googl_candles)
+    googl_candles = np.array(
+        [
+            Candle(
+                symbol="googl",
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="googl",
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
+    googl_candle_dataframe = CandleDataFrame.from_candle_list(
+        symbol="googl", candles=googl_candles
+    )
 
-    amzn_candles = [
-        Candle(
-            symbol="amzn",
-            open=Decimal("354.22"),
-            high=Decimal("354.26"),
-            low=Decimal("353.95"),
-            close=Decimal("353.98"),
-            volume=1186,
-            timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
-        ),
-        Candle(
-            symbol="amzn",
-            open=Decimal("354.13"),
-            high=Decimal("354.26"),
-            low=Decimal("353.01"),
-            close=Decimal("353.30"),
-            volume=1536,
-            timestamp=pd.Timestamp("2020-06-19 13:35:00+00:00"),
-        ),
-    ]
-    amzn_candle_dataframe = CandleDataFrame.from_candle_list(symbol="amzn", candles=amzn_candles)
+    amzn_candles = np.array(
+        [
+            Candle(
+                symbol="amzn",
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="amzn",
+                open=354.13,
+                high=354.26,
+                low=353.01,
+                close=353.30,
+                volume=1536,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
+    amzn_candle_dataframe = CandleDataFrame.from_candle_list(
+        symbol="amzn", candles=amzn_candles
+    )
 
     request_ticker_data_from_periods_mocked.side_effect = [
         (aapl_candle_dataframe, [(date(2020, 6, 11), date(2020, 6, 13))], {}),
@@ -443,14 +482,30 @@ def test_get_all_tickers_for_all_periods(
     )
 
     handle_states_mocked_calls = [
-        call([date(2020, 6, 11), date(2020, 6, 12), date(2020, 6, 13),], ["aapl"], [],),
         call(
-            [date(2020, 6, 14), date(2020, 6, 15), date(2020, 6, 16),],
+            [
+                date(2020, 6, 11),
+                date(2020, 6, 12),
+                date(2020, 6, 13),
+            ],
+            ["aapl"],
+            [],
+        ),
+        call(
+            [
+                date(2020, 6, 14),
+                date(2020, 6, 15),
+                date(2020, 6, 16),
+            ],
             ["googl"],
             [("amzn", "400: Bad Request")],
         ),
         call(
-            [date(2020, 6, 17), date(2020, 6, 18), date(2020, 6, 19),],
+            [
+                date(2020, 6, 17),
+                date(2020, 6, 18),
+                date(2020, 6, 19),
+            ],
             [],
             [("googl", "400: Bad Request")],
         ),

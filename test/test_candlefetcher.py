@@ -1,6 +1,7 @@
-from decimal import Decimal
+from datetime import datetime, timedelta
 from unittest.mock import call, patch
 
+import numpy as np
 import pandas as pd
 
 from common.constants import DATE_FORMAT
@@ -15,62 +16,77 @@ from strategy.candlefetcher import CandleFetcher
 from test.tools.tools import compare_candles_list
 
 SYMBOL = "IVV"
-CANDLES = [
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.12"),
-        high=Decimal("94.15"),
-        low=Decimal("94.00"),
-        close=Decimal("94.13"),
-        volume=7,
-        timestamp=pd.Timestamp("2020-05-08 14:17:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.07"),
-        high=Decimal("94.10"),
-        low=Decimal("93.95"),
-        close=Decimal("94.08"),
-        volume=91,
-        timestamp=pd.Timestamp("2020-05-08 14:24:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.07"),
-        high=Decimal("94.10"),
-        low=Decimal("93.95"),
-        close=Decimal("94.08"),
-        volume=30,
-        timestamp=pd.Timestamp("2020-05-08 14:24:56", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.17"),
-        high=Decimal("94.18"),
-        low=Decimal("94.05"),
-        close=Decimal("94.18"),
-        volume=23,
-        timestamp=pd.Timestamp("2020-05-08 14:35:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.19"),
-        high=Decimal("94.22"),
-        low=Decimal("94.07"),
-        close=Decimal("94.20"),
-        volume=21,
-        timestamp=pd.Timestamp("2020-05-08 14:41:00", tz="UTC"),
-    ),
-    Candle(
-        symbol=SYMBOL,
-        open=Decimal("94.19"),
-        high=Decimal("94.22"),
-        low=Decimal("94.07"),
-        close=Decimal("94.20"),
-        volume=7,
-        timestamp=pd.Timestamp("2020-05-08 14:41:58", tz="UTC"),
-    ),
-]
+CANDLES = np.array(
+    [
+        Candle(
+            symbol=SYMBOL,
+            open=94.12,
+            high=94.15,
+            low=94.00,
+            close=94.13,
+            volume=7,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=SYMBOL,
+            open=94.07,
+            high=94.10,
+            low=93.95,
+            close=94.08,
+            volume=91,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:24:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=SYMBOL,
+            open=94.07,
+            high=94.10,
+            low=93.95,
+            close=94.08,
+            volume=30,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:24:56+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=SYMBOL,
+            open=94.17,
+            high=94.18,
+            low=94.05,
+            close=94.18,
+            volume=23,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=SYMBOL,
+            open=94.19,
+            high=94.22,
+            low=94.07,
+            close=94.20,
+            volume=21,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:41:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=SYMBOL,
+            open=94.19,
+            high=94.22,
+            low=94.07,
+            close=94.20,
+            volume=7,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:41:58+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+    ],
+    dtype=Candle,
+)
 
 DB_STORAGE = MongoDbStorage(DATABASE_NAME)
 FILE_STORAGE = MegaNzFileStorage()
@@ -114,20 +130,20 @@ def test_fetch_candle_db_data():
         ],
         "high": [
             "94.15",
-            "94.10",
-            "94.10",
+            "94.1",
+            "94.1",
             "94.18",
             "94.22",
             "94.22",
         ],
-        "low": ["94.00", "93.95", "93.95", "94.05", "94.07", "94.07"],
+        "low": ["94.0", "93.95", "93.95", "94.05", "94.07", "94.07"],
         "close": [
             "94.13",
             "94.08",
             "94.08",
             "94.18",
-            "94.20",
-            "94.20",
+            "94.2",
+            "94.2",
         ],
         "volume": [7, 91, 30, 23, 21, 7],
     }
@@ -163,8 +179,8 @@ def test_fetch_historical_data(get_file_content_mocked):
         ),
     ]
 
-    start = pd.Timestamp("2020-06-17 09:33:00", tz="UTC")
-    end = pd.Timestamp("2020-06-19 09:32:00", tz="UTC")
+    start = datetime.strptime("2020-06-17 09:33:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-19 09:32:00+0000", "%Y-%m-%d %H:%M:%S%z")
     df = CANDLE_FETCHER.fetch_candle_historical_data(SYMBOL, start, end)
 
     expected_df_candles = {
@@ -220,67 +236,82 @@ def test_fetch_no_historical_data(get_file_content_mocked):
 
     df = CANDLE_FETCHER.fetch(
         SYMBOL,
-        pd.offsets.Minute(5),
-        pd.Timestamp("2020-05-06 14:12:00", tz="UTC"),
-        pd.Timestamp("2020-05-08 14:49:00", tz="UTC"),
+        timedelta(minutes=5),
+        datetime.strptime("2020-05-06 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
 
-    expected_df_candles = [
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.12"),
-            high=Decimal("94.15"),
-            low=Decimal("94.00"),
-            close=Decimal("94.13"),
-            volume=7,
-            timestamp=pd.Timestamp("2020-05-08 14:20:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.07"),
-            high=Decimal("94.10"),
-            low=Decimal("93.95"),
-            close=Decimal("94.08"),
-            volume=121,
-            timestamp=pd.Timestamp("2020-05-08 14:25:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.08"),
-            high=Decimal("94.08"),
-            low=Decimal("94.08"),
-            close=Decimal("94.08"),
-            volume=0,
-            timestamp=pd.Timestamp("2020-05-08 14:30:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.17"),
-            high=Decimal("94.18"),
-            low=Decimal("94.05"),
-            close=Decimal("94.18"),
-            volume=23,
-            timestamp=pd.Timestamp("2020-05-08 14:35:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.18"),
-            high=Decimal("94.18"),
-            low=Decimal("94.18"),
-            close=Decimal("94.18"),
-            volume=0,
-            timestamp=pd.Timestamp("2020-05-08 14:40:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.19"),
-            high=Decimal("94.22"),
-            low=Decimal("94.07"),
-            close=Decimal("94.20"),
-            volume=28,
-            timestamp=pd.Timestamp("2020-05-08 14:45:00+00:00"),
-        ),
-    ]
+    expected_df_candles = np.array(
+        [
+            Candle(
+                symbol="IVV",
+                open=94.12,
+                high=94.15,
+                low=94.00,
+                close=94.13,
+                volume=7,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.07,
+                high=94.10,
+                low=93.95,
+                close=94.08,
+                volume=121,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.08,
+                high=94.08,
+                low=94.08,
+                close=94.08,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.17,
+                high=94.18,
+                low=94.05,
+                close=94.18,
+                volume=23,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.18,
+                high=94.18,
+                low=94.18,
+                close=94.18,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:40:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.19,
+                high=94.22,
+                low=94.07,
+                close=94.20,
+                volume=28,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:45:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     expected_df = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=expected_df_candles
     )
@@ -316,31 +347,38 @@ def test_fetch_no_db_data(get_file_content_mocked):
 
     df = CANDLE_FETCHER.fetch(
         SYMBOL,
-        pd.offsets.Minute(5),
-        pd.Timestamp("2020-06-11 14:12:00", tz="UTC"),
-        pd.Timestamp("2020-06-11 14:49:00", tz="UTC"),
+        timedelta(minutes=5),
+        datetime.strptime("2020-06-11 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        datetime.strptime("2020-06-11 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
 
-    expected_df_candles = [
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.28"),
-            high=Decimal("95.32"),
-            low=Decimal("93.96"),
-            close=Decimal("94.59"),
-            volume=60,
-            timestamp=pd.Timestamp("2020-06-11 14:15:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.22"),
-            high=Decimal("94.26"),
-            low=Decimal("93.95"),
-            close=Decimal("93.98"),
-            volume=11,
-            timestamp=pd.Timestamp("2020-06-11 14:20:00+00:00"),
-        ),
-    ]
+    expected_df_candles = np.array(
+        [
+            Candle(
+                symbol="IVV",
+                open=94.28,
+                high=95.32,
+                low=93.96,
+                close=94.59,
+                volume=60,
+                timestamp=datetime.strptime(
+                    "2020-06-11 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.22,
+                high=94.26,
+                low=93.95,
+                close=93.98,
+                volume=11,
+                timestamp=datetime.strptime(
+                    "2020-06-11 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     expected_df = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=expected_df_candles
     )
@@ -376,76 +414,93 @@ def test_fetch(get_file_content_mocked):
 
     df = CANDLE_FETCHER.fetch(
         SYMBOL,
-        pd.offsets.Minute(5),
-        pd.Timestamp("2020-05-08 14:12:00", tz="UTC"),
-        pd.Timestamp("2020-05-08 14:49:00", tz="UTC"),
+        timedelta(minutes=5),
+        datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
 
-    expected_df_candles = [
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.28"),
-            high=Decimal("95.32"),
-            low=Decimal("93.95"),
-            close=Decimal("93.98"),
-            volume=71,
-            timestamp=pd.Timestamp("2020-05-08 14:15:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.12"),
-            high=Decimal("94.15"),
-            low=Decimal("94.00"),
-            close=Decimal("94.13"),
-            volume=7,
-            timestamp=pd.Timestamp("2020-05-08 14:20:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.07"),
-            high=Decimal("94.10"),
-            low=Decimal("93.95"),
-            close=Decimal("94.08"),
-            volume=121,
-            timestamp=pd.Timestamp("2020-05-08 14:25:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.08"),
-            high=Decimal("94.08"),
-            low=Decimal("94.08"),
-            close=Decimal("94.08"),
-            volume=0,
-            timestamp=pd.Timestamp("2020-05-08 14:30:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.17"),
-            high=Decimal("94.18"),
-            low=Decimal("94.05"),
-            close=Decimal("94.18"),
-            volume=23,
-            timestamp=pd.Timestamp("2020-05-08 14:35:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.18"),
-            high=Decimal("94.18"),
-            low=Decimal("94.18"),
-            close=Decimal("94.18"),
-            volume=0,
-            timestamp=pd.Timestamp("2020-05-08 14:40:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.19"),
-            high=Decimal("94.22"),
-            low=Decimal("94.07"),
-            close=Decimal("94.20"),
-            volume=28,
-            timestamp=pd.Timestamp("2020-05-08 14:45:00+00:00"),
-        ),
-    ]
+    expected_df_candles = np.array(
+        [
+            Candle(
+                symbol="IVV",
+                open=94.28,
+                high=95.32,
+                low=93.95,
+                close=93.98,
+                volume=71,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.12,
+                high=94.15,
+                low=94.00,
+                close=94.13,
+                volume=7,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.07,
+                high=94.10,
+                low=93.95,
+                close=94.08,
+                volume=121,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.08,
+                high=94.08,
+                low=94.08,
+                close=94.08,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.17,
+                high=94.18,
+                low=94.05,
+                close=94.18,
+                volume=23,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.18,
+                high=94.18,
+                low=94.18,
+                close=94.18,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:40:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.19,
+                high=94.22,
+                low=94.07,
+                close=94.20,
+                volume=28,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:45:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     expected_df = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=expected_df_candles
     )
@@ -487,30 +542,37 @@ def test_fetch_1_day_offset(get_file_content_mocked):
     df = CANDLE_FETCHER.fetch(
         SYMBOL,
         pd.offsets.Day(1),
-        pd.Timestamp("2020-05-07 14:12:00", tz="UTC"),
-        pd.Timestamp("2020-05-08 14:49:00", tz="UTC"),
+        datetime.strptime("2020-05-07 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
 
-    expected_df_candles = [
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.28"),
-            high=Decimal("95.32"),
-            low=Decimal("93.96"),
-            close=Decimal("94.59"),
-            volume=60,
-            timestamp=pd.Timestamp("2020-05-07 00:00:00+00:00"),
-        ),
-        Candle(
-            symbol="IVV",
-            open=Decimal("94.22"),
-            high=Decimal("94.26"),
-            low=Decimal("93.95"),
-            close=Decimal("94.20"),
-            volume=190,
-            timestamp=pd.Timestamp("2020-05-08 00:00:00+00:00"),
-        ),
-    ]
+    expected_df_candles = np.array(
+        [
+            Candle(
+                symbol="IVV",
+                open=94.28,
+                high=95.32,
+                low=93.96,
+                close=94.59,
+                volume=60,
+                timestamp=datetime.strptime(
+                    "2020-05-07 00:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=94.22,
+                high=94.26,
+                low=93.95,
+                close=94.20,
+                volume=190,
+                timestamp=datetime.strptime(
+                    "2020-05-08 00:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     expected_df = CandleDataFrame.from_candle_list(
         symbol=SYMBOL, candles=expected_df_candles
     )
@@ -536,10 +598,12 @@ def test_fetch_none_db_storage_none_file_storage():
 
     df = candle_fetcher.fetch(
         SYMBOL,
-        pd.offsets.Minute(5),
-        pd.Timestamp("2020-05-08 14:12:00", tz="UTC"),
-        pd.Timestamp("2020-05-08 14:49:00", tz="UTC"),
+        timedelta(minutes=5),
+        datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
 
-    expected_df = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=[])
+    expected_df = CandleDataFrame.from_candle_list(
+        symbol=SYMBOL, candles=np.array([], dtype=Candle)
+    )
     assert (df == expected_df).all(axis=None)

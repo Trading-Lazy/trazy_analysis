@@ -1,25 +1,22 @@
-from decimal import Decimal
-
-import pandas as pd
-import pytz
+from datetime import datetime
 
 from portfolio.portfolio_event import PortfolioEvent
 
 PE1 = PortfolioEvent(
-    timestamp=pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC),
+    timestamp=datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     type="subscription",
     description="SUBSCRIPTION",
-    debit=Decimal("0.0"),
-    credit=Decimal("2000.0"),
-    balance=Decimal("2000.0"),
+    debit=0.0,
+    credit=2000.0,
+    balance=2000.0,
 )
 PE2 = PortfolioEvent(
-    timestamp=pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC),
+    timestamp=datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     type="subscription",
     description="SUBSCRIPTION",
-    debit=Decimal("0.0"),
-    credit=Decimal("2000.0"),
-    balance=Decimal("2000.0"),
+    debit=0.0,
+    credit=2000.0,
+    balance=2000.0,
 )
 
 
@@ -28,14 +25,16 @@ def test_eq():
 
 
 def test_repr():
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     pe1 = PortfolioEvent(
         timestamp=start_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("2000.0"),
-        balance=Decimal("2000.0"),
+        debit=0.0,
+        credit=2000.0,
+        balance=2000.0,
     )
     expected_repr = (
         "PortfolioEvent(timestamp=2017-10-05 08:00:00+00:00, type=subscription, "
@@ -46,11 +45,13 @@ def test_repr():
 
 def test_to_dict():
     expected_dict = {
-        "timestamp": pd.Timestamp("2017-10-05 08:00:00+0000", tz="UTC"),
+        "timestamp": datetime.strptime(
+            "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+        ),
         "type": "subscription",
         "description": "SUBSCRIPTION",
-        "debit": Decimal("0.0"),
-        "credit": Decimal("2000.0"),
-        "balance": Decimal("2000.0"),
+        "debit": float("0.0"),
+        "credit": float("2000.0"),
+        "balance": float("2000.0"),
     }
     assert PE1.to_dict() == expected_dict

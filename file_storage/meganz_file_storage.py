@@ -3,6 +3,7 @@ import os
 import random
 from typing import List, Optional
 
+import numpy as np
 import requests
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
@@ -50,7 +51,9 @@ class MegaExtended(Mega):
         return super().login(email, password)
 
     @try_until_success
-    def get_files(self,) -> dict:
+    def get_files(
+        self,
+    ) -> dict:
         return super().get_files()
 
     @try_until_success
@@ -91,7 +94,7 @@ class MegaExtended(Mega):
         filename = path.name
         parent_path = path.parent
         parent_dir_name = str(parent_path) if parent_path.name else ""
-        LOG.info("Searching file {} ...".format(filename))
+        LOG.info("Searching file %s ...", filename)
         for file in list(files.items()):
             parent_node_id = None
             if parent_dir_name:
@@ -263,7 +266,7 @@ class MegaExtended(Mega):
             file = self.find(filename)
 
             if file is None:
-                LOG.error("File {} not found for getting content".format(filename))
+                LOG.error("File %s not found for getting content", filename)
                 return ""
             self.path_cache[filename] = file
 
@@ -339,23 +342,30 @@ class MegaNzFileStorage(FileStorage):
         file = self.mega.find(path, exclude_deleted=True)
         return file is not None
 
-    def ls(self, path: str) -> List[str]:
+    def ls(self, path: str) -> np.array:  # [str]
         dir_infos: dict = self.mega.find(path, exclude_deleted=True)
         if dir_infos is None:
-            return []
+            return np.array([], dtype="U256")
         dir_id: str = self.get_id_from_file(dir_infos)
         subfolders_infos: dict = self.mega.get_files_in_node(dir_id)
-        subfolders_list: List[str] = []
+        subfolders_list: np.array = np.empty(shape=len(subfolders_infos), dtype="U256")
+        index = 0
         for subfolder_id, subfolder_infos in subfolders_infos.items():
-            subfolders_list.append(
-                subfolder_infos[NODE_ATTRIBUTES_KEY][NODE_NAME_ATTRIBUTE_KEY]
+            LOG.info(
+                "subfolder info = %s",
+                subfolder_infos[NODE_ATTRIBUTES_KEY][NODE_NAME_ATTRIBUTE_KEY],
             )
+            subfolders_list[index] = subfolder_infos[NODE_ATTRIBUTES_KEY][
+                NODE_NAME_ATTRIBUTE_KEY
+            ]
+            LOG.info("subfolder list = %s", subfolders_list[index])
+            index += 1
         return subfolders_list
 
     def mkdir(self, path: str) -> None:
         if self.exists(path):
             return
-        LOG.info("Creating directory for the path: {}".format(path))
+        LOG.info("Creating directory for the path: %s", path)
         dirs_in_path: List[str] = list(filter(None, path.split(PATH_SEPARATOR)))
         current_path: str = ""
         idx: int = 0
@@ -366,7 +376,7 @@ class MegaNzFileStorage(FileStorage):
             else:
                 break
             idx += 1
-        LOG.info("{} already exists in the path".format(current_path))
+        LOG.info("%s already exists in the path", current_path)
         dest = None
         remaining_path = path
         if current_path != "" and idx < len(dirs_in_path):

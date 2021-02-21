@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pandas as pd
 
 from common.clock import SimulatedClock
@@ -5,14 +7,18 @@ from models.enums import Action, Direction
 from models.signal import Signal
 
 clock = SimulatedClock()
-clock.update_time("IVV", pd.Timestamp("2020-05-08 14:17:00+00:00"))
+clock.update_time(
+    "IVV", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+)
 SIGNAL1 = Signal(
     symbol="IVV",
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level="0.05",
     strategy="SmaCrossoverStrategy",
-    root_candle_timestamp=pd.Timestamp("2020-05-08 14:16:00+00:00"),
+    root_candle_timestamp=datetime.strptime(
+        "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    ),
     parameters={},
     clock=clock,
 )
@@ -25,7 +31,7 @@ SIGNAL1_DICT = {
     "root_candle_timestamp": "2020-05-08 14:16:00+00:00",
     "parameters": {},
     "generation_time": "2020-05-08 14:17:00+00:00",
-    "time_in_force": "<5 * Minutes>",
+    "time_in_force": "0:05:00",
 }
 
 SIGNAL2 = Signal(
@@ -34,7 +40,9 @@ SIGNAL2 = Signal(
     direction=Direction.LONG,
     confidence_level="0.05",
     strategy="SmaCrossoverStrategy",
-    root_candle_timestamp=pd.Timestamp("2020-05-08 14:16:00+00:00"),
+    root_candle_timestamp=datetime.strptime(
+        "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    ),
     parameters={},
     clock=clock,
 )
@@ -45,7 +53,9 @@ SIGNAL3 = Signal(
     direction=Direction.LONG,
     confidence_level="0.05",
     strategy="SmaCrossoverStrategy",
-    root_candle_timestamp=pd.Timestamp("2020-05-08 14:16:00+00:00"),
+    root_candle_timestamp=datetime.strptime(
+        "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    ),
     parameters={},
     clock=clock,
 )
@@ -58,10 +68,12 @@ def test_no_clock_no_generation_time():
         direction=Direction.LONG,
         confidence_level="0.05",
         strategy="SmaCrossoverStrategy",
-        root_candle_timestamp=pd.Timestamp("2020-05-08 14:16:00+00:00"),
+        root_candle_timestamp=datetime.strptime(
+            "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
+        ),
         parameters={},
     )
-    assert pd.Timestamp.now("UTC") - signal.generation_time < pd.offsets.Second(1)
+    assert datetime.now(timezone.utc) - signal.generation_time < pd.offsets.Second(1)
 
 
 def test_eq():
@@ -84,13 +96,21 @@ def test_to_serializable_dict():
 
 
 def test_in_force():
-    assert SIGNAL1.in_force(pd.Timestamp("2020-05-08 14:19:00+00:00"))
-    assert not SIGNAL1.in_force(pd.Timestamp("2020-05-08 14:22:00+00:00"))
+    assert SIGNAL1.in_force(
+        datetime.strptime("2020-05-08 14:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
+    assert not SIGNAL1.in_force(
+        datetime.strptime("2020-05-08 14:22:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
 
     # None timestamp
-    clock.update_time("IVV", pd.Timestamp("2020-05-08 14:17:00+00:00"))
+    clock.update_time(
+        "IVV", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
     assert SIGNAL1.in_force()
-    clock.update_time("IVV", pd.Timestamp("2020-05-08 14:22:00+00:00"))
+    clock.update_time(
+        "IVV", datetime.strptime("2020-05-08 14:22:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    )
     assert not SIGNAL1.in_force()
 
     # No clock

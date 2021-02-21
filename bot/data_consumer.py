@@ -65,8 +65,11 @@ class DataConsumer:
         candles_queue: CandlesQueue,
         db_storage: DbStorage,
         order_manager: OrderManager,
+        indicators_manager: IndicatorsManager,
         strategies_classes: List[type] = [],
         save_candles=False,
+        live=False,
+        frequency=timedelta(seconds=10),
     ):
         self.symbols = sorted(set(symbols))
         self.candles_queue = candles_queue
@@ -74,16 +77,17 @@ class DataConsumer:
         self.order_manager = order_manager
         self.broker = self.order_manager.broker
         self.clock = self.order_manager.clock
-        self.indicators_manager = IndicatorsManager()
+        self.indicators_manager = indicators_manager
         self.strategies_classes = strategies_classes
         self.strategy_instances: List[Strategy] = []
         self._init_strategy_instances()
+        self.indicators_manager.warmup()
         self._subscribe_broker_to_data_stream()
-        self.for_simulation = self.order_manager.for_simulation
-        if self.for_simulation:
+        self.live = live
+        if not self.live:
             self._subscribe_order_manager_to_data_stream()
         else:
-            self.process_signals_interval = interval(timedelta(seconds=10))
+            self.process_signals_interval = interval(frequency)
             self.process_signals_interval.subscribe(lambda _: self.broker.synchronize())
             self.process_signals_interval.subscribe(
                 lambda _: self.order_manager.process_signals()
@@ -101,14 +105,12 @@ class DataConsumer:
         for strategy in self.strategy_instances:
             self.run_strategy(strategy, candle)
             LOG.info(
-                "Strategy results: {}".format(
-                    strategy.order_manager.broker.get_portfolio_cash_balance()
-                )
+                "Strategy results: %s",
+                strategy.order_manager.broker.get_portfolio_cash_balance(),
             )
 
-    def handle_new_candle_callback(self, candle_json: str):
-        LOG.info("Dequeue new candle: {}".format(candle_json))
-        candle = Candle.from_json(candle_json)
+    def handle_new_candle_callback(self, candle: Candle):
+        LOG.info("Dequeue new candle: %s", candle.to_json())
         if candle.symbol in self.symbols:
             add_to_db = (
                 self.save_candles
@@ -116,7 +118,7 @@ class DataConsumer:
                     candle.symbol, candle.timestamp
                 )
             )
-            LOG.info("Add to db: {}".format(add_to_db))
+            LOG.info("Add to db: %s", add_to_db)
             if not self.save_candles or add_to_db:
                 self.indicators_manager.RollingWindow(candle.symbol).push(candle)
                 self.run_strategies(candle)

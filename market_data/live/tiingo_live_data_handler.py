@@ -1,5 +1,6 @@
 from datetime import date
 from typing import List
+
 from market_data.live.live_data_handler import LiveDataHandler
 from market_data.tiingo_data_handler import TiingoDataHandler
 from models.candle import Candle

@@ -1,7 +1,7 @@
-from datetime import date, timedelta
-from decimal import Decimal
+from datetime import date, datetime, timedelta
 from unittest.mock import call, patch
 
+import numpy as np
 import pandas as pd
 from requests import Response
 
@@ -22,73 +22,102 @@ STATUS_CODE_KO = 404
 TOKEN = "my_token"
 
 AAPL_SYMBOL = "AAPL"
-AAPL_CANDLES1 = [
-    Candle(
-        symbol=AAPL_SYMBOL,
-        open=Decimal("355.15"),
-        high=Decimal("355.15"),
-        low=Decimal("353.74"),
-        close=Decimal("353.84"),
-        volume=3254,
-        timestamp=pd.Timestamp("2020-06-11 13:30:00+00:00"),
-    ),
-    Candle(
-        symbol=AAPL_SYMBOL,
-        open=Decimal("354.28"),
-        high=Decimal("354.96"),
-        low=Decimal("353.96"),
-        close=Decimal("354.78"),
-        volume=2324,
-        timestamp=pd.Timestamp("2020-06-13 13:31:00+00:00"),
-    ),
-]
-AAPL_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES1)
+AAPL_CANDLES1 = np.array(
+    [
+        Candle(
+            symbol=AAPL_SYMBOL,
+            open=355.15,
+            high=355.15,
+            low=353.74,
+            close=353.84,
+            volume=3254,
+            timestamp=datetime.strptime(
+                "2020-06-11 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=AAPL_SYMBOL,
+            open=354.28,
+            high=354.96,
+            low=353.96,
+            close=354.78,
+            volume=2324,
+            timestamp=datetime.strptime(
+                "2020-06-13 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+    ],
+    dtype=Candle,
+)
+AAPL_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(
+    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES1
+)
 
-AAPL_CANDLES2 = [
-    Candle(
-        symbol=AAPL_SYMBOL,
-        open=Decimal("354.92"),
-        high=Decimal("355.32"),
-        low=Decimal("354.09"),
-        close=Decimal("354.09"),
-        volume=1123,
-        timestamp=pd.Timestamp("2020-06-15 13:32:00+00:00"),
-    ),
-    Candle(
-        symbol=AAPL_SYMBOL,
-        open=Decimal("354.25"),
-        high=Decimal("354.59"),
-        low=Decimal("354.14"),
-        close=Decimal("354.59"),
-        volume=2613,
-        timestamp=pd.Timestamp("2020-06-17 13:33:00+00:00"),
-    ),
-]
-AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2)
-AAPL_CANDLES3 = [
-    Candle(
-        symbol=AAPL_SYMBOL,
-        open=Decimal("354.22"),
-        high=Decimal("354.26"),
-        low=Decimal("353.95"),
-        close=Decimal("353.98"),
-        volume=1186,
-        timestamp=pd.Timestamp("2020-06-19 13:34:00+00:00"),
-    ),
-    Candle(
-        symbol=AAPL_SYMBOL,
-        open=Decimal("354.13"),
-        high=Decimal("354.26"),
-        low=Decimal("353.01"),
-        close=Decimal("353.30"),
-        volume=1536,
-        timestamp=pd.Timestamp("2020-06-19 13:35:00+00:00"),
-    ),
-]
-AAPL_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES3)
+AAPL_CANDLES2 = np.array(
+    [
+        Candle(
+            symbol=AAPL_SYMBOL,
+            open=354.92,
+            high=355.32,
+            low=354.09,
+            close=354.09,
+            volume=1123,
+            timestamp=datetime.strptime(
+                "2020-06-15 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=AAPL_SYMBOL,
+            open=354.25,
+            high=354.59,
+            low=354.14,
+            close=354.59,
+            volume=2613,
+            timestamp=datetime.strptime(
+                "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+    ],
+    dtype=Candle,
+)
+AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(
+    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2
+)
+AAPL_CANDLES3 = np.array(
+    [
+        Candle(
+            symbol=AAPL_SYMBOL,
+            open=354.22,
+            high=354.26,
+            low=353.95,
+            close=353.98,
+            volume=1186,
+            timestamp=datetime.strptime(
+                "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            symbol=AAPL_SYMBOL,
+            open=354.13,
+            high=354.26,
+            low=353.01,
+            close=353.30,
+            volume=1536,
+            timestamp=datetime.strptime(
+                "2020-06-19 13:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+    ],
+    dtype=Candle,
+)
+AAPL_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(
+    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES3
+)
 
-AAPL_CANDLES = AAPL_CANDLES1 + AAPL_CANDLES2 + AAPL_CANDLES3
-AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES)
+AAPL_CANDLES = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2, AAPL_CANDLES3])
+AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
+    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES
+)
 
 
 def test_parse_ticker_data_tiingo():
@@ -296,8 +325,10 @@ def test_get_tickers_success_iex(content_mocked, request_mocked):
     }]"""
     request_mocked.return_value.content = str.encode(tickers_response)
     IexCloudHistoricalDataHandler.API_TOKEN = TOKEN
-    expected_parsed_response = ["AAPL", "GOOGL", "AMZN"]
-    assert IexCloudHistoricalDataHandler.get_tickers_list() == expected_parsed_response
+    expected_parsed_response = np.array(["AAPL", "GOOGL", "AMZN"], dtype="U6")
+    assert (
+        IexCloudHistoricalDataHandler.get_tickers_list() == expected_parsed_response
+    ).all()
     expected_url = (
         "https://cloud.iexapis.com/stable/ref-data/iex/symbols?token=my_token"
     )
@@ -312,7 +343,7 @@ def test_get_tickers_failure_tiingo(request_mocked):
     request_mocked.return_value = Response()
     request_mocked.return_value.status_code = 404
     TiingoHistoricalDataHandler.API_TOKEN = TOKEN
-    expected_parsed_response = []
+    expected_parsed_response = np.empty([], dtype="U6")
     assert TiingoHistoricalDataHandler.get_tickers_list() == expected_parsed_response
     expected_url = "https://api.tiingo.com/iex?token=my_token"
     request_mocked_calls = [call(expected_url)]
@@ -326,7 +357,7 @@ def test_get_tickers_failure_iex(request_mocked):
     request_mocked.return_value = Response()
     request_mocked.return_value.status_code = 404
     IexCloudHistoricalDataHandler.API_TOKEN = TOKEN
-    expected_parsed_response = []
+    expected_parsed_response = np.empty([], dtype="U6")
     assert IexCloudHistoricalDataHandler.get_tickers_list() == expected_parsed_response
     expected_url = (
         "https://cloud.iexapis.com/stable/ref-data/iex/symbols?token=my_token"
@@ -396,35 +427,44 @@ def test_request_ticker_data_for_period_tiingo(
     )
     request_ticker_data_mocked.return_value.content = str.encode(ticker_data)
 
-    expected_candles = [
-        Candle(
-            symbol=SYMBOL,
-            open=Decimal("354.28"),
-            high=Decimal("354.96"),
-            low=Decimal("353.96"),
-            close=Decimal("354.78"),
-            volume=2324,
-            timestamp=pd.Timestamp("2020-06-18 13:31:00+00:00"),
-        ),
-        Candle(
-            symbol=SYMBOL,
-            open=Decimal("354.92"),
-            high=Decimal("355.32"),
-            low=Decimal("354.09"),
-            close=Decimal("354.09"),
-            volume=1123,
-            timestamp=pd.Timestamp("2020-06-18 13:32:00+00:00"),
-        ),
-        Candle(
-            symbol=SYMBOL,
-            open=Decimal("354.25"),
-            high=Decimal("354.59"),
-            low=Decimal("354.14"),
-            close=Decimal("354.59"),
-            volume=2613,
-            timestamp=pd.Timestamp("2020-06-19 13:33:00+00:00"),
-        ),
-    ]
+    expected_candles = np.array(
+        [
+            Candle(
+                symbol=SYMBOL,
+                open=354.28,
+                high=354.96,
+                low=353.96,
+                close=354.78,
+                volume=2324,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol=SYMBOL,
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol=SYMBOL,
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
@@ -433,7 +473,7 @@ def test_request_ticker_data_for_period_tiingo(
         none_response_periods,
         error_response_periods,
     )
-    assert expected_candles == candle_dataframe.to_candles()
+    assert (expected_candles == candle_dataframe.to_candles()).all()
     assert none_response_periods == set()
     assert error_response_periods == {}
 
@@ -450,7 +490,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_tiingo(
     ticker_data = ",open,high,low,close,volume\n"
     request_ticker_data_mocked.return_value.content = str.encode(ticker_data)
 
-    expected_candles = []
+    expected_candles = np.empty(shape=0, dtype=Candle)
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
@@ -459,7 +499,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_tiingo(
         none_response_periods,
         error_response_periods,
     )
-    assert expected_candles == candle_dataframe.to_candles()
+    assert (expected_candles == candle_dataframe.to_candles()).all()
     assert none_response_periods == {(date(2020, 6, 18), date(2020, 6, 19))}
     assert error_response_periods == {}
 
@@ -476,7 +516,7 @@ def test_request_ticker_data_for_period_error_tiingo(
     error_response = "Not Found"
     request_ticker_data_mocked.return_value.content = str.encode(error_response)
 
-    expected_candles = []
+    expected_candles = np.empty(shape=0, dtype=Candle)
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
@@ -485,7 +525,7 @@ def test_request_ticker_data_for_period_error_tiingo(
         none_response_periods,
         error_response_periods,
     )
-    assert expected_candles == candle_dataframe.to_candles()
+    assert (expected_candles == candle_dataframe.to_candles()).all()
     assert none_response_periods == set()
     assert error_response_periods == {
         (date(2020, 6, 18), date(2020, 6, 19)): "404: Not Found"
@@ -507,35 +547,44 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
     )
     request_ticker_data_mocked.return_value.content = str.encode(ticker_data)
 
-    expected_candles = [
-        Candle(
-            symbol=SYMBOL,
-            open=Decimal("192.94"),
-            high=Decimal("193.27"),
-            low=Decimal("192.89"),
-            close=Decimal("192.9"),
-            volume=2345,
-            timestamp=pd.Timestamp("2019-06-18 13:31:00+00:00"),
-        ),
-        Candle(
-            symbol=SYMBOL,
-            open=Decimal("192.6"),
-            high=Decimal("192.6"),
-            low=Decimal("192.3"),
-            close=Decimal("192.3"),
-            volume=1350,
-            timestamp=pd.Timestamp("2019-06-18 13:32:00+00:00"),
-        ),
-        Candle(
-            symbol=SYMBOL,
-            open=Decimal("192.22"),
-            high=Decimal("192.46"),
-            low=Decimal("192.22"),
-            close=Decimal("192.29"),
-            volume=756,
-            timestamp=pd.Timestamp("2019-06-19 13:33:00+00:00"),
-        ),
-    ]
+    expected_candles = np.array(
+        [
+            Candle(
+                symbol=SYMBOL,
+                open=192.94,
+                high=193.27,
+                low=192.89,
+                close=192.9,
+                volume=2345,
+                timestamp=datetime.strptime(
+                    "2019-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol=SYMBOL,
+                open=192.6,
+                high=192.6,
+                low=192.3,
+                close=192.3,
+                volume=1350,
+                timestamp=datetime.strptime(
+                    "2019-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol=SYMBOL,
+                open=192.22,
+                high=192.46,
+                low=192.22,
+                close=192.29,
+                volume=756,
+                timestamp=datetime.strptime(
+                    "2019-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = IexCloudHistoricalDataHandler.request_ticker_data_for_period(
@@ -544,7 +593,7 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
         none_response_periods,
         error_response_periods,
     )
-    assert expected_candles == candle_dataframe.to_candles()
+    assert (expected_candles == candle_dataframe.to_candles()).all()
     assert none_response_periods == set()
     assert error_response_periods == {}
 
@@ -561,7 +610,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_iex(
     ticker_data = ""
     request_ticker_data_mocked.return_value.content = str.encode(ticker_data)
 
-    expected_candles = []
+    expected_candles = np.empty(shape=0, dtype=Candle)
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = IexCloudHistoricalDataHandler.request_ticker_data_for_period(
@@ -570,7 +619,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_iex(
         none_response_periods,
         error_response_periods,
     )
-    assert expected_candles == candle_dataframe.to_candles()
+    assert (expected_candles == candle_dataframe.to_candles()).all()
     assert none_response_periods == {(date(2020, 6, 18), date(2020, 6, 19))}
     assert error_response_periods == {}
 
@@ -587,7 +636,7 @@ def test_request_ticker_data_for_period_error_iex(
     error_response = "Not Found"
     request_ticker_data_mocked.return_value.content = str.encode(error_response)
 
-    expected_candles = []
+    expected_candles = np.empty(shape=0, dtype=Candle)
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = IexCloudHistoricalDataHandler.request_ticker_data_for_period(
@@ -596,7 +645,7 @@ def test_request_ticker_data_for_period_error_iex(
         none_response_periods,
         error_response_periods,
     )
-    assert expected_candles == candle_dataframe.to_candles()
+    assert (expected_candles == candle_dataframe.to_candles()).all()
     assert none_response_periods == set()
     assert error_response_periods == {
         (date(2020, 6, 18), date(2020, 6, 19)): "404: Not Found"
@@ -607,7 +656,7 @@ def test_request_ticker_data_for_period_error_iex(
     "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_for_period"
 )
 def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked):
-    expected_candles = AAPL_CANDLES1 + AAPL_CANDLES2 + AAPL_CANDLES3
+    expected_candles = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2, AAPL_CANDLES3])
     expected_candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=AAPL_SYMBOL, candles=expected_candles
     )
@@ -616,11 +665,14 @@ def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked)
         AAPL_CANDLE_DATAFRAME2,
         AAPL_CANDLE_DATAFRAME3,
     ]
-    periods = [
-        (date(2020, 6, 11), date(2020, 6, 13)),
-        (date(2020, 6, 14), date(2020, 6, 16)),
-        (date(2020, 6, 17), date(2020, 6, 19)),
-    ]
+    periods = np.array(
+        [
+            (date(2020, 6, 11), date(2020, 6, 13)),
+            (date(2020, 6, 14), date(2020, 6, 16)),
+            (date(2020, 6, 17), date(2020, 6, 19)),
+        ],
+        dtype=datetime,
+    )
     (
         candle_dataframe,
         none_response_periods,
@@ -636,9 +688,18 @@ def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked)
         call(SYMBOL, periods[1], set(), {}),
         call(SYMBOL, periods[2], set(), {}),
     ]
-    request_ticker_data_for_period_mocked.assert_has_calls(
-        request_ticker_data_for_period_mocked_calls
-    )
+    for i, call_arg_tuple in enumerate(
+        request_ticker_data_for_period_mocked.call_args_list
+    ):
+        call_arg = call_arg_tuple[0]
+        symbol = call_arg[0]
+        assert symbol == SYMBOL
+        period = call_arg[1]
+        assert (periods[i] == period).all()
+        none_response_periods = call_arg[2]
+        assert none_response_periods == set()
+        error_response_periods = call_arg[3]
+        assert error_response_periods == {}
 
 
 @patch(
@@ -650,8 +711,8 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
         {(date(2020, 6, 14), date(2020, 6, 16))},
         {(date(2020, 6, 11), date(2020, 6, 13)): "400: Bad Request"},
     )
-    start = pd.Timestamp("2020-06-11 13:31:00+00:00")
-    end = pd.Timestamp("2020-06-19 13:34:00+00:00")
+    start = datetime.strptime("2020-06-11 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z")
     expected_candle_dataframe = CandleDataFrame.from_candle_list(
         symbol=AAPL_SYMBOL, candles=AAPL_CANDLES[1:-1]
     )
@@ -670,15 +731,19 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
         (date(2020, 6, 11), date(2020, 6, 13)): "400: Bad Request"
     }
 
-    periods = [
-        (date(2020, 6, 11), date(2020, 6, 13)),
-        (date(2020, 6, 14), date(2020, 6, 16)),
-        (date(2020, 6, 17), date(2020, 6, 19)),
-    ]
-    request_ticker_data_from_periods_calls = [call(AAPL_SYMBOL, periods)]
-    request_ticker_data_from_periods_mocked.assert_has_calls(
-        request_ticker_data_from_periods_calls
+    expected_periods = np.array(
+        [
+            (date(2020, 6, 11), date(2020, 6, 13)),
+            (date(2020, 6, 14), date(2020, 6, 16)),
+            (date(2020, 6, 17), date(2020, 6, 19)),
+        ]
     )
+    assert len(request_ticker_data_from_periods_mocked.call_args_list) == 1
+    call_args = request_ticker_data_from_periods_mocked.call_args_list[0]
+    symbol = call_args[0][0]
+    assert symbol == AAPL_SYMBOL
+    periods = call_args[0][1]
+    assert (periods == expected_periods).all()
 
 
 @patch("pandas.DataFrame.to_csv")
@@ -692,8 +757,8 @@ def test_save_ticker_data_in_range(request_ticker_data_in_range_mocked, to_csv_m
         {},
     )
     csv_filename = "aapl_candles.csv"
-    start = pd.Timestamp("2020-06-11 13:31:00+00:00")
-    end = pd.Timestamp("2020-06-19 13:34:00+00:00")
+    start = datetime.strptime("2020-06-11 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z")
     TiingoHistoricalDataHandler.MAX_DOWNLOAD_FRAME = timedelta(days=3)
     TiingoHistoricalDataHandler.save_ticker_data_in_range(
         AAPL_SYMBOL, csv_filename, start, end

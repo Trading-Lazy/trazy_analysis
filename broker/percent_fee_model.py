@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from broker.fee_model import FeeModel
 
 
@@ -19,16 +17,16 @@ class PercentFeeModel(FeeModel):
 
     def __init__(
         self,
-        commission_pct: Decimal = Decimal("0.0"),
-        tax_pct: Decimal = Decimal("0.0"),
+        commission_pct: float = 0.0,
+        tax_pct: float = 0.0,
     ) -> None:
         super().__init__()
         self.commission_pct = commission_pct
         self.tax_pct = tax_pct
 
     def _calc_commission(
-        self, symbol: str, size: int, consideration: Decimal, broker: "Broker" = None
-    ) -> Decimal:
+        self, symbol: str, size: int, consideration: float, broker: "Broker" = None
+    ) -> float:
         """
         Returns the percentage commission from the consideration.
         Parameters
@@ -50,8 +48,8 @@ class PercentFeeModel(FeeModel):
         return self.commission_pct * abs(consideration)
 
     def _calc_tax(
-        self, symbol: str, size: int, consideration: Decimal, broker: "Broker" = None
-    ) -> Decimal:
+        self, symbol: str, size: int, consideration: float, broker: "Broker" = None
+    ) -> float:
         """
         Returns the percentage tax from the consideration.
         Parameters

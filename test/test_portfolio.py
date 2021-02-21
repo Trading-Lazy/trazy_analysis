@@ -1,8 +1,7 @@
-from decimal import Decimal
+from datetime import datetime
 
 import pandas as pd
 import pytest
-import pytz
 
 from models.enums import Action, Direction
 from portfolio.portfolio import Portfolio
@@ -15,38 +14,40 @@ def test_initial_settings_for_default_portfolio():
     Test that the initial settings are as they should be
     for two specified portfolios.
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
 
     # Test a default Portfolio
     port1 = Portfolio()
     assert port1.currency == "USD"
-    assert port1.starting_cash == Decimal("0.0")
+    assert port1.starting_cash == 0.0
     assert port1.portfolio_id is None
     assert port1.name is None
-    assert port1.total_market_value == Decimal("0.0")
-    assert port1.cash == Decimal("0.0")
-    assert port1.total_equity == Decimal("0.0")
-    assert port1.total_unrealised_pnl == Decimal("0")
-    assert port1.total_realised_pnl == Decimal("0")
-    assert port1.total_pnl == Decimal("0")
+    assert port1.total_market_value == 0.0
+    assert port1.cash == 0.0
+    assert port1.total_equity == 0.0
+    assert port1.total_unrealised_pnl == 0
+    assert port1.total_realised_pnl == 0
+    assert port1.total_pnl == 0
 
     # Test a Portfolio with keyword arguments
     port2 = Portfolio(
-        starting_cash=Decimal("1234567.56"),
+        starting_cash=1234567.56,
         currency="USD",
         portfolio_id=12345,
         name="My Second Test Portfolio",
     )
     assert port2.currency == "USD"
-    assert port2.starting_cash == Decimal("1234567.56")
+    assert port2.starting_cash == 1234567.56
     assert port2.portfolio_id == 12345
     assert port2.name == "My Second Test Portfolio"
-    assert port2.total_equity == Decimal("1234567.56")
-    assert port2.total_market_value == Decimal("0.0")
-    assert port2.total_unrealised_pnl == Decimal("0")
-    assert port2.total_realised_pnl == Decimal("0")
-    assert port2.total_pnl == Decimal("0")
-    assert port2.cash == Decimal("1234567.56")
+    assert port2.total_equity == 1234567.56
+    assert port2.total_market_value == 0.0
+    assert port2.total_unrealised_pnl == 0
+    assert port2.total_realised_pnl == 0
+    assert port2.total_pnl == 0
+    assert port2.cash == 1234567.56
 
 
 def test_portfolio_currency_settings():
@@ -73,11 +74,15 @@ def test_subscribe_funds_behaviour():
     Test subscribe_funds correctly adds positive
     amount, generates correct event and modifies time
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
-    pos_cash = Decimal("1000.0")
-    neg_cash = -Decimal("1000.0")
-    port = Portfolio(starting_cash=Decimal("2000.0"), timestamp=start_timestamp)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    pos_cash = 1000.0
+    neg_cash = -1000.0
+    port = Portfolio(starting_cash=2000.0, timestamp=start_timestamp)
 
     # Test subscribe_funds raises for negative amount
     with pytest.raises(ValueError):
@@ -87,28 +92,28 @@ def test_subscribe_funds_behaviour():
     # amount, generates correct event and modifies time
     port.subscribe_funds(pos_cash, later_timestamp)
 
-    assert port.cash == Decimal("3000.0")
-    assert port.total_market_value == Decimal("0.0")
-    assert port.total_equity == Decimal("3000.0")
-    assert port.total_unrealised_pnl == Decimal("0")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("0")
+    assert port.cash == 3000.0
+    assert port.total_market_value == 0.0
+    assert port.total_equity == 3000.0
+    assert port.total_unrealised_pnl == 0
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == 0
 
     pe1 = PortfolioEvent(
         timestamp=start_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("2000.0"),
-        balance=Decimal("2000.0"),
+        debit=0.0,
+        credit=2000.0,
+        balance=2000.0,
     )
     pe2 = PortfolioEvent(
         timestamp=later_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("1000.0"),
-        balance=Decimal("3000.0"),
+        debit=0.0,
+        credit=1000.0,
+        balance=3000.0,
     )
 
     assert port.history == [pe1, pe2]
@@ -122,10 +127,14 @@ def test_withdraw_funds_behaviour():
     Test withdraw_funds correctly subtracts positive
     amount, generates correct event and modifies time
     """
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
-    even_later_timestamp = pd.Timestamp("2017-10-07 08:00:00", tz=pytz.UTC)
-    pos_cash = Decimal("1000.0")
-    neg_cash = -Decimal("1000.0")
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    even_later_timestamp = datetime.strptime(
+        "2017-10-07 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    pos_cash = 1000.0
+    neg_cash = -1000.0
     port_raise = Portfolio(timestamp=later_timestamp)
 
     # Test withdraw_funds raises for incorrect datetime
@@ -138,10 +147,10 @@ def test_withdraw_funds_behaviour():
 
     # Test withdraw_funds raises for not enough cash
     port_broke = Portfolio()
-    port_broke.subscribe_funds(Decimal("1000.0"), later_timestamp)
+    port_broke.subscribe_funds(1000.0, later_timestamp)
 
     with pytest.raises(ValueError):
-        port_broke.withdraw_funds(Decimal("2000.0"), later_timestamp)
+        port_broke.withdraw_funds(2000.0, later_timestamp)
 
     # Test withdraw_funds correctly subtracts positive
     # amount, generates correct event and modifies time
@@ -152,34 +161,34 @@ def test_withdraw_funds_behaviour():
         timestamp=later_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("1000.0"),
-        balance=Decimal("1000.0"),
+        debit=0.0,
+        credit=1000.0,
+        balance=1000.0,
     )
-    assert port_cor.cash == Decimal("1000.0")
-    assert port_cor.total_market_value == Decimal("0.0")
-    assert port_cor.total_equity == Decimal("1000.0")
-    assert port_cor.total_unrealised_pnl == Decimal("0")
-    assert port_cor.total_realised_pnl == Decimal("0")
-    assert port_cor.total_pnl == Decimal("0")
+    assert port_cor.cash == 1000.0
+    assert port_cor.total_market_value == 0.0
+    assert port_cor.total_equity == 1000.0
+    assert port_cor.total_unrealised_pnl == 0
+    assert port_cor.total_realised_pnl == 0
+    assert port_cor.total_pnl == 0
     assert port_cor.history == [pe_sub]
 
     # Now withdraw
-    port_cor.withdraw_funds(Decimal("468.0"), even_later_timestamp)
+    port_cor.withdraw_funds(468.0, even_later_timestamp)
     pe_wdr = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="withdrawal",
         description="WITHDRAWAL",
-        debit=Decimal("468.0"),
-        credit=Decimal("0.0"),
-        balance=Decimal("532.0"),
+        debit=468.0,
+        credit=0.0,
+        balance=532.0,
     )
-    assert port_cor.cash == Decimal("532.0")
-    assert port_cor.total_market_value == Decimal("0.0")
-    assert port_cor.total_equity == Decimal("532.0")
-    assert port_cor.total_unrealised_pnl == Decimal("0")
-    assert port_cor.total_realised_pnl == Decimal("0")
-    assert port_cor.total_pnl == Decimal("0")
+    assert port_cor.cash == 532.0
+    assert port_cor.total_market_value == 0.0
+    assert port_cor.total_equity == 532.0
+    assert port_cor.total_unrealised_pnl == 0
+    assert port_cor.total_realised_pnl == 0
+    assert port_cor.total_pnl == 0
     assert port_cor.history == [pe_sub, pe_wdr]
 
 
@@ -190,10 +199,18 @@ def test_transact_symbol_behaviour():
     for correct transaction (commission etc), correct
     portfolio event and correct time update
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    earlier_timestamp = pd.Timestamp("2017-10-04 08:00:00", tz=pytz.UTC)
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
-    even_later_timestamp = pd.Timestamp("2017-10-07 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    earlier_timestamp = datetime.strptime(
+        "2017-10-04 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    even_later_timestamp = datetime.strptime(
+        "2017-10-07 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
 
@@ -203,9 +220,9 @@ def test_transact_symbol_behaviour():
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
-        price=Decimal("567.0"),
+        price=567.0,
         order_id=1,
-        commission=Decimal("0.0"),
+        commission=0.0,
         timestamp=earlier_timestamp,
     )
 
@@ -213,71 +230,71 @@ def test_transact_symbol_behaviour():
 
     # Test transact_symbol raises for transaction total
     # cost exceeding total cash
-    port.subscribe_funds(Decimal("1000.0"), timestamp=later_timestamp)
+    port.subscribe_funds(1000.0, timestamp=later_timestamp)
 
-    assert port.cash == Decimal("1000.0")
-    assert port.total_market_value == Decimal("0.0")
-    assert port.total_equity == Decimal("1000.0")
-    assert port.total_unrealised_pnl == Decimal("0")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("0")
+    assert port.cash == 1000.0
+    assert port.total_market_value == 0.0
+    assert port.total_equity == 1000.0
+    assert port.total_unrealised_pnl == 0
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == 0
 
     pe_sub1 = PortfolioEvent(
         timestamp=later_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("1000.00"),
-        balance=Decimal("1000.00"),
+        debit=0.0,
+        credit=1000.00,
+        balance=1000.00,
     )
 
     # Test correct total_cash and total_securities_value
     # for correct transaction (commission etc), correct
     # portfolio event and correct time update
-    port.subscribe_funds(Decimal("99000.0"), timestamp=even_later_timestamp)
+    port.subscribe_funds(99000.0, timestamp=even_later_timestamp)
 
-    assert port.cash == Decimal("100000.0")
-    assert port.total_market_value == Decimal("0.0")
-    assert port.total_equity == Decimal("100000.0")
-    assert port.total_unrealised_pnl == Decimal("0")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("0")
+    assert port.cash == 100000.0
+    assert port.total_market_value == 0.0
+    assert port.total_equity == 100000.0
+    assert port.total_unrealised_pnl == 0
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == 0
 
     pe_sub2 = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("99000.00"),
-        balance=Decimal("100000.00"),
+        debit=0.0,
+        credit=99000.00,
+        balance=100000.00,
     )
     tn_even_later = Transaction(
         symbol=symbol,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
-        price=Decimal("567.00"),
+        price=567.00,
         order_id=1,
-        commission=Decimal("15.78"),
+        commission=15.78,
         timestamp=even_later_timestamp,
     )
     port.transact_symbol(tn_even_later)
 
-    assert port.cash == Decimal("43284.22")
-    assert port.total_market_value == Decimal("56700.00")
-    assert port.total_equity == Decimal("99984.22")
-    assert port.total_unrealised_pnl == Decimal("-15.7800")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("-15.7800")
+    assert port.cash == 43284.22
+    assert port.total_market_value == 56700.00
+    assert port.total_equity == 99984.22
+    assert port.total_unrealised_pnl == pytest.approx(-15.7800, 0.01)
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
-    description = "LONG 100 AAA 567.00 07/10/2017"
+    description = "LONG 100 AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",
         description=description,
-        debit=Decimal("56715.78"),
-        credit=Decimal("0.0"),
-        balance=Decimal("43284.22"),
+        debit=56715.78,
+        credit=0.0,
+        balance=43284.22,
     )
 
     assert port.history == [pe_sub1, pe_sub2, pe_tn]
@@ -290,10 +307,18 @@ def test_transact_symbol_behaviour_short():
     for correct transaction (commission etc), correct
     portfolio event and correct time update
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    earlier_timestamp = pd.Timestamp("2017-10-04 08:00:00", tz=pytz.UTC)
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
-    even_later_timestamp = pd.Timestamp("2017-10-07 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    earlier_timestamp = datetime.strptime(
+        "2017-10-04 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    even_later_timestamp = datetime.strptime(
+        "2017-10-07 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
 
@@ -303,79 +328,79 @@ def test_transact_symbol_behaviour_short():
         size=100,
         action=Action.SELL,
         direction=Direction.SHORT,
-        price=Decimal("567.0"),
+        price=567.0,
         order_id=1,
-        commission=Decimal("0.0"),
+        commission=0.0,
         timestamp=earlier_timestamp,
     )
 
     # Test transact_symbol raises for transaction total
     # cost exceeding total cash
-    port.subscribe_funds(Decimal("1000.0"), timestamp=later_timestamp)
+    port.subscribe_funds(1000.0, timestamp=later_timestamp)
 
-    assert port.cash == Decimal("1000.0")
-    assert port.total_market_value == Decimal("0.0")
-    assert port.total_equity == Decimal("1000.0")
-    assert port.total_unrealised_pnl == Decimal("0")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("0")
+    assert port.cash == 1000.0
+    assert port.total_market_value == 0.0
+    assert port.total_equity == 1000.0
+    assert port.total_unrealised_pnl == 0
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == 0
 
     pe_sub1 = PortfolioEvent(
         timestamp=later_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("1000.0"),
-        balance=Decimal("1000.0"),
+        debit=0.0,
+        credit=1000.0,
+        balance=1000.0,
     )
 
     # Test correct total_cash and total_securities_value
     # for correct transaction (commission etc), correct
     # portfolio event and correct time update
-    port.subscribe_funds(Decimal("99000.0"), timestamp=even_later_timestamp)
+    port.subscribe_funds(99000.0, timestamp=even_later_timestamp)
 
-    assert port.cash == Decimal("100000.0")
-    assert port.total_market_value == Decimal("0.0")
-    assert port.total_equity == Decimal("100000.0")
-    assert port.total_unrealised_pnl == Decimal("0")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("0")
+    assert port.cash == 100000.0
+    assert port.total_market_value == 0.0
+    assert port.total_equity == 100000.0
+    assert port.total_unrealised_pnl == 0
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == 0
 
     pe_sub2 = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="subscription",
         description="SUBSCRIPTION",
-        debit=Decimal("0.0"),
-        credit=Decimal("99000.00"),
-        balance=Decimal("100000.00"),
+        debit=0.0,
+        credit=99000.00,
+        balance=100000.00,
     )
     tn_even_later = Transaction(
         symbol=symbol,
         size=100,
         action=Action.SELL,
         direction=Direction.SHORT,
-        price=Decimal("567.0"),
+        price=567.0,
         order_id=1,
-        commission=Decimal("15.78"),
+        commission=15.78,
         timestamp=even_later_timestamp,
     )
     port.transact_symbol(tn_even_later)
 
-    assert port.cash == Decimal("156684.22")
-    assert port.total_market_value == Decimal("-56700.00")
-    assert port.total_equity == Decimal("99984.22")
-    assert port.total_unrealised_pnl == Decimal("-15.7800")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("-15.7800")
+    assert port.cash == 156684.22
+    assert port.total_market_value == -56700.00
+    assert port.total_equity == 99984.22
+    assert port.total_unrealised_pnl == pytest.approx(-15.7800, 0.01)
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
     description = "SHORT 100 AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",
         description=description,
-        debit=Decimal("0.0"),
-        credit=Decimal("56684.220"),
-        balance=Decimal("156684.22"),
+        debit=0.0,
+        credit=56684.220,
+        balance=156684.22,
     )
 
     assert port.history == [pe_sub1, pe_sub2, pe_tn]
@@ -388,51 +413,61 @@ def test_transact_symbol_not_enough_cash():
     for correct transaction (commission etc), correct
     portfolio event and correct time update
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    earlier_timestamp = pd.Timestamp("2017-10-04 08:00:00", tz=pytz.UTC)
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
-    even_later_timestamp = pd.Timestamp("2017-10-07 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    earlier_timestamp = datetime.strptime(
+        "2017-10-04 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    even_later_timestamp = datetime.strptime(
+        "2017-10-07 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
 
     # Test transact_symbol raises for transaction total
     # cost exceeding total cash
-    port.subscribe_funds(Decimal("1000.0"), timestamp=later_timestamp)
+    port.subscribe_funds(1000.0, timestamp=later_timestamp)
 
-    assert port.cash == Decimal("1000.0")
-    assert port.total_market_value == Decimal("0.0")
-    assert port.total_equity == Decimal("1000.0")
-    assert port.total_unrealised_pnl == Decimal("0")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("0")
+    assert port.cash == 1000.0
+    assert port.total_market_value == 0.0
+    assert port.total_equity == 1000.0
+    assert port.total_unrealised_pnl == 0
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == 0
 
     tn_even_later = Transaction(
         symbol=symbol,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
-        price=Decimal("567.0"),
+        price=567.0,
         order_id=1,
-        commission=Decimal("15.78"),
+        commission=15.78,
         timestamp=even_later_timestamp,
     )
     port.transact_symbol(tn_even_later)
 
-    assert port.cash == Decimal("1000.0")
-    assert port.total_market_value == Decimal("0.0")
-    assert port.total_equity == Decimal("1000.0")
-    assert port.total_unrealised_pnl == Decimal("0")
-    assert port.total_realised_pnl == Decimal("0")
-    assert port.total_pnl == Decimal("0")
+    assert port.cash == 1000.0
+    assert port.total_market_value == 0.0
+    assert port.total_equity == 1000.0
+    assert port.total_unrealised_pnl == 0
+    assert port.total_realised_pnl == 0
+    assert port.total_pnl == 0
 
 
 def test_portfolio_to_dict_empty_portfolio():
     """
     Test 'portfolio_to_dict' method for an empty Portfolio.
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(timestamp=start_timestamp)
-    port.subscribe_funds(Decimal("100000.0"), timestamp=start_timestamp)
+    port.subscribe_funds(100000.0, timestamp=start_timestamp)
     port_dict = port.portfolio_to_dict()
     assert port_dict == {}
 
@@ -441,23 +476,31 @@ def test_portfolio_to_dict_for_two_holdings():
     """
     Test portfolio_to_dict for two holdings.
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    symbol1_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
-    symbol2_timestamp = pd.Timestamp("2017-10-07 08:00:00", tz=pytz.UTC)
-    update_timestamp = pd.Timestamp("2017-10-08 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    symbol1_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    symbol2_timestamp = datetime.strptime(
+        "2017-10-07 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    update_timestamp = datetime.strptime(
+        "2017-10-08 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     symbol1 = "AAA"
     symbol2 = "BBB"
 
     port = Portfolio(portfolio_id="1234", timestamp=start_timestamp)
-    port.subscribe_funds(Decimal("100000.0"), timestamp=start_timestamp)
+    port.subscribe_funds(100000.0, timestamp=start_timestamp)
     tn_symbol1 = Transaction(
         symbol=symbol1,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
-        price=Decimal("567.0"),
+        price=567.0,
         order_id=1,
-        commission=Decimal("15.78"),
+        commission=15.78,
         timestamp=symbol1_timestamp,
     )
     port.transact_symbol(tn_symbol1)
@@ -467,30 +510,30 @@ def test_portfolio_to_dict_for_two_holdings():
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
-        price=Decimal("123.0"),
+        price=123.0,
         order_id=2,
-        commission=Decimal("7.64"),
+        commission=7.64,
         timestamp=symbol2_timestamp,
     )
     port.transact_symbol(tn_symbol2)
-    port.update_market_value_of_symbol(symbol2, Decimal("134.0"), update_timestamp)
+    port.update_market_value_of_symbol(symbol2, 134.0, update_timestamp)
     test_holdings = {
         symbol1: {
             Direction.LONG: {
                 "size": 100,
-                "market_value": Decimal("56700.0"),
-                "unrealised_pnl": -Decimal("15.78"),
-                "realised_pnl": Decimal("0.0"),
-                "total_pnl": -Decimal("15.78"),
+                "market_value": float("56700.0"),
+                "unrealised_pnl": -15.78,
+                "realised_pnl": float("0.0"),
+                "total_pnl": -15.78,
             }
         },
         symbol2: {
             Direction.LONG: {
                 "size": 100,
-                "market_value": Decimal("13400.0"),
-                "unrealised_pnl": Decimal("1092.3600"),
-                "realised_pnl": Decimal("0.0"),
-                "total_pnl": Decimal("1092.3600"),
+                "market_value": float("13400.0"),
+                "unrealised_pnl": float("1092.3600"),
+                "realised_pnl": float("0.0"),
+                "total_pnl": float("1092.3600"),
             }
         },
     }
@@ -501,20 +544,24 @@ def test_portfolio_to_dict_for_two_holdings():
     # floating point representations
     for symbol in (symbol1, symbol2):
         for key, val in test_holdings[symbol].items():
-            assert port_holdings[symbol][key] == test_holdings[symbol][key]
+            assert port_holdings[symbol][key] == pytest.approx(
+                test_holdings[symbol][key], 0.01
+            )
 
 
 def test_update_market_value_of_symbol_not_in_list():
     """
     Test update_market_value_of_symbol for symbol not in list.
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
-    update = port.update_market_value_of_symbol(
-        symbol, Decimal("54.34"), later_timestamp
-    )
+    update = port.update_market_value_of_symbol(symbol, 54.34, later_timestamp)
     assert update is None
 
 
@@ -523,25 +570,29 @@ def test_update_market_value_of_symbol_negative_price():
     Test update_market_value_of_symbol for
     symbol with negative price.
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(timestamp=start_timestamp)
 
     symbol = "AAA"
-    port.subscribe_funds(Decimal("100000.0"), timestamp=later_timestamp)
+    port.subscribe_funds(100000.0, timestamp=later_timestamp)
     tn_symbol = Transaction(
         symbol=symbol,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
-        price=Decimal("567.0"),
+        price=567.0,
         order_id=1,
-        commission=Decimal("15.78"),
+        commission=15.78,
         timestamp=later_timestamp,
     )
     port.transact_symbol(tn_symbol)
     with pytest.raises(ValueError):
-        port.update_market_value_of_symbol(symbol, -Decimal("54.34"), later_timestamp)
+        port.update_market_value_of_symbol(symbol, -54.34, later_timestamp)
 
 
 def test_update_market_value_of_symbol_earlier_date():
@@ -549,21 +600,27 @@ def test_update_market_value_of_symbol_earlier_date():
     Test update_market_value_of_symbol for symbol
     with current_trade_date in past
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
-    earlier_timestamp = pd.Timestamp("2017-10-04 08:00:00", tz=pytz.UTC)
-    later_timestamp = pd.Timestamp("2017-10-06 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    earlier_timestamp = datetime.strptime(
+        "2017-10-04 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
+    later_timestamp = datetime.strptime(
+        "2017-10-06 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(portfolio_id="1234", timestamp=start_timestamp)
 
     symbol = "AAA"
-    port.subscribe_funds(Decimal("100000.0"), timestamp=later_timestamp)
+    port.subscribe_funds(100000.0, timestamp=later_timestamp)
     tn_symbol = Transaction(
         symbol=symbol,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
-        price=Decimal("567.0"),
+        price=567.0,
         order_id=1,
-        commission=Decimal("15.78"),
+        commission=15.78,
         timestamp=later_timestamp,
     )
     port.transact_symbol(tn_symbol)
@@ -573,7 +630,9 @@ def test_history_to_df_empty():
     """
     Test 'history_to_df' with no events.
     """
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port = Portfolio(timestamp=start_timestamp)
     hist_df = port.history_to_df()
     test_df = pd.DataFrame(
@@ -586,19 +645,21 @@ def test_history_to_df_empty():
 
 
 def test_neq_different_type():
-    start_timestamp = pd.Timestamp("2017-10-05 08:00:00", tz=pytz.UTC)
+    start_timestamp = datetime.strptime(
+        "2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+    )
     port1 = Portfolio(
-        starting_cash=Decimal("100000.0"),
+        starting_cash=100000.0,
         portfolio_id="1234",
         timestamp=start_timestamp,
     )
     port2 = Portfolio(
-        starting_cash=Decimal("100000.0"),
+        starting_cash=100000.0,
         portfolio_id="1234",
         timestamp=start_timestamp,
     )
     port3 = Portfolio(
-        starting_cash=Decimal("150000.0"),
+        starting_cash=150000.0,
         portfolio_id="1236",
         timestamp=start_timestamp,
     )

@@ -5,6 +5,7 @@ import traceback
 import logger
 import settings
 from candles_queue.candles_queue import CandlesQueue
+from models.candle import Candle
 
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
@@ -35,9 +36,7 @@ class RabbitMqConsumer:
                 if not self.auto_ack:
                     channel.basic_ack(delivery_tag=method_frame.delivery_tag)
             except Exception:
-                LOG.error(
-                    "Exception will reenqueue candle: {}".format(traceback.format_exc())
-                )
+                LOG.error("Exception will reenqueue candle: %s", traceback.format_exc())
                 channel.basic_reject(
                     delivery_tag=method_frame.delivery_tag, requeue=True
                 )
@@ -88,10 +87,10 @@ class RabbitMq(CandlesQueue):
     def add_consumer(self, callback: Callable[[str], None]) -> None:
         self.add_consumer_helper(callback)
 
-    def push(self, queue_elt: str) -> None:
+    def push(self, queue_elt: Candle) -> None:
         self.push_channel.queue_declare(queue=self.queue_name)
         self.push_channel.basic_publish(
-            exchange="", routing_key=self.queue_name, body=queue_elt
+            exchange="", routing_key=self.queue_name, body=queue_elt.to_json()
         )
         LOG.info("Sent new elt!")
 

@@ -1,13 +1,11 @@
 import os
 from abc import ABC
-from decimal import Decimal
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, List, Tuple
-
-import pandas as pd
-from bson import ObjectId
 
 import settings
 from common.clock import Clock
+from common.helper import parse_timedelta_str
 from common.utils import generate_object_id
 from logger import logger
 from models.enums import Action, Direction, OrderStatus, OrderType
@@ -22,8 +20,8 @@ class OrderBase(ABC):
     def __init__(
         self,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
-        time_in_force: pd.offsets.DateOffset = pd.offsets.Minute(5),
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: timedelta = timedelta(minutes=5),
     ):
         self.status = status
         self.generation_time = generation_time
@@ -34,7 +32,7 @@ class OrderBase(ABC):
     def add_on_complete_callback(self, callback: Callable, *args):
         self.on_complete_callbacks.append((callback, args))
 
-    def submit(self, submission_time: pd.Timestamp = pd.Timestamp.now("UTC")) -> None:
+    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         self.submission_time = submission_time
         self.status = OrderStatus.SUBMITTED
 
@@ -49,7 +47,7 @@ class OrderBase(ABC):
     def disable(self):
         self.status = OrderStatus.EXPIRED
 
-    def in_force(self, timestamp: pd.Timestamp) -> bool:
+    def in_force(self, timestamp: datetime) -> bool:
         in_force = self.submission_time + self.time_in_force > timestamp
         if not in_force:
             self.disable()
@@ -64,15 +62,15 @@ class Order(OrderBase):
         direction: Direction,
         size: int,
         signal_id: str,
-        limit: Decimal = None,
-        stop: Decimal = None,
-        target: Decimal = None,
-        stop_pct: Decimal = None,
+        limit: float = None,
+        stop: float = None,
+        target: float = None,
+        stop_pct: float = None,
         type: OrderType = OrderType.MARKET,
         clock: Clock = None,
-        time_in_force: pd.DateOffset = pd.offsets.Minute(5),
+        time_in_force: timedelta = timedelta(minutes=5),
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: pd.Timestamp = pd.Timestamp.now("UTC"),
+        generation_time: datetime = datetime.now(timezone.utc),
         order_id: str = None,
     ):
         self.symbol = symbol
@@ -95,13 +93,13 @@ class Order(OrderBase):
             status=status, generation_time=generation_time, time_in_force=time_in_force
         )
 
-    def submit(self, submission_time: pd.Timestamp = pd.Timestamp.now("UTC")) -> None:
+    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         if self.clock is not None:
             submission_time = self.clock.current_time(symbol=self.symbol)
         super().submit(submission_time)
-        LOG.info("Submitted order: %s, qty: %s" % (self.symbol, self.size))
+        LOG.info("Submitted order: %s, qty: %s", self.symbol, self.size)
 
-    def in_force(self, timestamp: pd.Timestamp = None) -> bool:
+    def in_force(self, timestamp: datetime = None) -> bool:
         if timestamp is None:
             timestamp = self.clock.current_time(symbol=self.symbol)
         return super().in_force(timestamp)
@@ -124,6 +122,7 @@ class Order(OrderBase):
             signal_id=order_dict["signal_id"],
             status=OrderStatus[order_dict["status"]],
             generation_time=order_dict["generation_time"],
+            time_in_force=parse_timedelta_str(order_dict["time_in_force"]),
         )
         return order
 
