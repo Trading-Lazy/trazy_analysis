@@ -1,5 +1,3 @@
-import time
-
 from bot.data_consumer import DataConsumer
 from bot.data_flow import DataFlow
 from broker.simulated_broker import SimulatedBroker
@@ -38,17 +36,17 @@ def test_reactive_sma_crossover_strategy_preload_data():
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
-    indicators_manager = IndicatorsManager(preload=False)
+    indicators_manager = IndicatorsManager(initial_data=feed.candles)
     data_consumer = DataConsumer(
         symbols=symbols,
         candles_queue=candles_queue,
-        db_storage=db_storage,
+        db_storage=None,
         order_manager=order_manager,
         strategies_classes=strategies,
         indicators_manager=indicators_manager,
     )
     data_flow = DataFlow(feed, data_consumer)
-    start = time.time()
+    # start = time.time()
     data_flow.start()
 
     assert broker.get_portfolio_cash_balance() == 10010.955

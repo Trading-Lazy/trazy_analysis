@@ -1,9 +1,18 @@
 import abc
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 
+from pandas_market_calendars import MarketCalendar
+
+from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
+from common.utils import timestamp_to_utc
 
 class Clock:
+    def __init__(
+        self, market_cal: MarketCalendar = AmericanStockExchangeCalendar()
+    ) -> None:
+        self.market_cal = market_cal
+
     @abc.abstractmethod
     def current_time(self, tz="UTC", symbol: str = "") -> datetime:  # pragma: no cover
         raise NotImplementedError
@@ -24,6 +33,24 @@ class Clock:
     def bars(self, symbol) -> int:  # pragma: no cover
         raise NotImplementedError
 
+    def end_of_day(
+        self, symbol: str, threshold: timedelta = timedelta(minutes=5)
+    ) -> bool:
+        now = self.current_time(symbol=symbol)
+        date = now.date()
+        time = self.market_cal.close_time_default
+        end_of_day_datetime = datetime(
+            year=date.year,
+            month=date.month,
+            day=date.day,
+            hour=time.hour,
+            minute=time.minute,
+            microsecond=time.microsecond,
+        )
+        end_of_day_datetime = self.market_cal.tz.localize(end_of_day_datetime)
+        end_of_day_datetime = timestamp_to_utc(end_of_day_datetime)
+        return end_of_day_datetime <= now + threshold
+
 
 class LiveClock(Clock):
     def current_time(self, tz=timezone.utc, symbol: str = "") -> datetime:
@@ -40,7 +67,10 @@ class LiveClock(Clock):
 
 
 class SimulatedClock(Clock):
-    def __init__(self) -> None:
+    def __init__(
+        self, market_cal: MarketCalendar = AmericanStockExchangeCalendar()
+    ) -> None:
+        super().__init__(market_cal)
         self.time_dict: Dict[str, datetime] = {}
         self.bars_dict: Dict[str, int] = {}
 

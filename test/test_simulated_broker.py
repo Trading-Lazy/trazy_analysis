@@ -1,4 +1,4 @@
-import queue
+from collections import deque
 from datetime import datetime
 
 import pytest
@@ -46,7 +46,7 @@ def test_initial_settings_for_default_simulated_broker():
     assert sb1.cash_balances == tcb1
     assert sb1.portfolio == portfolio1
     open_orders_queue1 = sb1.open_orders
-    assert open_orders_queue1.qsize() == 0
+    assert len(open_orders_queue1) == 0
 
     # Test a SimulatedBroker with some parameters set
     sb2 = SimulatedBroker(
@@ -66,7 +66,7 @@ def test_initial_settings_for_default_simulated_broker():
     assert sb2.cash_balances == tcb2
     assert sb2.portfolio == portfolio2
     open_orders_queue2 = sb2.open_orders
-    assert open_orders_queue2.qsize() == 0
+    assert len(open_orders_queue2) == 0
 
 
 def test_bad_set_base_currency():
@@ -130,8 +130,8 @@ def test_set_cash_balances():
 def test_set_initial_open_orders():
     clock = SimulatedClock()
     sb = SimulatedBroker(clock=clock)
-    assert type(sb._set_initial_open_orders()) == queue.Queue
-    assert sb._set_initial_open_orders().qsize() == 0
+    assert type(sb._set_initial_open_orders()) == deque
+    assert len(sb._set_initial_open_orders()) == 0
 
 
 def test_subscribe_funds_to_account():
@@ -252,7 +252,7 @@ def test_create_portfolio():
     # If portfolio_id isn't in the dictionary, then check it
     # was created correctly, along with the orders dictionary
     assert isinstance(sb.portfolio, Portfolio)
-    assert isinstance(sb.open_orders, queue.Queue)
+    assert isinstance(sb.open_orders, deque)
 
 
 def test_subscribe_funds_to_portfolio():

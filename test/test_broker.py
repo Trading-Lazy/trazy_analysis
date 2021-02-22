@@ -1,12 +1,27 @@
-import queue
+from collections import deque
 from unittest.mock import PropertyMock, call, patch
 
+from bot.data_consumer import DataConsumer
+from bot.data_flow import DataFlow
 from broker.broker import Broker
+from broker.simulated_broker import SimulatedBroker
+from candles_queue.candles_queue import CandlesQueue
+from candles_queue.fake_queue import FakeQueue
 from common.clock import SimulatedClock
+from db_storage.mongodb_storage import MongoDbStorage
+from feed.feed import CsvFeed, Feed
+from indicators.indicators import IndicatorsManager
 from models.enums import Action, Direction, OrderStatus
 from models.multiple_order import MultipleOrder, SequentialOrder
 from models.order import Order
+from order_manager.order_creator import OrderCreator
+from order_manager.order_manager import OrderManager
+from order_manager.position_sizer import PositionSizer
 from portfolio.portfolio import Portfolio
+from settings import DATABASE_NAME, DATABASE_URL
+from strategy.strategies.reactive_sma_crossover_strategy import (
+    ReactiveSmaCrossoverStrategy,
+)
 
 
 def test_init():
@@ -25,8 +40,8 @@ def test_init():
     assert broker.base_currency == base_currency
     assert broker.supported_currencies == supported_currencies
     assert broker.cash_balances == {"EUR": float("10000"), "USD": float("0.0")}
-    assert type(broker.open_orders) == queue.Queue
-    assert broker.open_orders.qsize() == 0
+    assert type(broker.open_orders) == deque
+    assert len(broker.open_orders) == 0
     assert broker.last_prices == {}
     assert broker.portfolio == port
 
@@ -114,8 +129,8 @@ def test_submit_order_single_order():
         clock=clock,
     )
     broker.submit_order(order1)
-    assert broker.open_orders.qsize() == 1
-    assert broker.open_orders.get() == order1
+    assert len(broker.open_orders) == 1
+    assert broker.open_orders.popleft() == order1
     assert order1.status == OrderStatus.SUBMITTED
 
 
@@ -147,10 +162,10 @@ def test_submit_order_multiple_order():
     orders = [order1, order2]
     multiple_order = MultipleOrder(orders=orders)
     broker.submit_order(multiple_order)
-    assert broker.open_orders.qsize() == len(orders)
-    assert broker.open_orders.get() == order1
+    assert len(broker.open_orders) == len(orders)
+    assert broker.open_orders.popleft() == order1
     assert order1.status == OrderStatus.SUBMITTED
-    assert broker.open_orders.get() == order2
+    assert broker.open_orders.popleft() == order2
     assert order2.status == OrderStatus.SUBMITTED
 
 
@@ -182,7 +197,85 @@ def test_submit_order_sequential_order():
     orders = [order1, order2]
     sequential_order = SequentialOrder(orders=orders)
     broker.submit_order(sequential_order)
-    assert broker.open_orders.qsize() == 2
-    assert broker.open_orders.get() == order1
-    assert broker.open_orders.get() == order2
+    assert len(broker.open_orders) == 2
+    assert broker.open_orders.popleft() == order1
+    assert broker.open_orders.popleft() == order2
     assert order1.status == OrderStatus.SUBMITTED
+
+
+def test_close_all_open_positions_at_end_of_day():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = FakeQueue("candles")
+
+    feed: Feed = CsvFeed(
+        {"AAPL": "test/data/aapl_candles_one_day_positions_opened_end_of_day.csv"},
+        candles_queue,
+    )
+
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
+    db_storage.clean_all_signals()
+    db_storage.clean_all_orders()
+    db_storage.clean_all_candles()
+
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=10000.0)
+    broker.subscribe_funds_to_portfolio(10000.0)
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(broker=broker)
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+    )
+    indicators_manager = IndicatorsManager(initial_data=feed.candles)
+    data_consumer = DataConsumer(
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=None,
+        order_manager=order_manager,
+        strategies_classes=strategies,
+        indicators_manager=indicators_manager,
+    )
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
+
+    assert broker.get_portfolio_cash_balance() == 10016.415
+
+
+def test_close_all_open_positions_at_end_of_feed_data():
+    symbols = ["AAPL"]
+    candles_queue: CandlesQueue = FakeQueue("candles")
+
+    feed: Feed = CsvFeed(
+        {
+            "AAPL": "test/data/aapl_candles_one_day_positions_opened_end_of_feed_data.csv"
+        },
+        candles_queue,
+    )
+
+    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
+    db_storage.clean_all_signals()
+    db_storage.clean_all_orders()
+    db_storage.clean_all_candles()
+
+    strategies = [ReactiveSmaCrossoverStrategy]
+    clock = SimulatedClock()
+    broker = SimulatedBroker(clock, initial_funds=10000.0)
+    broker.subscribe_funds_to_portfolio(10000.0)
+    position_sizer = PositionSizer(broker)
+    order_creator = OrderCreator(broker=broker)
+    order_manager = OrderManager(
+        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+    )
+    indicators_manager = IndicatorsManager(initial_data=feed.candles)
+    data_consumer = DataConsumer(
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=None,
+        order_manager=order_manager,
+        strategies_classes=strategies,
+        indicators_manager=indicators_manager,
+    )
+    data_flow = DataFlow(feed, data_consumer)
+    data_flow.start()
+
+    assert broker.get_portfolio_cash_balance() == 10014.35

@@ -23,7 +23,6 @@ from common.helper import (
     round_time,
 )
 from common.types import CandleDataFrame
-from strategy.strategy import euronext_cal
 from test.tools.tools import not_raises
 
 SYMBOL = "IVV"
@@ -350,7 +349,7 @@ def test_calc_time_range_1_day_interval():
     start = calc_required_history_start_timestamp(
         pd.offsets.Day(1),
         8,
-        euronext_cal,
+        MARKET_CAL,
         datetime(2020, 5, 1, 0, 0, tzinfo=timezone("UTC")),
     )
     assert start == datetime(2020, 4, 21, 0, 0, tzinfo=timezone("UTC"))
@@ -360,7 +359,7 @@ def test_calc_time_range_1_day_interval():
     start = calc_required_history_start_timestamp(
         pd.offsets.Day(1),
         8,
-        euronext_cal,
+        MARKET_CAL,
         datetime(2020, 5, 1, 0, 0, tzinfo=timezone("UTC")),
     )
     assert start == datetime(2020, 4, 21, 0, 0, tzinfo=timezone("UTC"))
@@ -370,7 +369,7 @@ def test_calc_time_range_1_day_interval_2():
     start = calc_required_history_start_timestamp(
         pd.offsets.Day(1),
         8,
-        euronext_cal,
+        MARKET_CAL,
         datetime(2020, 4, 30, 0, 0, tzinfo=timezone("UTC")),
     )
     assert start == datetime(2020, 4, 20, 0, 0, tzinfo=timezone("UTC"))
@@ -380,7 +379,7 @@ def test_calc_time_range_30_minute_interval_on_business_hour():
     start = calc_required_history_start_timestamp(
         pd.offsets.Minute(30),
         4,
-        euronext_cal,
+        MARKET_CAL,
         datetime(2020, 4, 30, 15, 5, tzinfo=timezone("UTC")),
     )
     assert start == datetime(2020, 4, 30, 13, 30, tzinfo=timezone("UTC"))
@@ -390,7 +389,7 @@ def test_calc_time_range_30_minute_interval_on_non_business_hour():
     start = calc_required_history_start_timestamp(
         pd.offsets.Minute(30),
         4,
-        euronext_cal,
+        MARKET_CAL,
         datetime(2020, 5, 1, 12, 0, tzinfo=timezone("UTC")),
     )
     assert start == datetime(2020, 4, 30, 14, 0, tzinfo=timezone("UTC"))

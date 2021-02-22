@@ -25,3 +25,8 @@ class OrderType(Enum):
     STOP = "STOP"
     TARGET = "TARGET"
     TRAILING_STOP = "TRAILING_STOP"
+
+
+class OrderCondition(Enum):
+    EOD = "EOD"
+    GTC = "GTC"

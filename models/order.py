@@ -8,7 +8,7 @@ from common.clock import Clock
 from common.helper import parse_timedelta_str
 from common.utils import generate_object_id
 from logger import logger
-from models.enums import Action, Direction, OrderStatus, OrderType
+from models.enums import Action, Direction, OrderCondition, OrderStatus, OrderType
 from models.utils import is_closed_position
 
 LOG = logger.get_root_logger(
@@ -67,6 +67,7 @@ class Order(OrderBase):
         target: float = None,
         stop_pct: float = None,
         type: OrderType = OrderType.MARKET,
+        condition: OrderCondition = OrderCondition.GTC,
         clock: Clock = None,
         time_in_force: timedelta = timedelta(minutes=5),
         status: OrderStatus = OrderStatus.CREATED,
@@ -89,6 +90,7 @@ class Order(OrderBase):
         if self.clock is not None:
             generation_time = self.clock.current_time(symbol=symbol)
         self.type: OrderType = type
+        self.condition: OrderCondition = condition
         super().__init__(
             status=status, generation_time=generation_time, time_in_force=time_in_force
         )
@@ -119,10 +121,12 @@ class Order(OrderBase):
             action=Action[order_dict["action"]],
             direction=Direction[order_dict["direction"]],
             size=int(order_dict["size"]),
+            type=OrderType[order_dict["type"]],
+            condition=OrderCondition[order_dict["condition"]],
             signal_id=order_dict["signal_id"],
+            time_in_force=parse_timedelta_str(order_dict["time_in_force"]),
             status=OrderStatus[order_dict["status"]],
             generation_time=order_dict["generation_time"],
-            time_in_force=parse_timedelta_str(order_dict["time_in_force"]),
         )
         return order
 
@@ -135,6 +139,7 @@ class Order(OrderBase):
         dict["time_in_force"] = str(dict["time_in_force"])
         dict["status"] = dict["status"].name
         dict["type"] = dict["type"].name
+        dict["condition"] = dict["condition"].name
         if not with_order_id:
             del dict["order_id"]
         del dict["on_complete_callbacks"]

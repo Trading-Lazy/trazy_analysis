@@ -1,6 +1,5 @@
 import os
 import traceback
-from collections import deque
 from typing import Callable
 
 import settings
@@ -16,10 +15,10 @@ LOG = logger.get_root_logger(
 class FakeQueue(CandlesQueue):
     def __init__(self, queue_name: str):
         super().__init__(queue_name)
-        self.callbacks = deque()
+        self.consumer_callbacks = []
 
     def add_consumer_helper(self, callback: Callable[[], None], retry=True):
-        self.callbacks.append((callback, retry))
+        self.consumer_callbacks.append((callback, retry))
 
     def add_consumer_no_retry(self, callback: Callable[[Candle], None]) -> None:
         self.add_consumer_helper(callback, retry=False)
@@ -28,7 +27,7 @@ class FakeQueue(CandlesQueue):
         self.add_consumer_helper(callback)
 
     def push(self, queue_elt: Candle):
-        for callback, retry in self.callbacks:
+        for callback, retry in self.consumer_callbacks:
             if not retry:
                 callback(queue_elt)
             else:
@@ -37,9 +36,10 @@ class FakeQueue(CandlesQueue):
                     try:
                         callback(queue_elt)
                         done = True
-                    except Exception:
+                    except Exception as e:
                         LOG.error(
-                            "Exception will reenqueue candle: %s",
+                            "Exception %s, Traceback %s, Will reenqueue candle:",
+                            e,
                             traceback.format_exc(),
                         )
 

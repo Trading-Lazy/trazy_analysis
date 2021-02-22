@@ -1,6 +1,7 @@
 import os
 import queue
 from abc import ABCMeta, abstractmethod
+from collections import deque
 from typing import List, Union
 
 import numpy as np
@@ -10,7 +11,7 @@ from common.clock import Clock
 from common.helper import get_or_create_nested_dict
 from logger import logger
 from models.candle import Candle
-from models.enums import Direction, OrderStatus
+from models.enums import Action, Direction, OrderStatus, OrderType
 from models.multiple_order import MultipleOrder, OcoOrder, SequentialOrder
 from models.order import Order
 from portfolio.portfolio import Portfolio
@@ -79,15 +80,15 @@ class Broker:
         else:
             return base_currency
 
-    def _set_initial_open_orders(self) -> queue.Queue():
+    def _set_initial_open_orders(self) -> deque:
         """
         Set the appropriate initial open orders dictionary.
         Returns
         -------
-        `dict`
+        `queue`
             The empty initial open orders dictionary.
         """
-        return queue.Queue()
+        return deque()
 
     def _set_initial_exit_orders(self) -> dict:
         """
@@ -286,7 +287,7 @@ class Broker:
                 self.put_all_orders_in_queue(single_order)
         else:
             self.handle_exit_order(order)
-            self.open_orders.put(order)
+            self.open_orders.append(order)
 
     def submit_order(self, order: Order) -> None:
         """
@@ -324,15 +325,19 @@ class Broker:
 
     def execute_open_orders(self) -> None:
         # Try to execute orders
-        orders = np.empty(shape=self.open_orders.qsize(), dtype=Order)
+        orders = np.empty(shape=len(self.open_orders), dtype=Order)
         index = 0
-        while not self.open_orders.empty():
-            orders[index] = self.open_orders.get()
+        while len(self.open_orders) > 0:
+            orders[index] = self.open_orders.popleft()
             index += 1
 
         for order in orders:
             now = self.clock.current_time(symbol=order.symbol)
-            if order.in_force(now) and order.status == OrderStatus.SUBMITTED:
+            if (
+                order.in_force(now)
+                and not self.clock.end_of_day(order.symbol)
+                and order.status == OrderStatus.SUBMITTED
+            ):
                 self.execute_order(order)
             else:
                 LOG.info(
@@ -351,3 +356,32 @@ class Broker:
 
     def synchronize(self):  # pragma: no cover
         pass
+
+    def close_all_open_positions(self, symbol: str, end_of_day: bool = True):
+        # if we are close to the end of the day, we can start making market order to close all positions
+        if end_of_day and not self.clock.end_of_day(symbol):
+            return
+
+        pos_handler = self.portfolio.pos_handler
+        positions = pos_handler.positions
+
+        if symbol not in positions:
+            return
+
+        close_orders = []
+        for direction in positions[symbol]:
+            position = positions[symbol][direction]
+            order = Order(
+                symbol=symbol,
+                action=Action.SELL if direction == Direction.LONG else Action.BUY,
+                direction=direction,
+                size=position.net_size,
+                signal_id=f"SimulatedBroker-{symbol}",
+                type=OrderType.MARKET,
+                clock=self.clock,
+            )
+            order.submit()
+            close_orders.append(order)
+
+        for order in close_orders:
+            self.execute_market_order(order)
