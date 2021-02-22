@@ -113,8 +113,8 @@ ORDER1: Order = Order(
     action=Action.BUY,
     direction=Direction.LONG,
     size=100,
-    clock=clock,
     signal_id="1",
+    clock=clock,
 )
 
 clock = SimulatedClock()
@@ -126,8 +126,8 @@ ORDER2: Order = Order(
     action=Action.SELL,
     direction=Direction.LONG,
     size=100,
-    clock=clock,
     signal_id="2",
+    clock=clock,
 )
 
 MONGODB_STORAGE = MongoDbStorage(DATABASE_NAME, DATABASE_URL)

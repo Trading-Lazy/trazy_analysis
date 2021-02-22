@@ -263,7 +263,7 @@ class SimulatedBroker(Broker):
         ):
             self.execute_market_order(limit_order)
         else:
-            self.open_orders.put(limit_order)
+            self.open_orders.append(limit_order)
 
     def execute_stop_order(self, stop_order: Order) -> None:
         price = self.current_price(stop_order.symbol)
@@ -275,7 +275,7 @@ class SimulatedBroker(Broker):
         ):
             self.execute_market_order(stop_order)
         else:
-            self.open_orders.put(stop_order)
+            self.open_orders.append(stop_order)
 
     def execute_target_order(self, target_order: Order) -> None:
         price = self.current_price(target_order.symbol)
@@ -287,7 +287,7 @@ class SimulatedBroker(Broker):
         ):
             self.execute_market_order(target_order)
         else:
-            self.open_orders.put(target_order)
+            self.open_orders.append(target_order)
 
     def execute_trailing_stop_order(
         self,
@@ -317,7 +317,7 @@ class SimulatedBroker(Broker):
         ):
             self.execute_market_order(trailing_stop_order)
         else:
-            self.open_orders.put(trailing_stop_order)
+            self.open_orders.append(trailing_stop_order)
 
     def execute_order(self, order: Order) -> None:
         """

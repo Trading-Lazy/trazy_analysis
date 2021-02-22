@@ -51,9 +51,13 @@ class OrderManager:
         opened_position = self.broker.has_opened_position(
             signal.symbol, signal.direction
         )
-        if signal.in_force(now) and (
-            (signal.is_entry_signal and not opened_position)
-            or (signal.is_exit_signal and opened_position)
+        if (
+            signal.in_force(now)
+            and (
+                (signal.is_entry_signal and not opened_position)
+                or (signal.is_exit_signal and opened_position)
+            )
+            and not self.clock.end_of_day(signal.symbol)
         ):
             LOG.info("Signal is still in force and will be processed soon.")
             self.pending_signals.put((signal, self.clock.bars(signal.symbol)))

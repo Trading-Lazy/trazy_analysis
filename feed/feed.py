@@ -95,6 +95,7 @@ class OfflineFeed(Feed):
         for symbol in self.candles:
             for candle in self.candles[symbol]:
                 self.candles_queue.push(candle)
+            self.candles_queue.complete(symbol=symbol)
 
     def stop(self):
         pass

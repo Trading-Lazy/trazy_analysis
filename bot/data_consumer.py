@@ -43,6 +43,9 @@ class DataConsumer:
             self.indicators_manager.RollingWindow(symbol).subscribe(
                 lambda candle: self.broker.execute_open_orders()
             )
+            self.indicators_manager.RollingWindow(symbol).subscribe(
+                lambda candle: self.broker.close_all_open_positions(candle.symbol)
+            )
 
     def _subscribe_order_manager_to_data_stream(self):
         for symbol in self.symbols:
@@ -127,3 +130,10 @@ class DataConsumer:
 
     def start(self):
         self.candles_queue.add_consumer(self.handle_new_candle_callback)
+        for symbol in self.symbols:
+            self.candles_queue.add_on_complete_callback(
+                symbol,
+                lambda symbol: self.broker.close_all_open_positions(
+                    symbol=symbol, end_of_day=False
+                ),
+            )

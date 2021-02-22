@@ -4,7 +4,6 @@ import os
 import logger
 import settings
 from common.clock import Clock
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from db_storage.db_storage import DbStorage
 from indicators.indicators import IndicatorsManager
 from indicators.stream import StreamData
@@ -15,8 +14,6 @@ from order_manager.order_manager import OrderManager
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
 )
-
-euronext_cal = EuronextExchangeCalendar()
 
 
 class Strategy(StreamData):

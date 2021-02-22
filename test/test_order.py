@@ -169,6 +169,8 @@ def test_from_serializable_dict():
         "action": "BUY",
         "direction": "LONG",
         "size": 100,
+        "type": "MARKET",
+        "condition": "GTC",
         "status": "SUBMITTED",
         "generation_time": "2017-10-05 08:00:00+00:00",
         "time_in_force": "0:05:00",
@@ -268,8 +270,8 @@ def test_limit_order():
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
-        limit=limit,
         signal_id="1",
+        limit=limit,
         type=OrderType.LIMIT,
         clock=clock,
     )
@@ -286,8 +288,8 @@ def test_stop_order():
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
-        stop=stop,
         signal_id="1",
+        stop=stop,
         type=OrderType.STOP,
         clock=clock,
     )
@@ -304,8 +306,8 @@ def test_trailing_stop_order():
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
-        stop_pct=stop_pct,
         signal_id="1",
+        stop_pct=stop_pct,
         type=OrderType.TRAILING_STOP,
         clock=clock,
     )
@@ -322,8 +324,8 @@ def test_trailing_stop_order_eq():
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
-        stop_pct=stop_pct,
         signal_id="1",
+        stop_pct=stop_pct,
         type=OrderType.TRAILING_STOP,
         clock=clock,
     )
@@ -332,8 +334,8 @@ def test_trailing_stop_order_eq():
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
-        stop_pct=stop_pct,
         signal_id="1",
+        stop_pct=stop_pct,
         type=OrderType.TRAILING_STOP,
         clock=clock,
     )
