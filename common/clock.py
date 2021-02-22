@@ -7,7 +7,6 @@ from pandas_market_calendars import MarketCalendar
 from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
 from common.utils import timestamp_to_utc
 
-
 class Clock:
     def __init__(
         self, market_cal: MarketCalendar = AmericanStockExchangeCalendar()

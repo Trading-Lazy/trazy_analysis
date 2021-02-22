@@ -18,7 +18,7 @@ from strategy.strategies.reactive_sma_crossover_strategy import (
 )
 
 
-def test_reactive_sma_crossover_strategy():
+def test_reactive_sma_crossover_strategy_preload_data():
     symbols = ["AAPL"]
     candles_queue: CandlesQueue = FakeQueue("candles")
 
