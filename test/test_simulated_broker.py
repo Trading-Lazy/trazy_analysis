@@ -21,8 +21,8 @@ from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from portfolio.portfolio import Portfolio
 from settings import DATABASE_NAME, DATABASE_URL
-from strategy.strategies.reactive_sma_crossover_strategy import (
-    ReactiveSmaCrossoverStrategy,
+from strategy.strategies.sma_crossover_strategy import (
+    SmaCrossoverStrategy,
 )
 from test.tools.tools import not_raises
 
@@ -445,7 +445,7 @@ def test_execute_limit_order():
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -484,7 +484,7 @@ def test_execute_stop_order():
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -521,7 +521,7 @@ def test_execute_target_order():
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -561,7 +561,7 @@ def test_execute_trailing_stop_order():
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -602,7 +602,7 @@ def test_execute_cover_order():
     db_storage.clean_all_orders()
     db_storage.clean_all_candles()
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -639,7 +639,7 @@ def test_execute_bracket_order():
     db_storage.clean_all_orders()
     db_storage.clean_all_candles()
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)

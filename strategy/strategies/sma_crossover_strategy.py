@@ -11,7 +11,7 @@ from order_manager.order_manager import OrderManager
 from strategy.strategy import LOG, Strategy
 
 
-class ReactiveSmaCrossoverStrategy(Strategy):
+class SmaCrossoverStrategy(Strategy):
     def __init__(
         self,
         symbol: str,

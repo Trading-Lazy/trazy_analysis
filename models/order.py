@@ -60,7 +60,7 @@ class Order(OrderBase):
         symbol: str,
         action: Action,
         direction: Direction,
-        size: int,
+        size: float,
         signal_id: str,
         limit: float = None,
         stop: float = None,

@@ -14,8 +14,8 @@ from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from settings import DATABASE_NAME, DATABASE_URL
 from strategy.strategies.idle_strategy import IdleStrategy
-from strategy.strategies.reactive_sma_crossover_strategy import (
-    ReactiveSmaCrossoverStrategy,
+from strategy.strategies.sma_crossover_strategy import (
+    SmaCrossoverStrategy,
 )
 
 QUEUE_NAME = "candles"
@@ -41,7 +41,7 @@ CLOCK = SimulatedClock()
 def test_init_live():
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL, AAPL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
@@ -63,9 +63,9 @@ def test_init_live():
     assert data_consumer.strategies_classes == strategies_classes
 
     assert len(data_consumer.strategy_instances) == 4
-    assert isinstance(data_consumer.strategy_instances[0], ReactiveSmaCrossoverStrategy)
+    assert isinstance(data_consumer.strategy_instances[0], SmaCrossoverStrategy)
     assert data_consumer.strategy_instances[0].symbol == AAPL_SYMBOL
-    assert isinstance(data_consumer.strategy_instances[1], ReactiveSmaCrossoverStrategy)
+    assert isinstance(data_consumer.strategy_instances[1], SmaCrossoverStrategy)
     assert data_consumer.strategy_instances[1].symbol == GOOGL_SYMBOL
     assert isinstance(data_consumer.strategy_instances[2], IdleStrategy)
     assert data_consumer.strategy_instances[2].symbol == AAPL_SYMBOL
@@ -79,7 +79,7 @@ def test_init_live():
 def test_init_simulation():
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL, AAPL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
@@ -101,9 +101,9 @@ def test_init_simulation():
     assert data_consumer.strategies_classes == strategies_classes
 
     assert len(data_consumer.strategy_instances) == 4
-    assert isinstance(data_consumer.strategy_instances[0], ReactiveSmaCrossoverStrategy)
+    assert isinstance(data_consumer.strategy_instances[0], SmaCrossoverStrategy)
     assert data_consumer.strategy_instances[0].symbol == AAPL_SYMBOL
-    assert isinstance(data_consumer.strategy_instances[1], ReactiveSmaCrossoverStrategy)
+    assert isinstance(data_consumer.strategy_instances[1], SmaCrossoverStrategy)
     assert data_consumer.strategy_instances[1].symbol == GOOGL_SYMBOL
     assert isinstance(data_consumer.strategy_instances[2], IdleStrategy)
     assert data_consumer.strategy_instances[2].symbol == AAPL_SYMBOL
@@ -117,7 +117,7 @@ def test_init_simulation():
 def test_add_strategy():
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy]
+    strategies_classes = [SmaCrossoverStrategy]
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
@@ -143,13 +143,11 @@ def test_add_strategy():
         assert strategy_object.db_storage == DB_STORAGE
 
 
-@patch(
-    "strategy.strategies.reactive_sma_crossover_strategy.ReactiveSmaCrossoverStrategy.process_candle"
-)
+@patch("strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_candle")
 def test_run_strategy(process_candle_mocked):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy]
+    strategies_classes = [SmaCrossoverStrategy]
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
@@ -175,7 +173,7 @@ def test_run_strategy(process_candle_mocked):
 def test_run_strategies(run_strategy_mocked):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
@@ -214,7 +212,7 @@ def test_handle_new_candle_callback(
 ):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     candle_with_identifier_exists_mocked.return_value = False
 
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
@@ -256,7 +254,7 @@ def test_handle_new_candle_callback(
 def test_start_live(add_consumer_with_ack_mocked, subscribe_mocked):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
 
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
@@ -286,7 +284,7 @@ def test_start_live(add_consumer_with_ack_mocked, subscribe_mocked):
 def test_start_simulation(add_consumer_with_ack_mocked):
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     candles_queue = FakeQueue(QUEUE_NAME)
-    strategies_classes = [ReactiveSmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
 
     broker = SimulatedBroker(clock=CLOCK, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
