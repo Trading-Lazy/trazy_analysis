@@ -13,8 +13,8 @@ from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from settings import DATABASE_NAME, DATABASE_URL
-from strategy.strategies.reactive_sma_crossover_strategy import (
-    ReactiveSmaCrossoverStrategy,
+from strategy.strategies.sma_crossover_strategy import (
+    SmaCrossoverStrategy,
 )
 
 
@@ -31,7 +31,7 @@ def test_start(data_consumer_start_mocked, feed_start_mocked):
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
     db_storage.clean_all_candles()
     db_storage.clean_all_orders()
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
 
     clock = SimulatedClock()
     broker = SimulatedBroker(clock=clock, initial_funds=10000)

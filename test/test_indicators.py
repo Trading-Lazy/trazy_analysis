@@ -11,8 +11,8 @@ from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from settings import DATABASE_NAME, DATABASE_URL
-from strategy.strategies.reactive_sma_crossover_strategy import (
-    ReactiveSmaCrossoverStrategy,
+from strategy.strategies.sma_crossover_strategy import (
+    SmaCrossoverStrategy,
 )
 
 
@@ -27,7 +27,7 @@ def test_reactive_sma_crossover_strategy_preload_data():
     db_storage.clean_all_orders()
     db_storage.clean_all_candles()
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)

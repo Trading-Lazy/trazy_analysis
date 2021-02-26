@@ -8,18 +8,20 @@ from pathlib import Path
 
 from bot.data_consumer import DataConsumer
 from bot.data_flow import DataFlow
-from broker.simulated_broker import SimulatedBroker
+from broker.degiro_broker import DegiroBroker
 from candles_queue.candles_queue import CandlesQueue
 from candles_queue.fake_queue import FakeQueue
-from common.clock import SimulatedClock
+from common.clock import LiveClock
 from db_storage.mongodb_storage import MongoDbStorage
-from feed.feed import CsvFeed, Feed
+from feed.feed import Feed, LiveFeed
+from indicators.indicators import IndicatorsManager
+from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
 from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from settings import DATABASE_NAME, DATABASE_URL
-from strategy.strategies.reactive_sma_crossover_strategy import (
-    ReactiveSmaCrossoverStrategy,
+from strategy.strategies.sma_crossover_strategy import (
+    SmaCrossoverStrategy,
 )
 from strategy.strategy import Strategy
 
@@ -53,29 +55,34 @@ def get_strategies_classes(
 
 
 if __name__ == "__main__":
-    symbols = ["AAPL"]
+    symbols = ["SHIP"]
     candles_queue: CandlesQueue = FakeQueue("candles")
+    live_data_handler = TiingoLiveDataHandler()
 
-    feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_three_years.csv"}, candles_queue
-    )
+    feed: Feed = LiveFeed(symbols, candles_queue, live_data_handler)
 
     db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
     db_storage.clean_all_signals()
     db_storage.clean_all_orders()
     db_storage.clean_all_candles()
 
-    strategies = [ReactiveSmaCrossoverStrategy]
-    clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000.0)
-    broker.subscribe_funds_to_portfolio(10000.0)
+    strategies = [SmaCrossoverStrategy]
+    clock = LiveClock()
+    broker = DegiroBroker(clock)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
+    indicators_manager = IndicatorsManager(preload=False)
     data_consumer = DataConsumer(
-        symbols, candles_queue, db_storage, order_manager, strategies
+        symbols=symbols,
+        candles_queue=candles_queue,
+        db_storage=db_storage,
+        order_manager=order_manager,
+        strategies_classes=strategies,
+        save_candles=True,
+        indicators_manager=indicators_manager,
     )
 
     data_flow = DataFlow(feed, data_consumer)

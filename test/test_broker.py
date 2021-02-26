@@ -19,8 +19,8 @@ from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from portfolio.portfolio import Portfolio
 from settings import DATABASE_NAME, DATABASE_URL
-from strategy.strategies.reactive_sma_crossover_strategy import (
-    ReactiveSmaCrossoverStrategy,
+from strategy.strategies.sma_crossover_strategy import (
+    SmaCrossoverStrategy,
 )
 
 
@@ -217,7 +217,7 @@ def test_close_all_open_positions_at_end_of_day():
     db_storage.clean_all_orders()
     db_storage.clean_all_candles()
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
@@ -257,7 +257,7 @@ def test_close_all_open_positions_at_end_of_feed_data():
     db_storage.clean_all_orders()
     db_storage.clean_all_candles()
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)

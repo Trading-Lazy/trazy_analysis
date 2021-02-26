@@ -2,20 +2,19 @@ from datetime import date, timedelta
 from typing import Tuple
 
 from market_data.historical.historical_data_handler import HistoricalDataHandler
-from market_data.tiingo_data_handler import TiingoDataHandler
+from market_data.tiingo_crypto_data_handler import TiingoCryptoDataHandler
 
 
-class TiingoHistoricalDataHandler(TiingoDataHandler, HistoricalDataHandler):
+class TiingoHistoricalCryptoDataHandler(TiingoCryptoDataHandler, HistoricalDataHandler):
     BASE_URL_HISTORICAL_TICKER_DATA = (
-        TiingoDataHandler.BASE_URL_API + "/{}/prices?"
+        TiingoCryptoDataHandler.BASE_URL_API + "/prices?tickers={}&"
         "startDate={}&"
         "endDate={}&"
-        "format=csv&columns=open,high,low,close,volume&"
         "resampleFreq=1min&"
         "token={}"
     )
-    EARLIEST_AVAILABLE_DATE_FOR_DOWNLOAD = date(2017, 3, 7)
-    MAX_DOWNLOAD_FRAME = timedelta(days=30)
+    EARLIEST_AVAILABLE_DATE_FOR_DOWNLOAD = date(2017, 12, 13)
+    MAX_DOWNLOAD_FRAME = timedelta(days=4)
 
     @classmethod
     def generate_ticker_data_url(cls, ticker: str, period: Tuple[date, date]) -> str:

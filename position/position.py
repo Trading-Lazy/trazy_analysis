@@ -389,4 +389,5 @@ class Position:
         del self_dict["last_price_update"]
         other_dict = other.__dict__.copy()
         del other_dict["last_price_update"]
-        return self.__dict__ == other.__dict__
+        t = self_dict == other_dict
+        return self_dict == other_dict

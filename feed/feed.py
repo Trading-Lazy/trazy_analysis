@@ -84,6 +84,9 @@ class LiveFeed(Feed):
             symbol, nb_candles=2
         )
         for candle in candles:
+            # wait for the candle minute to pass before getting the complete candle
+            while candle.timestamp + timedelta(minutes=1) > datetime.now(timezone.utc):
+                pass
             self.candles_queue.push(candle)
 
 

@@ -4,12 +4,16 @@ from datetime import date, datetime, timedelta
 import numpy as np
 import pytest
 
+from broker.common import get_rejected_order_error_message
+from common.clock import LiveClock
 from common.helper import get_or_create_nested_dict
 from common.meta import RateLimitedSingletonMeta
 from file_storage.common import concat_path
 from indicators.common import get_state
 from indicators.crossover import CrossoverState
 from market_data.common import get_periods
+from models.enums import Action, Direction, OrderType
+from models.order import Order
 
 
 def test_concat_path_base_and_complement_empty():
@@ -129,3 +133,18 @@ def test_get_state():
     assert get_state(0) == CrossoverState.IDLE
     assert get_state(1) == CrossoverState.POS
     assert get_state(-1) == CrossoverState.NEG
+
+
+def test_get_rejected_order_error_message():
+    clock = LiveClock()
+    order = Order(
+        symbol="IFMK",
+        action=Action.BUY,
+        direction=Direction.LONG,
+        size=1,
+        signal_id="1",
+        type=OrderType.MARKET,
+        clock=clock,
+    )
+    expected_error_message = "MARKET order (symbol=IFMK, action=BUY, direction=LONG, size=1) could not be executed."
+    assert get_rejected_order_error_message(order) == expected_error_message

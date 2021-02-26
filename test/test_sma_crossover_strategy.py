@@ -1,5 +1,3 @@
-import time
-
 from bot.data_consumer import DataConsumer
 from bot.data_flow import DataFlow
 from broker.simulated_broker import SimulatedBroker
@@ -13,12 +11,12 @@ from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from settings import DATABASE_NAME, DATABASE_URL
-from strategy.strategies.reactive_sma_crossover_strategy import (
-    ReactiveSmaCrossoverStrategy,
+from strategy.strategies.sma_crossover_strategy import (
+    SmaCrossoverStrategy,
 )
 
 
-def test_reactive_sma_crossover_strategy_preload_data():
+def test_reactive_sma_crossover_strategy():
     symbols = ["AAPL"]
     candles_queue: CandlesQueue = FakeQueue("candles")
 
@@ -29,7 +27,7 @@ def test_reactive_sma_crossover_strategy_preload_data():
     db_storage.clean_all_orders()
     db_storage.clean_all_candles()
 
-    strategies = [ReactiveSmaCrossoverStrategy]
+    strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
@@ -48,7 +46,6 @@ def test_reactive_sma_crossover_strategy_preload_data():
         indicators_manager=indicators_manager,
     )
     data_flow = DataFlow(feed, data_consumer)
-    start = time.time()
     data_flow.start()
 
     assert broker.get_portfolio_cash_balance() == 10010.955
