@@ -1,10 +1,10 @@
 class ClientInfo:
     def __init__(self, client_info):
-        self.__account_id = client_info['intAccount']
-        self.__username = client_info['username']
-        self.__first_name = client_info['firstContact']['firstName']
-        self.__last_name = client_info['firstContact']['lastName']
-        self.__email = client_info['email']
+        self.__account_id = client_info["intAccount"]
+        self.__username = client_info["username"]
+        self.__first_name = client_info["firstContact"]["firstName"]
+        self.__last_name = client_info["firstContact"]["lastName"]
+        self.__email = client_info["email"]
 
     @property
     def account_id(self):

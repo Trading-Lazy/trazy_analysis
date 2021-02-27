@@ -1,4 +1,5 @@
 import abc
+import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Set, Tuple
 
@@ -6,13 +7,20 @@ import numpy as np
 from pandas.core.groupby.generic import DataFrameGroupBy
 from requests.models import Response
 
+import settings
 from common.constants import ENCODING
 from common.helper import request
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
+from common.utils import timestamp_to_utc
+from logger import logger
 from market_data.common import LOG, get_periods
 from market_data.data_handler import DataHandler
 from models.candle import Candle
+
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+)
 
 
 class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
@@ -120,6 +128,29 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
             candle_dataframe = cls.request_ticker_data_for_period(
                 ticker, period, none_response_periods, error_response_periods
             )
+            start_period = period[0]
+            start_datetime = timestamp_to_utc(
+                datetime(
+                    year=start_period.year,
+                    month=start_period.month,
+                    day=start_period.day,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                )
+            )
+            end_period = period[1]
+            end_datetime = timestamp_to_utc(
+                datetime(
+                    year=end_period.year,
+                    month=end_period.month,
+                    day=end_period.day,
+                    hour=23,
+                    minute=59,
+                    second=59,
+                )
+            )
+            candle_dataframe = candle_dataframe.loc[start_datetime:end_datetime]
             candle_dataframes[index] = candle_dataframe
             index += 1
         candle_dataframe = CandleDataFrame.concat(candle_dataframes, ticker)

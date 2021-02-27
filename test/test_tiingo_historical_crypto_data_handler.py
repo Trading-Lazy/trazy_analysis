@@ -12,7 +12,7 @@ def test_generate_ticker_data_url():
     expected_url = (
         "https://api.tiingo.com/tiingo/crypto/prices?tickers=btcusd&"
         "startDate=1996-04-13&"
-        "endDate=1996-05-13&"
+        "endDate=1996-05-14&"
         "resampleFreq=1min&"
         "token=abcde"
     )

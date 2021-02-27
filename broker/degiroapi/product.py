@@ -3,15 +3,17 @@ from datetime import datetime
 
 class Product:
     def __init__(self, product):
-        self.__id = product['id']
-        self.__name = product['name']
-        self.__isin = product['isin']
-        self.__symbol = product['symbol']
-        self.__currency = product['currency']
-        self.__product_type = product['productTypeId']
-        self.__tradable = product['tradable']
-        self.__close_price = product['closePrice']
-        self.__close_price_date = datetime.strptime(product['closePriceDate'], '%Y-%m-%d').date()
+        self.__id = product["id"]
+        self.__name = product["name"]
+        self.__isin = product["isin"]
+        self.__symbol = product["symbol"]
+        self.__currency = product["currency"]
+        self.__product_type = product["productTypeId"]
+        self.__tradable = product["tradable"]
+        self.__close_price = product["closePrice"]
+        self.__close_price_date = datetime.strptime(
+            product["closePriceDate"], "%Y-%m-%d"
+        ).date()
 
     @property
     def id(self):

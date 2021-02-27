@@ -41,16 +41,19 @@ class Broker:
     def __init__(
         self,
         clock: Clock,
+        events: deque,
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
     ):
         self.supported_currencies = supported_currencies
         self.base_currency = self._set_base_currency(base_currency)
         self.clock = clock
+        self.events = events
         self.cash_balances = dict(
             (currency, 0) for currency in self.supported_currencies
         )
         self.open_orders = self._set_initial_open_orders()
+        self.open_orders_bars_delay = 0
         self.exit_orders = self._set_initial_exit_orders()
         self.last_prices = self._set_initial_last_prices()
 
@@ -281,13 +284,20 @@ class Broker:
                 )
                 self.exit_orders[order.symbol][order.direction] = order
 
-    def put_all_orders_in_queue(self, order: Order):
+    def put_all_orders_in_queue_recursive(self, order: Order, seen_symbols):
         if isinstance(order, MultipleOrder):
             for single_order in order.orders:
-                self.put_all_orders_in_queue(single_order)
+                self.put_all_orders_in_queue_recursive(single_order, seen_symbols)
         else:
             self.handle_exit_order(order)
             self.open_orders.append(order)
+            if order.symbol in seen_symbols:
+                return
+            seen_symbols.add(order.symbol)
+
+    def put_all_orders_in_queue(self, order: Order):
+        seen_symbols = set()
+        self.put_all_orders_in_queue_recursive(order, seen_symbols)
 
     def submit_order(self, order: Order) -> None:
         """
@@ -334,9 +344,9 @@ class Broker:
         for order in orders:
             now = self.clock.current_time(symbol=order.symbol)
             if (
-                order.in_force(now)
+                order.status == OrderStatus.SUBMITTED
+                and order.in_force(now)
                 and not self.clock.end_of_day(order.symbol)
-                and order.status == OrderStatus.SUBMITTED
             ):
                 self.execute_order(order)
             else:

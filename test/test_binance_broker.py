@@ -1,3 +1,4 @@
+from collections import deque
 from datetime import datetime
 from decimal import Decimal
 from unittest.mock import call, patch
@@ -638,7 +639,8 @@ def test_lot_size_info(
     init_mocked.return_value = None
     get_exchange_info_mocked.return_value = GET_EXCHANGE_INFO_RETURN_VALUE
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
     assert binance_broker.lot_size == {
         "BTCEUR": 0.000001,
         "ETHEUR": 0.00001,
@@ -671,7 +673,8 @@ def test_update_price(
     get_exchange_info_mocked.return_value = GET_EXCHANGE_INFO_RETURN_VALUE
     get_all_tickers_mocked.return_value = GET_ALL_TICKERS_RETURN_VALUE
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
     assert binance_broker.last_prices == {
         "BTCEUR": 40825.94,
         "ETHEUR": 1353.12,
@@ -707,7 +710,8 @@ def test_update_balances_and_positions(
     get_all_tickers_mocked.return_value = GET_ALL_TICKERS_RETURN_VALUE
     get_account_mocked.return_value = GET_ACCOUNT_RETURN_VALUE
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     assert binance_broker.cash_balances == {
         "EUR": float(INITIAL_CASH),
@@ -781,7 +785,8 @@ def test_has_opened_position(
     get_account_mocked.return_value = GET_ACCOUNT_RETURN_VALUE_CRYPTO_DUST
 
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     assert binance_broker.has_opened_position(SYMBOL1, Direction.LONG)
     assert not binance_broker.has_opened_position(SYMBOL1, Direction.SHORT)
@@ -811,7 +816,8 @@ def test_update_transactions(
     get_my_trades_mocked.side_effect = GET_MY_TRADES_SIDE_EFFECT
 
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
     assert isinstance(binance_broker.transactions_last_update, datetime)
 
     # Call again to see if the value is cached
@@ -865,8 +871,8 @@ def test_update_transactions(
     get_all_tickers_mocked.assert_has_calls([call()])
 
     get_my_trades_mocked_calls = [
-        call(symbol="XRPEUR", timestamp=1613907957000),
-        call(symbol="ETHEUR", timestamp=1613907957000),
+        call(symbol="XRPEUR", timestamp=1613993757000),
+        call(symbol="ETHEUR", timestamp=1613993757000),
     ]
     get_my_trades_mocked.assert_has_calls(get_my_trades_mocked_calls, any_order=True)
 
@@ -903,7 +909,8 @@ def test_execute_market_order(
     ]
 
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     # test buy orders
     buy_order = Order(
@@ -986,7 +993,8 @@ def test_execute_limit_order(
     order_limit_sell_mocked.return_value = LIMIT_SELL_ORDER_RESPONSE
 
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     # test buy orders
     buy_order = Order(
@@ -1060,7 +1068,8 @@ def test_execute_stop_order(
     get_my_trades_mocked.side_effect = GET_MY_TRADES_SIDE_EFFECT
 
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     # stop order sell
     stop_order_sell = Order(
@@ -1125,7 +1134,8 @@ def test_execute_target_order(
     get_my_trades_mocked.side_effect = GET_MY_TRADES_SIDE_EFFECT
 
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     # target order sell
     target_order_sell = Order(
@@ -1193,7 +1203,8 @@ def test_execute_trailing_stop_order_sell(
     get_account_mocked.return_value = GET_ACCOUNT_RETURN_VALUE
     get_my_trades_mocked.side_effect = GET_MY_TRADES_SIDE_EFFECT
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
         symbol=SYMBOL2,
@@ -1246,7 +1257,8 @@ def test_execute_trailing_stop_order_buy(
     get_account_mocked.return_value = GET_ACCOUNT_RETURN_VALUE
     get_my_trades_mocked.side_effect = GET_MY_TRADES_SIDE_EFFECT
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
         symbol=SYMBOL2,
@@ -1293,7 +1305,8 @@ def test_synchronize(
 ):
     init_mocked.return_value = None
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     binance_broker.synchronize()
 
@@ -1327,9 +1340,11 @@ def test_max_order_entry_size(
     get_account_mocked.return_value = GET_ACCOUNT_RETURN_VALUE
     get_my_trades_mocked.side_effect = GET_MY_TRADES_SIDE_EFFECT
     clock = LiveClock()
-    binance_broker = BinanceBroker(clock=clock)
+    events = deque()
+
+    binance_broker = BinanceBroker(clock=clock, events=events)
 
     assert (
         binance_broker.max_entry_order_size(symbol=SYMBOL2, direction=Direction.LONG)
-        == 136.94209718670075
+        == 130.61682864450128
     )

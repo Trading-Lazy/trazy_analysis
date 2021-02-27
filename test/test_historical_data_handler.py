@@ -66,6 +66,14 @@ AAPL_CANDLES2 = np.array(
                 "2020-06-15 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
             ),
         ),
+    ],
+    dtype=Candle,
+)
+AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(
+    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2
+)
+AAPL_CANDLES3 = np.array(
+    [
         Candle(
             symbol=AAPL_SYMBOL,
             open=354.25,
@@ -77,14 +85,6 @@ AAPL_CANDLES2 = np.array(
                 "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
             ),
         ),
-    ],
-    dtype=Candle,
-)
-AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(
-    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2
-)
-AAPL_CANDLES3 = np.array(
-    [
         Candle(
             symbol=AAPL_SYMBOL,
             open=354.22,

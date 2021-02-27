@@ -3,16 +3,12 @@ from datetime import datetime
 
 import pytest
 
-from bot.data_consumer import DataConsumer
-from bot.data_flow import DataFlow
+from bot.event_loop import EventLoop
 from broker.fixed_fee_model import FixedFeeModel
 from broker.simulated_broker import SimulatedBroker
-from candles_queue.candles_queue import CandlesQueue
-from candles_queue.fake_queue import FakeQueue
 from common.clock import SimulatedClock
-from db_storage.mongodb_storage import MongoDbStorage
 from feed.feed import CsvFeed, Feed
-from indicators.indicators import IndicatorsManager
+from indicators.indicators_manager import IndicatorsManager
 from models.candle import Candle
 from models.enums import Action, Direction, OrderType
 from models.order import Order
@@ -20,7 +16,6 @@ from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from portfolio.portfolio import Portfolio
-from settings import DATABASE_NAME, DATABASE_URL
 from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
@@ -34,7 +29,8 @@ def test_initial_settings_for_default_simulated_broker():
 
     # Test a default SimulatedBroker
     clock = SimulatedClock()
-    sb1 = SimulatedBroker(clock)
+    events = deque()
+    sb1 = SimulatedBroker(clock, events)
 
     assert sb1.base_currency == "EUR"
     assert sb1.cash_balances["USD"] == 0.0
@@ -50,7 +46,11 @@ def test_initial_settings_for_default_simulated_broker():
 
     # Test a SimulatedBroker with some parameters set
     sb2 = SimulatedBroker(
-        clock=clock, base_currency="EUR", initial_funds=1e6, fee_model=FixedFeeModel()
+        clock=clock,
+        events=events,
+        base_currency="EUR",
+        initial_funds=1e6,
+        fee_model=FixedFeeModel(),
     )
 
     assert sb2.base_currency == "EUR"
@@ -71,57 +71,63 @@ def test_initial_settings_for_default_simulated_broker():
 
 def test_bad_set_base_currency():
     clock = SimulatedClock()
+    events = deque()
     with pytest.raises(ValueError):
-        SimulatedBroker(clock=clock, base_currency="XYZ")
+        SimulatedBroker(clock=clock, events=events, base_currency="XYZ")
 
 
 def test_good_set_base_currency():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock, base_currency="EUR")
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events, base_currency="EUR")
     assert sb.base_currency == "EUR"
 
 
 def test_bad_set_initial_funds():
     clock = SimulatedClock()
+    events = deque()
     with pytest.raises(ValueError):
-        SimulatedBroker(clock=clock, initial_funds=float("-56.34"))
+        SimulatedBroker(clock=clock, events=events, initial_funds=float("-56.34"))
 
 
 def test_good_set_initial_funds():
     clock = SimulatedClock()
+    events = deque()
     with not_raises(ValueError):
-        sb = SimulatedBroker(clock=clock, initial_funds=1e4)
+        sb = SimulatedBroker(clock=clock, events=events, initial_funds=1e4)
     sb.cash_balances["USD"] == 1e4
 
 
 def test_all_cases_of_set_broker_commission():
     # Broker commission is None
     clock = SimulatedClock()
-    sb1 = SimulatedBroker(clock=clock)
+    events = deque()
+    sb1 = SimulatedBroker(clock=clock, events=events)
     assert sb1.fee_model.__class__.__name__ == "FixedFeeModel"
 
     # Broker commission is specified as a subclass
     # of FeeModel abstract base class
     bc2 = FixedFeeModel()
-    sb2 = SimulatedBroker(clock=clock, fee_model=bc2)
+    sb2 = SimulatedBroker(clock=clock, events=events, fee_model=bc2)
     assert sb2.fee_model.__class__.__name__ == "FixedFeeModel"
 
     # FeeModel is mis-specified and thus
     # raises a TypeError
     with pytest.raises(TypeError):
-        SimulatedBroker(clock=clock, fee_model="bad_fee_model")
+        SimulatedBroker(clock=clock, events=events, fee_model="bad_fee_model")
 
 
 def test_set_cash_balances():
     # Zero initial funds
     clock = SimulatedClock()
-    sb1 = SimulatedBroker(clock=clock)
+    events = deque()
+    sb1 = SimulatedBroker(clock=clock, events=events)
     tcb1 = {"EUR": 0.0, "USD": 0.0}
     sb1._set_cash_balances(initial_funds=0.0)
     assert sb1.cash_balances == tcb1
 
     # Non-zero initial funds
-    sb2 = SimulatedBroker(clock=clock, initial_funds=12345.0)
+    sb2 = SimulatedBroker(clock=clock, events=events, initial_funds=12345.0)
     tcb2 = {"EUR": 12345.0, "USD": 0.0}
     sb2._set_cash_balances(initial_funds=12345.0)
     assert sb2.cash_balances == tcb2
@@ -129,14 +135,16 @@ def test_set_cash_balances():
 
 def test_set_initial_open_orders():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
     assert type(sb._set_initial_open_orders()) == deque
     assert len(sb._set_initial_open_orders()) == 0
 
 
 def test_subscribe_funds_to_account():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
@@ -149,7 +157,8 @@ def test_subscribe_funds_to_account():
 
 def test_withdraw_funds_from_account():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock, initial_funds=1000000)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events, initial_funds=1000000)
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
@@ -166,7 +175,8 @@ def test_withdraw_funds_from_account():
 
 def test_get_account_cash_balance():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock, initial_funds=1000.0)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events, initial_funds=1000.0)
 
     # If currency is None, return the cash balances
     sbcb1 = sb.get_cash_balance()
@@ -185,7 +195,8 @@ def test_get_account_cash_balance():
 
 def test_get_account_total_market_value():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
 
     # Subscribe all necessary funds and create portfolios
     sb.subscribe_funds_to_account(300000.0)
@@ -247,7 +258,8 @@ def test_get_account_total_market_value():
 
 def test_create_portfolio():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
 
     # If portfolio_id isn't in the dictionary, then check it
     # was created correctly, along with the orders dictionary
@@ -257,7 +269,8 @@ def test_create_portfolio():
 
 def test_subscribe_funds_to_portfolio():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock, initial_funds=0)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events, initial_funds=0)
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
@@ -278,7 +291,8 @@ def test_subscribe_funds_to_portfolio():
 
 def test_withdraw_funds_from_portfolio():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
 
     # Raising ValueError with negative amount
     with pytest.raises(ValueError):
@@ -300,7 +314,8 @@ def test_withdraw_funds_from_portfolio():
 
 def test_get_portfolio_cash_balance():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
 
     # Raising ValueError if portfolio_id not in keys
     assert sb.get_portfolio_cash_balance() == 0.0
@@ -315,7 +330,8 @@ def test_get_portfolio_cash_balance():
 
 def test_get_portfolio_total_market_value():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
 
     # Raising KeyError if portfolio_id not in keys
     assert sb.get_portfolio_total_market_value() == 0.0
@@ -344,7 +360,8 @@ def test_submit_order():
 
     clock = SimulatedClock()
     clock.update_time(symbol, timestamp)
-    sbwp = SimulatedBroker(clock=clock)
+    events = deque()
+    sbwp = SimulatedBroker(clock=clock, events=events)
     sbwp.subscribe_funds_to_account(175000.0)
     sbwp.subscribe_funds_to_portfolio(100000.00)
     sbwp.update_price(candle)
@@ -369,7 +386,7 @@ def test_submit_order():
     assert port.pos_handler.positions[symbol][Direction.LONG].net_size == 1000
 
     # Negative direction
-    sbwp = SimulatedBroker(clock=clock)
+    sbwp = SimulatedBroker(clock=clock, events=events)
     sbwp.subscribe_funds_to_account(175000.0)
     sbwp.subscribe_funds_to_portfolio(100000.00)
     sbwp.update_price(candle)
@@ -396,7 +413,8 @@ def test_submit_order():
 
 def test_execute_market_order():
     clock = SimulatedClock()
-    sb = SimulatedBroker(clock=clock)
+    events = deque()
+    sb = SimulatedBroker(clock=clock, events=events)
 
     # Subscribe all necessary funds and create portfolios
     sb.subscribe_funds_to_account(300000.0)
@@ -437,17 +455,15 @@ def test_execute_market_order():
 
 def test_execute_limit_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_limit_order.csv"}, candles_queue
+        {"AAPL": "test/data/aapl_candles_one_day_limit_order.csv"}, events
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
@@ -456,74 +472,74 @@ def test_execute_limit_order():
         limit_order_pct=0.0004,
     )
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=db_storage,
+        events=events,
+        feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
         strategies_classes=strategies,
     )
 
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == pytest.approx(10012.845, 0.0001)
 
 
 def test_execute_stop_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_stop_order.csv"}, candles_queue
+        {"AAPL": "test/data/aapl_candles_one_day_stop_order.csv"}, events
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
         broker=broker, fixed_order_type=OrderType.STOP, stop_order_pct=0.0004
     )
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=db_storage,
+        events=events,
+        feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
         strategies_classes=strategies,
     )
 
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 9996.01
 
 
 def test_execute_target_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_target_order.csv"}, candles_queue
+        {"AAPL": "test/data/aapl_candles_one_day_target_order.csv"}, events
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
@@ -532,38 +548,38 @@ def test_execute_target_order():
         target_order_pct=0.0004,
     )
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=db_storage,
+        events=events,
+        feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
         strategies_classes=strategies,
     )
 
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == pytest.approx(9998.74, 0.001)
 
 
 def test_execute_trailing_stop_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_trailing_stop_order.csv"},
-        candles_queue=candles_queue,
+        events,
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
@@ -572,93 +588,91 @@ def test_execute_trailing_stop_order():
         trailing_stop_order_pct=0.0004,
     )
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=db_storage,
+        events=events,
+        feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
         strategies_classes=strategies,
     )
 
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == pytest.approx(10009.345, 0.0001)
 
 
 def test_execute_cover_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, candles_queue
+        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
-    db_storage.clean_all_orders()
-    db_storage.clean_all_candles()
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker, with_cover=True)
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=db_storage,
+        events=events,
+        feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
         strategies_classes=strategies,
     )
 
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == pytest.approx(10009.59, 0.001)
 
 
 def test_execute_bracket_order():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, candles_queue
+        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
-    db_storage.clean_all_orders()
-    db_storage.clean_all_candles()
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000)
+    broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker, with_bracket=True)
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=db_storage,
+        events=events,
+        feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
         strategies_classes=strategies,
     )
 
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10007.175

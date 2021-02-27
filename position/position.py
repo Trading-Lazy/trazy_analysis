@@ -1,7 +1,8 @@
 import os
 from datetime import datetime, timezone
-from math import floor
 from typing import Any
+
+from math import floor
 
 import settings
 from logger import logger

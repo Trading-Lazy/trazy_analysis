@@ -1,3 +1,4 @@
+from collections import deque
 from datetime import datetime
 
 from broker.simulated_broker import SimulatedBroker
@@ -10,10 +11,11 @@ from order_manager.order_creator import OrderCreator
 
 def test_create_order_from_signal():
     clock = SimulatedClock()
+    events = deque()
     symbol = "IVV"
     timestamp = datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
-    broker = SimulatedBroker(clock)
+    broker = SimulatedBroker(clock, events)
     order_creator = OrderCreator(broker=broker)
     signal = Signal(
         symbol=symbol,

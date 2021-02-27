@@ -11,7 +11,7 @@ click==7.1.2
 constantly==15.1.0
 coverage==5.4
 cryptography==3.4.6
-dataclasses==0.8
+dataclasses==0.6
 dateparser==1.0.0
 degiroapi==0.9.5
 dnspython==1.16.0

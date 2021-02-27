@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from typing import List
 
 import pandas as pd
@@ -32,11 +33,13 @@ class DegiroBroker(Broker):
     def __init__(
         self,
         clock: Clock,
+        events: deque,
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
     ):
         super().__init__(
             clock=clock,
+            events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
         )

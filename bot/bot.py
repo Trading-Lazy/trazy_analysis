@@ -2,20 +2,20 @@ import glob
 import importlib
 import inspect
 import os
-from typing import List, Set
-
+from collections import deque
 from pathlib import Path
+from typing import List, Set
 
 from bot.data_consumer import DataConsumer
 from bot.data_flow import DataFlow
-from broker.degiro_broker import DegiroBroker
+from broker.binance_broker import BinanceBroker
 from candles_queue.candles_queue import CandlesQueue
 from candles_queue.fake_queue import FakeQueue
 from common.clock import LiveClock
 from db_storage.mongodb_storage import MongoDbStorage
 from feed.feed import Feed, LiveFeed
-from indicators.indicators import IndicatorsManager
-from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
+from indicators.indicators_manager import IndicatorsManager
+from market_data.live.tiingo_live_crypto_data_handler import TiingoLiveCryptoDataHandler
 from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
@@ -55,9 +55,9 @@ def get_strategies_classes(
 
 
 if __name__ == "__main__":
-    symbols = ["SHIP"]
+    symbols = ["XRPUSD"]
     candles_queue: CandlesQueue = FakeQueue("candles")
-    live_data_handler = TiingoLiveDataHandler()
+    live_data_handler = TiingoLiveCryptoDataHandler()
 
     feed: Feed = LiveFeed(symbols, candles_queue, live_data_handler)
 
@@ -68,9 +68,12 @@ if __name__ == "__main__":
 
     strategies = [SmaCrossoverStrategy]
     clock = LiveClock()
-    broker = DegiroBroker(clock)
+    events = deque
+    broker = BinanceBroker(clock, events)
     position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
+    order_creator = OrderCreator(
+        broker=broker, with_cover=True, trailing_stop_order_pct=0.05
+    )
     order_manager = OrderManager(
         broker=broker, position_sizer=position_sizer, order_creator=order_creator
     )
@@ -83,6 +86,7 @@ if __name__ == "__main__":
         strategies_classes=strategies,
         save_candles=True,
         indicators_manager=indicators_manager,
+        live=True,
     )
 
     data_flow = DataFlow(feed, data_consumer)

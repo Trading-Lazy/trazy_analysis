@@ -24,7 +24,7 @@ class OrderCreator:
         limit_order_pct=0.005,
         stop_order_pct=0.05,
         target_order_pct=0.01,
-        trailing_stop_order_pct=0.005,
+        trailing_stop_order_pct=0.05,
         with_cover=False,
         with_bracket=False,
     ):

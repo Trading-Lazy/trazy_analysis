@@ -199,7 +199,7 @@ def resample_candle_data(
 ) -> CandleDataFrame:
     symbol = df.symbol
     resample_label = "right"
-    if time_unit >= pd.offsets.Day(1):
+    if time_unit >= timedelta(days=1):
         resample_label = "left"
     df = df.resample(time_unit, label=resample_label, closed="right").agg(
         {
@@ -222,7 +222,7 @@ def resample_candle_data(
 
     candle_dataframe = CandleDataFrame.from_dataframe(df, symbol)
 
-    if time_unit >= pd.offsets.Day(1):
+    if time_unit >= timedelta(days=1):
         market_cal_df.index = timestamp_to_utc(market_cal_df.index)
         df_resampled = candle_dataframe.reindex(market_cal_df.index)
         df_resampled.index.name = "timestamp"

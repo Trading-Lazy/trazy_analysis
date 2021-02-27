@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from typing import Dict, List, Union
 
 import settings
@@ -37,6 +38,7 @@ class SimulatedBroker(Broker):
     def __init__(
         self,
         clock: Clock,
+        events: deque,
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
         initial_funds: float = 0.0,
@@ -45,12 +47,14 @@ class SimulatedBroker(Broker):
         self._check_initial_funds(initial_funds)
         super().__init__(
             clock=clock,
+            events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
         )
         self._set_cash_balances(initial_funds)
         self.fee_model = fee_model
         self.fee_model = self._set_fee_model(fee_model)
+        self.open_orders_bars_delay = 1
 
         LOG.info("Initialising simulated broker...")
 
