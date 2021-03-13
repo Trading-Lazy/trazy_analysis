@@ -1,16 +1,14 @@
-from bot.data_consumer import DataConsumer
-from bot.data_flow import DataFlow
+from collections import deque
+from time import time
+
+from bot.event_loop import EventLoop
 from broker.simulated_broker import SimulatedBroker
-from candles_queue.candles_queue import CandlesQueue
-from candles_queue.fake_queue import FakeQueue
 from common.clock import SimulatedClock
-from db_storage.mongodb_storage import MongoDbStorage
 from feed.feed import CsvFeed, Feed
-from indicators.indicators import IndicatorsManager
+from indicators.indicators_manager import IndicatorsManager
 from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
-from settings import DATABASE_NAME, DATABASE_URL
 from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
@@ -18,34 +16,33 @@ from strategy.strategies.sma_crossover_strategy import (
 
 def test_reactive_sma_crossover_strategy():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
-    feed: Feed = CsvFeed({"AAPL": "test/data/aapl_candles_one_day.csv"}, candles_queue)
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
-    db_storage.clean_all_signals()
-    db_storage.clean_all_orders()
-    db_storage.clean_all_candles()
+    feed: Feed = CsvFeed({"AAPL": "test/data/aapl_candles_one_day.csv"}, events)
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000.0)
+    broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
-    indicators_manager = IndicatorsManager(preload=False)
-    data_consumer = DataConsumer(
+    indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
+    event_loop = EventLoop(
+        events=events,
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=db_storage,
+        feed=feed,
         order_manager=order_manager,
         strategies_classes=strategies,
         indicators_manager=indicators_manager,
     )
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    start = time()
+    event_loop.loop()
+    print(time() - start)
 
     assert broker.get_portfolio_cash_balance() == 10010.955

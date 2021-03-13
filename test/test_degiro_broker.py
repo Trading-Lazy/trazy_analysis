@@ -1,9 +1,10 @@
+from collections import deque
 from datetime import datetime
 from unittest.mock import call, patch
 
-from broker import degiroapi
 import pytest
 
+from broker import degiroapi
 from broker.degiro_broker import DegiroBroker
 from common.clock import LiveClock
 from models.candle import Candle
@@ -324,8 +325,8 @@ def test_update_product_info_cached_info(
     update_cash_balances_mocked,
 ):
     clock = LiveClock()
-
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
     degiro_broker.product_info_last_update[str(PRODUCT_ID1)] = clock.current_time()
     degiro_broker.update_product_info(str(PRODUCT_ID1))
 
@@ -345,8 +346,8 @@ def test_update_symbol_cached_info(
     update_cash_balances_mocked,
 ):
     clock = LiveClock()
-
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
     degiro_broker.symbol_info_last_update[SYMBOL1] = clock.current_time()
     degiro_broker.update_symbol_info(SYMBOL1)
 
@@ -365,8 +366,8 @@ def test_update_cash_balances(
 ):
     getdata_mocked.return_value = GET_DATA_CASH_MOCKED_RETURN_VALUE
     clock = LiveClock()
-
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
     assert degiro_broker.cash_balances == {
         "EUR": float(INITIAL_CASH),
         "USD": float("0.0"),
@@ -409,7 +410,8 @@ def test_update_open_positions(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     price1 = 3.7
     buy_size1 = 1
@@ -487,7 +489,8 @@ def test_has_opened_position(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     assert degiro_broker.has_opened_position(SYMBOL1, Direction.LONG)
     assert not degiro_broker.has_opened_position(SYMBOL1, Direction.SHORT)
@@ -522,7 +525,8 @@ def test_update_transactions(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
     assert isinstance(degiro_broker.transactions_last_update, datetime)
     timestamp = degiro_broker.transactions_last_update
 
@@ -591,7 +595,8 @@ def test_execute_market_order(
     search_products_mocked.return_value = SEARCH_PRODUCTS_MOCKED_RETURN_VALUE
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     buy_order = Order(
         symbol=SYMBOL1,
@@ -683,7 +688,8 @@ def test_execute_limit_order(
     search_products_mocked.return_value = SEARCH_PRODUCTS_MOCKED_RETURN_VALUE
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     buy_order = Order(
         symbol=SYMBOL1,
@@ -788,7 +794,8 @@ def test_execute_stop_order(
     search_products_mocked.return_value = SEARCH_PRODUCTS_MOCKED_RETURN_VALUE
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     buy_order = Order(
         symbol=SYMBOL1,
@@ -887,7 +894,8 @@ def test_execute_target_order(
     transactions_mocked.return_value = TRANSACTIONS_RETURN_VALUE
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     # target order sell
     target_order = Order(
@@ -1013,7 +1021,8 @@ def test_execute_trailing_stop_order_sell(
     search_products_mocked.return_value = SEARCH_PRODUCTS_MOCKED_RETURN_VALUE
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
         symbol=SYMBOL1,
@@ -1118,7 +1127,8 @@ def test_execute_trailing_stop_order_buy(
     search_products_mocked.return_value = SEARCH_PRODUCTS_MOCKED_RETURN_VALUE
 
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
         symbol=SYMBOL1,
@@ -1200,7 +1210,8 @@ def test_synchronize(
     update_cash_balances_mocked,
 ):
     clock = LiveClock()
-    degiro_broker = DegiroBroker(clock=clock)
+    events = deque()
+    degiro_broker = DegiroBroker(clock=clock, events=events)
 
     degiro_broker.synchronize()
 

@@ -167,7 +167,7 @@ def test_generate_ticker_latest_data_points_url():
     expected_url = (
         "https://api.tiingo.com/tiingo/crypto/prices?tickers=BTCUSD&"
         "startDate=2020-06-18&"
-        "endDate=2020-06-18&"
+        "endDate=2020-06-19&"
         "resampleFreq=1min&"
         "token=abcde"
     )

@@ -11,7 +11,7 @@ from common.helper import get_or_create_nested_dict, round_time
 from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc
 from indicators.common import PriceType
-from indicators.stream import StreamData
+from indicators.indicator import Indicator
 from models.candle import Candle
 
 
@@ -28,7 +28,7 @@ def get_price_selector_function(price_type: PriceType) -> Callable[[Candle], flo
         raise Exception("Invalid price_type {}".format(price_type.name))
 
 
-class RollingWindowStream(StreamData):
+class RollingWindow(Indicator):
     count = 0
     instances = 0
 
@@ -36,12 +36,12 @@ class RollingWindowStream(StreamData):
         self,
         size: int = None,
         dtype: type = None,
-        source_data: StreamData = None,
+        source_indicator: Indicator = None,
         transform: Callable = lambda new_data: new_data,
         preload=False,
     ):
-        RollingWindowStream.instances += 1
-        super().__init__(source_data, transform)
+        RollingWindow.instances += 1
+        super().__init__(source_indicator, transform)
         self.dtype = dtype
         self.nb_elts = 0
         self.insert = 0
@@ -79,7 +79,7 @@ class RollingWindowStream(StreamData):
         self.data = None if nb_elts_list == 0 else self.window[-1]
 
     def handle_new_data(self, new_data) -> None:
-        RollingWindowStream.count += 1
+        RollingWindow.count += 1
         if not self.preload:
             transformed_data = self.transform(new_data)
             self.data = transformed_data
@@ -90,9 +90,12 @@ class RollingWindowStream(StreamData):
             self.on_next(transformed_data)
         else:
             self.index = (self.index + 1) % self.size
+            if self.index == 0:
+                self.nb_elts = 1
+            else:
+                self.nb_elts += 1
             self.data = self.window[self.index]
             self.on_next(self.data)
-            self.nb_elts += 1
 
     def push(self, new_data: Any = None):
         self.handle_new_data(new_data)
@@ -132,10 +135,10 @@ class RollingWindowStream(StreamData):
         else:
             raise TypeError("Invalid argument type: {}".format(type(key)))
 
-    def map(self, func: Callable) -> "RollingWindowStream":
-        rolling_window_stream = RollingWindowStream(
+    def map(self, func: Callable) -> "RollingWindow":
+        rolling_window_stream = RollingWindow(
             size=self.size,
-            source_data=self,
+            source_indicator=self,
             transform=func,
             dtype=self.dtype,
             preload=self.preload,
@@ -145,7 +148,7 @@ class RollingWindowStream(StreamData):
         return rolling_window_stream
 
 
-class TimeFramedCandleRollingWindowStream(RollingWindowStream):
+class TimeFramedCandleRollingWindow(RollingWindow):
     instances = 0
     count = 0
 
@@ -154,13 +157,13 @@ class TimeFramedCandleRollingWindowStream(RollingWindowStream):
         time_unit: pd.offsets.DateOffset,
         market_cal: MarketCalendar,
         size: int = None,
-        source_data: StreamData = None,
+        source_indicator: Indicator = None,
         preload=False,
     ):
-        TimeFramedCandleRollingWindowStream.instances += 1
+        TimeFramedCandleRollingWindow.instances += 1
         super().__init__(
             size=size,
-            source_data=source_data,
+            source_indicator=source_indicator,
             dtype=Candle,
             preload=preload,
         )
@@ -172,7 +175,7 @@ class TimeFramedCandleRollingWindowStream(RollingWindowStream):
         self.last_candle_added_timestamp = None
 
     def handle_new_data(self, new_data: Candle) -> None:
-        TimeFramedCandleRollingWindowStream.count += 1
+        TimeFramedCandleRollingWindow.count += 1
         if not self.preload:
             if self.time_unit == timedelta(minutes=1):
                 super().handle_new_data(new_data)
@@ -194,22 +197,20 @@ class TimeFramedCandleRollingWindowStream(RollingWindowStream):
                     new_data.timestamp, self.time_unit
                 )
         else:
-            self.index = (self.index + 1) % self.size
-            self.data = self.window[self.index]
-            self.on_next(self.data)
+            super().handle_new_data(new_data)
 
 
 class RollingWindowManager:
     def __init__(self, preload=True):
-        self.cache: Dict[str, RollingWindowStream] = {}
+        self.cache: Dict[str, RollingWindow] = {}
         self.max_periods: Dict[str, int] = {}
         self.preload = preload
 
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)
-    def __call__(self, symbol: str, period: int = 5) -> RollingWindowStream:
+    def __call__(self, symbol: str, period: int = 5) -> RollingWindow:
         if symbol not in self.cache:
             self.max_periods[symbol] = period
-            self.cache[symbol] = RollingWindowStream(dtype=Candle, preload=self.preload)
+            self.cache[symbol] = RollingWindow(dtype=Candle, preload=self.preload)
         elif period > self.max_periods[symbol]:
             self.max_periods[symbol] = period
         return self.cache[symbol]
@@ -242,15 +243,15 @@ class TimeFramedCandleRollingWindowManager:
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)
     def __call__(
         self, symbol: str, period: int, time_unit: pd.offsets.DateOffset
-    ) -> TimeFramedCandleRollingWindowStream:
+    ) -> TimeFramedCandleRollingWindow:
         get_or_create_nested_dict(self.cache, symbol)
         get_or_create_nested_dict(self.max_periods, symbol)
         rolling_window = self.rolling_window_manager(symbol, period)
         if time_unit not in self.cache[symbol]:
-            self.cache[symbol][time_unit] = TimeFramedCandleRollingWindowStream(
+            self.cache[symbol][time_unit] = TimeFramedCandleRollingWindow(
                 time_unit=time_unit,
                 market_cal=self.market_cal,
-                source_data=rolling_window,
+                source_indicator=rolling_window,
                 preload=self.preload,
             )
             self.max_periods[symbol][time_unit] = period
@@ -262,7 +263,7 @@ class TimeFramedCandleRollingWindowManager:
         for symbol in self.max_periods:
             for time_unit in self.max_periods[symbol]:
                 max_period = self.max_periods[symbol][time_unit]
-                preload_data = self.cache[symbol][time_unit].source_data.window
+                preload_data = self.cache[symbol][time_unit].source_indicator.window
                 candles_len = len(preload_data)
                 max_period = int(max(max_period, candles_len))
                 self.cache[symbol][time_unit].set_size(max_period)
@@ -300,7 +301,7 @@ class PriceRollingWindowManager:
         period: int,
         time_unit: pd.offsets.DateOffset,
         price_type: PriceType,
-    ) -> TimeFramedCandleRollingWindowStream:
+    ) -> TimeFramedCandleRollingWindow:
         get_or_create_nested_dict(self.cache, symbol, time_unit)
         get_or_create_nested_dict(self.max_periods, symbol, time_unit)
         candle_rolling_window = self.time_framed_candle_rolling_window_manager(

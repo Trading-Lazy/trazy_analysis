@@ -1,6 +1,7 @@
 import io
 import os
 import random
+from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
@@ -21,7 +22,6 @@ from mega.crypto import (
     str_to_a32,
 )
 from mega.errors import RequestError
-from pathlib import Path
 
 import settings
 from common.constants import ENCODING

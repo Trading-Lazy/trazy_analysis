@@ -26,8 +26,11 @@ class IndicatorsManager:
         self.sma_manager = SmaManager(
             self.price_rolling_window_manager, preload=preload
         )
-        if not self.preload:
-            self.warmup()
+        self.warmedup = False
+
+    @property
+    def data(self):  # pragma: no cover
+        return self.rolling_window_manager
 
     @property
     def RollingWindow(self):  # pragma: no cover
@@ -46,7 +49,11 @@ class IndicatorsManager:
         return self.sma_manager
 
     def warmup(self):
-        self.rolling_window_manager.warmup(self.initial_data if self.preload else {})
-        self.time_framed_candle_rolling_window_manager.warmup()
-        self.price_rolling_window_manager.warmup()
-        self.sma_manager.warmup()
+        if not self.warmedup:
+            self.rolling_window_manager.warmup(
+                self.initial_data if self.preload else {}
+            )
+            self.time_framed_candle_rolling_window_manager.warmup()
+            self.price_rolling_window_manager.warmup()
+            self.sma_manager.warmup()
+            self.warmedup = True

@@ -43,6 +43,10 @@ class FakeQueue(CandlesQueue):
                             traceback.format_exc(),
                         )
 
+    def reset(self):
+        self.consumer_callbacks = []
+        self.on_complete_callbacks = {}
+
     def flush(self):
         pass
 

@@ -1,9 +1,11 @@
 import os
-from queue import Queue
+from collections import deque
 
 import settings
 from broker.broker import Broker
 from logger import logger
+from models.event import PendingSignalEvent
+from models.signal import Signal
 from order_manager.order_creator import OrderCreator
 from order_manager.position_sizer import PositionSizer
 
@@ -14,37 +16,36 @@ LOG = logger.get_root_logger(
 
 class OrderManager:
     def __init__(
-        self, broker: Broker, position_sizer: PositionSizer, order_creator: OrderCreator
+        self, events: deque, broker: Broker, position_sizer: PositionSizer, order_creator: OrderCreator
     ):
+        self.events = events
         self.broker: Broker = broker
         self.position_sizer: PositionSizer = position_sizer
         self.order_creator = order_creator
-        self.pending_signals = Queue()
+        self.pending_signals = deque()
         self.clock = self.broker.clock
 
-    def process_signals(self, bars_delay=0):
+    def process_pending_signal(self, signal: Signal, pending_signals):
+        LOG.info("Processing %s", str(signal))
+        order = self.order_creator.create_order(signal, self.clock)
+        if order is not None:
+            LOG.info("Order has been created and can be dispatched to the broker")
+            self.position_sizer.size_order(order)
+            self.broker.submit_order(order)
+
+    def process_pending_signals(self):
         # Create an order from the signal
         LOG.info("Start processing pending signals")
         pending_signals = []
-        while not self.pending_signals.empty():
-            signal_bars_pair = self.pending_signals.get()
-            signal = signal_bars_pair[0]
-            LOG.info("Processing %s", str(signal))
-            bars = signal_bars_pair[1]
-            if bars + bars_delay > self.clock.bars(signal.symbol):
-                pending_signals.append(signal_bars_pair)
-                continue
-            LOG.info("Signal can be processed")
-            order = self.order_creator.create_order(signal, self.clock)
-            if order is not None:
-                LOG.info("Order has been created and can be dispatched to the broker")
-                self.position_sizer.size_order(order)
-                self.broker.submit_order(order)
+        while len(self.pending_signals) != 0:
+            signal = self.pending_signals.popleft()
+            self.process_pending_signal(signal, pending_signals)
 
         for pending_signal in pending_signals:
-            self.pending_signals.put(pending_signal)
+            self.pending_signals.append(pending_signal)
+            self.events.append(PendingSignalEvent(symbol=pending_signal.symbol, bars_delay=1))
 
-    def check_signal(self, signal, bars_delay=0):
+    def check_signal(self, signal):
         # check if signal is still valid
         LOG.info("Received new signal %s", str(signal))
         now = self.clock.current_time(symbol=signal.symbol)
@@ -60,5 +61,5 @@ class OrderManager:
             and not self.clock.end_of_day(signal.symbol)
         ):
             LOG.info("Signal is still in force and will be processed soon.")
-            self.pending_signals.put((signal, self.clock.bars(signal.symbol)))
-        self.process_signals(bars_delay)
+            self.pending_signals.append(signal)
+            self.events.append(PendingSignalEvent(symbol=signal.symbol))

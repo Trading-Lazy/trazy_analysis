@@ -8,7 +8,7 @@ import logger
 import settings
 from candles_queue.candles_queue import CandlesQueue
 from db_storage.db_storage import DbStorage
-from indicators.indicators import IndicatorsManager
+from indicators.indicators_manager import IndicatorsManager
 from models.candle import Candle
 from order_manager.order_manager import OrderManager
 from strategy.strategy import Strategy
@@ -40,9 +40,10 @@ class DataConsumer:
             self.indicators_manager.RollingWindow(symbol).subscribe(
                 lambda candle: self.broker.update_price(candle)
             )
-            self.indicators_manager.RollingWindow(symbol).subscribe(
-                lambda candle: self.broker.execute_open_orders()
-            )
+            if not self.live:
+                self.indicators_manager.RollingWindow(symbol).subscribe(
+                    lambda candle: self.broker.execute_open_orders()
+                )
             self.indicators_manager.RollingWindow(symbol).subscribe(
                 lambda candle: self.broker.close_all_open_positions(candle.symbol)
             )
@@ -53,7 +54,7 @@ class DataConsumer:
                 lambda candle: self.clock.update(symbol, candle.timestamp)
             )
             self.indicators_manager.RollingWindow(symbol).subscribe(
-                lambda candle: self.order_manager.process_signals()
+                lambda candle: self.order_manager.process_pending_signals()
             )
 
     def _subscribe_order_manager_to_strategy_instances(self):
@@ -85,15 +86,18 @@ class DataConsumer:
         self.strategy_instances: List[Strategy] = []
         self._init_strategy_instances()
         self.indicators_manager.warmup()
-        self._subscribe_broker_to_data_stream()
         self.live = live
+        self._subscribe_broker_to_data_stream()
         if not self.live:
             self._subscribe_order_manager_to_data_stream()
         else:
             self.process_signals_interval = interval(frequency)
             self.process_signals_interval.subscribe(lambda _: self.broker.synchronize())
             self.process_signals_interval.subscribe(
-                lambda _: self.order_manager.process_signals()
+                lambda _: self.order_manager.process_pending_signals()
+            )
+            self.process_signals_interval.subscribe(
+                lambda _: self.broker.execute_open_orders()
             )
         self._subscribe_order_manager_to_strategy_instances()
         self.save_candles = save_candles

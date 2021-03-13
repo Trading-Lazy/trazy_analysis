@@ -4,18 +4,18 @@ import pandas as pd
 import pytest
 
 from indicators.common import PriceType
-from indicators.indicators import IndicatorsManager
-from indicators.rolling_window import RollingWindowStream
-from indicators.sma import SmaManager, SmaStream
-from indicators.stream import StreamData
+from indicators.indicator import Indicator
+from indicators.indicators_manager import IndicatorsManager
+from indicators.rolling_window import RollingWindow
+from indicators.sma import Sma, SmaManager
 
 SYMBOL1 = "IVV"
 SYMBOL2 = "AAPL"
 
 
 def test_sma_stream_handle_new_data_source_is_stream_data():
-    stream_data = RollingWindowStream(size=3, preload=False)
-    sma = SmaStream(period=3, source_data=stream_data, preload=False)
+    stream_data = RollingWindow(size=3, preload=False)
+    sma = Sma(period=3, source_indicator=stream_data, preload=False)
     stream_data.push(7.2)
     assert sma.data is None
     stream_data.push(6.7)
@@ -25,8 +25,8 @@ def test_sma_stream_handle_new_data_source_is_stream_data():
 
 
 def test_sma_stream_handle_new_data_source_is_rolling_window_stream():
-    rolling_window_stream = RollingWindowStream(size=3, preload=False)
-    sma = SmaStream(period=3, source_data=rolling_window_stream, preload=False)
+    rolling_window_stream = RollingWindow(size=3, preload=False)
+    sma = Sma(period=3, source_indicator=rolling_window_stream, preload=False)
     rolling_window_stream.push(7.2)
     assert sma.data is None
     rolling_window_stream.push(6.7)
@@ -36,8 +36,8 @@ def test_sma_stream_handle_new_data_source_is_rolling_window_stream():
 
 
 def test_sma_stream_handle_new_data_source_is_rolling_window_stream_with_lower_period():
-    stream_data = StreamData()
-    sma = SmaStream(period=3, source_data=stream_data, preload=False)
+    stream_data = Indicator()
+    sma = Sma(period=3, source_indicator=stream_data, preload=False)
     stream_data.on_next(7.2)
     assert sma.data is None
     stream_data.on_next(6.7)
@@ -47,12 +47,12 @@ def test_sma_stream_handle_new_data_source_is_rolling_window_stream_with_lower_p
 
 
 def test_sma_stream_handle_new_data_source_is_filled_rolling_window_stream():
-    stream_data = StreamData()
-    rolling_window_stream = RollingWindowStream(
-        size=3, source_data=stream_data, preload=False
+    stream_data = Indicator()
+    rolling_window_stream = RollingWindow(
+        size=3, source_indicator=stream_data, preload=False
     )
     rolling_window_stream.prefill(filling_array=[7.2, 6.7, 6.3])
-    sma = SmaStream(period=3, source_data=rolling_window_stream, preload=False)
+    sma = Sma(period=3, source_indicator=rolling_window_stream, preload=False)
     assert sma.data == pytest.approx(6.733, 0.01)
     rolling_window_stream.push(7)
     assert sma.data == 6.666666666666666666666666667

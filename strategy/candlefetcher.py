@@ -100,7 +100,7 @@ class CandleFetcher:
     def fetch(
         self,
         symbol: str,
-        time_unit: pd.offsets.DateOffset,
+        time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),
     ) -> CandleDataFrame:

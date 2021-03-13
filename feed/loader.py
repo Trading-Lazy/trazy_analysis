@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
 import pandas as pd
@@ -66,7 +66,7 @@ class CsvLoader:
             "high": str,
             "low": str,
             "close": str,
-            "volume": int,
+            "volume": float,
         }
         for symbol, csv_filename in self.csv_filenames.items():
             dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=self.sep)
@@ -80,6 +80,7 @@ class ExternalStorageLoader:
     def __init__(
         self,
         symbols: List[str],
+        time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),
         db_storage: DbStorage = None,
@@ -87,6 +88,7 @@ class ExternalStorageLoader:
         market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
     ):
         self.symbols = symbols
+        self.time_unit = time_unit
         self.start = start
         self.end = end
         self.db_storage = db_storage
@@ -103,6 +105,6 @@ class ExternalStorageLoader:
     def load(self):
         for symbol in self.symbols:
             self.candle_dataframes[symbol] = self.candle_fetcher.fetch(
-                symbol, self.start, self.end
+                symbol, self.time_unit, self.start, self.end
             )
             self.candles[symbol] = self.candle_dataframes[symbol].to_candles()

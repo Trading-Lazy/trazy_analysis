@@ -1,8 +1,9 @@
-import requests, json
-from degiroapi.order import Order
+import json
+
+import requests
 from degiroapi.client_info import ClientInfo
 from degiroapi.datatypes import Data
-from degiroapi.intervaltypes import Interval
+from degiroapi.order import Order
 
 
 class DeGiro:
@@ -359,8 +360,8 @@ class DeGiro:
             request_type=DeGiro.__POST_REQUEST,
             error_message="Could not confirm order",
         )
-        print(response)
-        return response['data']['orderId']
+        # print(response)
+        return response["data"]["orderId"]
 
     def sellorder(
         self, orderType, productId, timeType, size, limit=None, stop_loss=None
@@ -411,8 +412,8 @@ class DeGiro:
             request_type=DeGiro.__POST_REQUEST,
             error_message="Could not confirm order",
         )
-        print(response)
-        return response['data']['orderId']
+        # print(response)
+        return response["data"]["orderId"]
 
     def get_stock_list(self, indexId, stockCountryId):
         stock_list_params = {

@@ -1,9 +1,9 @@
+from collections import deque
 from datetime import timedelta
 
 from common.clock import Clock
-from db_storage.db_storage import DbStorage
 from indicators.crossover import Crossover
-from indicators.indicators import IndicatorsManager
+from indicators.indicators_manager import IndicatorsManager
 from models.candle import Candle
 from models.enums import Action, Direction
 from models.signal import Signal
@@ -12,22 +12,25 @@ from strategy.strategy import LOG, Strategy
 
 
 class SmaCrossoverStrategy(Strategy):
+    SHORT_SMA = 9
+    LONG_SMA = 65
+
     def __init__(
         self,
         symbol: str,
-        db_storage: DbStorage,
         order_manager: OrderManager,
+        events: deque,
         indicators_manager: IndicatorsManager = IndicatorsManager(),
     ):
-        super().__init__(symbol, db_storage, order_manager, indicators_manager)
+        super().__init__(symbol, order_manager, events, indicators_manager)
         self.short_sma = self.indicators_manager.Sma(
             symbol,
-            period=9,
+            period=SmaCrossoverStrategy.SHORT_SMA,
             time_unit=timedelta(minutes=1),
         )
         self.long_sma = self.indicators_manager.Sma(
             symbol,
-            period=65,
+            period=SmaCrossoverStrategy.LONG_SMA,
             time_unit=timedelta(minutes=1),
         )
         self.crossover = Crossover(self.short_sma, self.long_sma)

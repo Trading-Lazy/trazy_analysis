@@ -1,10 +1,9 @@
-import threading
-from datetime import datetime
+from collections import deque
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import numpy as np
 
-from candles_queue.fake_queue import FakeQueue
 from common.types import CandleDataFrame
 from db_storage.mongodb_storage import MongoDbStorage
 from feed.feed import (
@@ -13,14 +12,15 @@ from feed.feed import (
     Feed,
     HistoricalFeed,
     LiveFeed,
-    OfflineFeed,
     PandasFeed,
 )
+from file_storage.meganz_file_storage import MegaNzFileStorage
 from market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
 from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
 from models.candle import Candle
+from models.event import MarketDataEndEvent, MarketDataEvent
 from settings import DATABASE_NAME
 
 DB_STORAGE = MongoDbStorage(DATABASE_NAME)
@@ -220,48 +220,40 @@ CANDLES = np.array(
     dtype=Candle,
 )
 
+FILE_STORAGE = MegaNzFileStorage()
+
 
 def test_feed():
-    candles_queue = FakeQueue(QUEUE_NAME)
-
+    events = deque()
+    candles = {AAPL_SYMBOL: AAPL_CANDLES1, GOOGL_SYMBOL: GOOGL_CANDLES1}
     feed = Feed(
-        candles_queue,
-        {AAPL_SYMBOL: AAPL_CANDLES1, GOOGL_SYMBOL: GOOGL_CANDLES1},
-        seconds=1,
+        events=events,
+        candles=candles,
     )
 
-    aapl_idx = 0
-    googl_idx = 0
-    checks = True
-    key_lock = threading.Lock()
+    for i in range(0, 3):
+        feed.update_latest_data()
 
-    def callback(candle: Candle):
-        symbol = candle.symbol
-        with key_lock:
-            nonlocal aapl_idx
-            nonlocal googl_idx
-            nonlocal checks
-            if symbol == AAPL_SYMBOL:
-                if candle != AAPL_CANDLES1[aapl_idx]:
-                    checks = False
-                aapl_idx += 1
-            else:
-                if candle != GOOGL_CANDLES1[googl_idx]:
-                    checks = False
-                googl_idx += 1
-
-    candles_queue.add_consumer_no_retry(callback)
-
-    feed.start()
-    assert checks
+    events_list = list(events)
+    assert len(events_list) == 6
+    assert isinstance(events_list[0], MarketDataEvent)
+    assert events_list[0].candle == AAPL_CANDLES1[0]
+    assert isinstance(events_list[1], MarketDataEvent)
+    assert events_list[1].candle == GOOGL_CANDLES1[0]
+    assert isinstance(events_list[2], MarketDataEvent)
+    assert events_list[2].candle == AAPL_CANDLES1[1]
+    assert isinstance(events_list[3], MarketDataEvent)
+    assert events_list[3].candle == GOOGL_CANDLES1[1]
+    assert isinstance(events_list[4], MarketDataEndEvent)
+    assert events_list[4].symbol == AAPL_SYMBOL
+    assert isinstance(events_list[5], MarketDataEndEvent)
+    assert events_list[5].symbol == GOOGL_SYMBOL
 
 
 @patch(
     "market_data.live.tiingo_live_data_handler.TiingoLiveDataHandler.request_ticker_lastest_candles"
 )
 def test_live_feed(request_ticker_lastest_candles_mocked):
-    candles_queue = FakeQueue(QUEUE_NAME)
-
     request_ticker_lastest_candles_mocked.side_effect = [
         AAPL_CANDLES1,
         GOOGL_CANDLES1,
@@ -269,76 +261,37 @@ def test_live_feed(request_ticker_lastest_candles_mocked):
         GOOGL_CANDLES2,
     ]
     tiingo_live_data_handler = TiingoLiveDataHandler()
-    live_feed = LiveFeed(
-        [AAPL_SYMBOL], candles_queue, tiingo_live_data_handler, seconds=1
-    )
+    events = deque()
+    live_feed = LiveFeed([AAPL_SYMBOL], events, tiingo_live_data_handler)
 
-    aapl_idx = 0
-    googl_idx = 0
-    checks = True
-    key_lock = threading.Lock()
+    for i in range(0, 4):
+        live_feed.update_latest_data()
 
-    def callback(candle: Candle):
-        symbol = candle.symbol
-        with key_lock:
-            nonlocal aapl_idx
-            nonlocal googl_idx
-            nonlocal checks
-            if symbol == AAPL_SYMBOL:
-                if candle != AAPL_CANDLES[aapl_idx]:
-                    checks = False
-                aapl_idx += 1
-            else:
-                if candle != GOOGL_CANDLES[googl_idx]:
-                    checks = False
-                googl_idx += 1
-            if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
-                live_feed.stop()
-
-    candles_queue.add_consumer_no_retry(callback)
-
-    live_feed.start()
-    assert checks
-
-
-def test_offline_feed():
-    candles_queue = FakeQueue(QUEUE_NAME)
-
-    offline_feed = OfflineFeed(
-        candles_queue, {AAPL_SYMBOL: AAPL_CANDLES1, GOOGL_SYMBOL: GOOGL_CANDLES1}
-    )
-
-    aapl_idx = 0
-    googl_idx = 0
-    checks = True
-    key_lock = threading.Lock()
-
-    def callback(candle: Candle):
-        symbol = candle.symbol
-        with key_lock:
-            nonlocal aapl_idx
-            nonlocal googl_idx
-            nonlocal checks
-            if symbol == AAPL_SYMBOL:
-                if candle != AAPL_CANDLES1[aapl_idx]:
-                    checks = False
-                aapl_idx += 1
-            else:
-                if candle != GOOGL_CANDLES1[googl_idx]:
-                    checks = False
-                googl_idx += 1
-
-    candles_queue.add_consumer_no_retry(callback)
-
-    offline_feed.start()
-    assert checks
+    events_list = list(events)
+    assert len(events_list) == 8
+    assert isinstance(events_list[0], MarketDataEvent)
+    assert events_list[0].candle == AAPL_CANDLES1[0]
+    assert isinstance(events_list[1], MarketDataEvent)
+    assert events_list[1].candle == AAPL_CANDLES1[1]
+    assert isinstance(events_list[2], MarketDataEvent)
+    assert events_list[2].candle == GOOGL_CANDLES1[0]
+    assert isinstance(events_list[3], MarketDataEvent)
+    assert events_list[3].candle == GOOGL_CANDLES1[1]
+    assert isinstance(events_list[4], MarketDataEvent)
+    assert events_list[4].candle == AAPL_CANDLES2[0]
+    assert isinstance(events_list[5], MarketDataEvent)
+    assert events_list[5].candle == AAPL_CANDLES2[1]
+    assert isinstance(events_list[6], MarketDataEvent)
+    assert events_list[6].candle == GOOGL_CANDLES2[0]
+    assert isinstance(events_list[7], MarketDataEvent)
+    assert events_list[7].candle == GOOGL_CANDLES2[1]
 
 
 @patch(
     "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_in_range"
 )
 def test_historical_feed(request_ticker_data_in_range_mocked):
-    candles_queue = FakeQueue(QUEUE_NAME)
+    events = deque()
     tiingo_historical_data_handler = TiingoHistoricalDataHandler()
     start = datetime.strptime("2020-06-11 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     end = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
@@ -357,113 +310,109 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
     ]
     historical_feed = HistoricalFeed(
         [AAPL_SYMBOL, GOOGL_SYMBOL],
-        candles_queue,
+        events,
         tiingo_historical_data_handler,
         start,
         end,
     )
 
-    aapl_idx = 0
-    googl_idx = 0
-    checks = True
-    key_lock = threading.Lock()
+    for i in range(0, len(AAPL_CANDLES) + 1):
+        historical_feed.update_latest_data()
 
-    def callback(candle: Candle):
-        symbol = candle.symbol
-        with key_lock:
-            nonlocal aapl_idx
-            nonlocal googl_idx
-            nonlocal checks
-            if symbol == AAPL_SYMBOL:
-                if candle != AAPL_CANDLES[aapl_idx]:
-                    checks = False
-                aapl_idx += 1
-            else:
-                if candle != GOOGL_CANDLES[googl_idx]:
-                    checks = False
-                googl_idx += 1
-            if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
-                historical_feed.stop()
-
-    candles_queue.add_consumer_no_retry(callback)
-
-    historical_feed.start()
-    assert checks
+    events_list = list(events)
+    assert len(events_list) == 10
+    assert isinstance(events_list[0], MarketDataEvent)
+    assert events_list[0].candle == AAPL_CANDLES1[0]
+    assert isinstance(events_list[1], MarketDataEvent)
+    assert events_list[1].candle == GOOGL_CANDLES1[0]
+    assert isinstance(events_list[2], MarketDataEvent)
+    assert events_list[2].candle == AAPL_CANDLES1[1]
+    assert isinstance(events_list[3], MarketDataEvent)
+    assert events_list[3].candle == GOOGL_CANDLES1[1]
+    assert isinstance(events_list[4], MarketDataEvent)
+    assert events_list[4].candle == AAPL_CANDLES2[0]
+    assert isinstance(events_list[5], MarketDataEvent)
+    assert events_list[5].candle == GOOGL_CANDLES2[0]
+    assert isinstance(events_list[6], MarketDataEvent)
+    assert events_list[6].candle == AAPL_CANDLES2[1]
+    assert isinstance(events_list[7], MarketDataEvent)
+    assert events_list[7].candle == GOOGL_CANDLES2[1]
+    assert isinstance(events_list[8], MarketDataEndEvent)
+    assert events_list[8].symbol == AAPL_SYMBOL
+    assert isinstance(events_list[9], MarketDataEndEvent)
+    assert events_list[9].symbol == GOOGL_SYMBOL
 
 
 def test_pandas_feed():
-    candles_queue = FakeQueue(QUEUE_NAME)
+    events = deque()
     candle_dataframes = [
         CandleDataFrame.from_candle_list(symbol=AAPL_SYMBOL, candles=AAPL_CANDLES),
         CandleDataFrame.from_candle_list(symbol=GOOGL_SYMBOL, candles=GOOGL_CANDLES),
     ]
-    pandas_feed = PandasFeed(candle_dataframes, candles_queue)
+    pandas_feed = PandasFeed(candle_dataframes, events)
 
-    aapl_idx = 0
-    googl_idx = 0
-    checks = True
-    key_lock = threading.Lock()
+    for i in range(0, len(AAPL_CANDLES) + 1):
+        pandas_feed.update_latest_data()
 
-    def callback(candle: Candle):
-        symbol = candle.symbol
-        with key_lock:
-            nonlocal aapl_idx
-            nonlocal googl_idx
-            nonlocal checks
-            if symbol == AAPL_SYMBOL:
-                if candle != AAPL_CANDLES[aapl_idx]:
-                    checks = False
-                aapl_idx += 1
-            else:
-                if candle != GOOGL_CANDLES[googl_idx]:
-                    checks = False
-                googl_idx += 1
-            if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
-                pandas_feed.stop()
-
-    candles_queue.add_consumer_no_retry(callback)
-
-    pandas_feed.start()
-    assert checks
+    events_list = list(events)
+    assert len(events_list) == 10
+    assert isinstance(events_list[0], MarketDataEvent)
+    assert events_list[0].candle == AAPL_CANDLES1[0]
+    assert isinstance(events_list[1], MarketDataEvent)
+    assert events_list[1].candle == GOOGL_CANDLES1[0]
+    assert isinstance(events_list[2], MarketDataEvent)
+    assert events_list[2].candle == AAPL_CANDLES1[1]
+    assert isinstance(events_list[3], MarketDataEvent)
+    assert events_list[3].candle == GOOGL_CANDLES1[1]
+    assert isinstance(events_list[4], MarketDataEvent)
+    assert events_list[4].candle == AAPL_CANDLES2[0]
+    assert isinstance(events_list[5], MarketDataEvent)
+    assert events_list[5].candle == GOOGL_CANDLES2[0]
+    assert isinstance(events_list[6], MarketDataEvent)
+    assert events_list[6].candle == AAPL_CANDLES2[1]
+    assert isinstance(events_list[7], MarketDataEvent)
+    assert events_list[7].candle == GOOGL_CANDLES2[1]
+    assert isinstance(events_list[8], MarketDataEndEvent)
+    assert events_list[8].symbol == AAPL_SYMBOL
+    assert isinstance(events_list[9], MarketDataEndEvent)
+    assert events_list[9].symbol == GOOGL_SYMBOL
 
 
 def test_csv_feed():
-    candles_queue = FakeQueue(QUEUE_NAME)
-
+    events = deque()
     csv_feed = CsvFeed(
-        {
+        events=events,
+        csv_filenames={
             AAPL_SYMBOL: "test/data/aapl_candles.csv",
             GOOGL_SYMBOL: "test/data/googl_candles.csv",
         },
-        candles_queue,
     )
 
-    aapl_idx = 0
-    googl_idx = 0
-    checks = True
-    key_lock = threading.Lock()
+    for i in range(0, len(AAPL_CANDLES) + 1):
+        csv_feed.update_latest_data()
 
-    def callback(candle: Candle):
-        symbol = candle.symbol
-        with key_lock:
-            nonlocal aapl_idx
-            nonlocal googl_idx
-            nonlocal checks
-            if symbol == AAPL_SYMBOL:
-                if candle != AAPL_CANDLES[aapl_idx]:
-                    checks = False
-                aapl_idx += 1
-            else:
-                if candle != GOOGL_CANDLES[googl_idx]:
-                    checks = False
-                googl_idx += 1
-            if aapl_idx == len(AAPL_CANDLES) and googl_idx == len(GOOGL_CANDLES):
-                csv_feed.stop()
-
-    candles_queue.add_consumer_no_retry(callback)
-
-    csv_feed.start()
-    assert checks
+    events_list = list(events)
+    assert len(events_list) == 10
+    assert isinstance(events_list[0], MarketDataEvent)
+    assert events_list[0].candle == AAPL_CANDLES1[0]
+    assert isinstance(events_list[1], MarketDataEvent)
+    assert events_list[1].candle == GOOGL_CANDLES1[0]
+    assert isinstance(events_list[2], MarketDataEvent)
+    assert events_list[2].candle == AAPL_CANDLES1[1]
+    assert isinstance(events_list[3], MarketDataEvent)
+    assert events_list[3].candle == GOOGL_CANDLES1[1]
+    assert isinstance(events_list[4], MarketDataEvent)
+    assert events_list[4].candle == AAPL_CANDLES2[0]
+    assert isinstance(events_list[5], MarketDataEvent)
+    assert events_list[5].candle == GOOGL_CANDLES2[0]
+    assert isinstance(events_list[6], MarketDataEvent)
+    assert events_list[6].candle == AAPL_CANDLES2[1]
+    assert isinstance(events_list[7], MarketDataEvent)
+    assert events_list[7].candle == GOOGL_CANDLES2[1]
+    assert isinstance(events_list[8], MarketDataEndEvent)
+    assert events_list[8].symbol == AAPL_SYMBOL
+    assert isinstance(events_list[9], MarketDataEndEvent)
+    assert events_list[9].symbol == GOOGL_SYMBOL
 
 
 @patch("file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content")
@@ -482,32 +431,95 @@ def test_external_storage_feed(get_file_content_mocked):
             "2020-05-08 14:15:00+00:00,94.22,94.26,93.95,93.98,11\n"
         )
     ]
-    candles_queue = FakeQueue(QUEUE_NAME)
-
+    events = deque()
     external_storage_feed = ExternalStorageFeed(
         symbols=[SYMBOL],
-        candles_queue=candles_queue,
+        events=events,
+        time_unit=timedelta(minutes=1),
         start=datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
-        end=datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        end=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        db_storage=DB_STORAGE,
+        file_storage=FILE_STORAGE,
     )
+    file_content_valid_candles = np.array(
+        [
+            Candle(
+                symbol=SYMBOL,
+                open=94.28,
+                high=94.96,
+                low=93.96,
+                close=94.78,
+                volume=23,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol=SYMBOL,
+                open=94.92,
+                high=95.32,
+                low=94.09,
+                close=94.09,
+                volume=11,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:13:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol=SYMBOL,
+                open=94.25,
+                high=94.59,
+                low=94.14,
+                close=94.59,
+                volume=26,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:14:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol=SYMBOL,
+                open=94.22,
+                high=94.26,
+                low=93.95,
+                close=93.98,
+                volume=11,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                symbol="IVV",
+                open=93.98,
+                high=93.98,
+                low=93.98,
+                close=93.98,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+        ],
+        dtype=Candle,
+    )
+    candles_valid_candles_count = 1
+    for i in range(
+        0, candles_valid_candles_count + len(file_content_valid_candles) + 1
+    ):
+        external_storage_feed.update_latest_data()
 
-    idx = 0
-    checks = True
-    key_lock = threading.Lock()
-
-    def callback(candle: Candle):
-        symbol = candle.symbol
-        with key_lock:
-            nonlocal idx
-            nonlocal checks
-            assert symbol == SYMBOL
-            if candle != CANDLES[idx]:
-                checks = False
-            idx += 1
-            if idx == len(CANDLES):
-                external_storage_feed.stop()
-
-    candles_queue.add_consumer_no_retry(callback)
-
-    external_storage_feed.start()
-    assert checks
+    events_list = list(events)
+    assert len(events_list) == 7
+    assert isinstance(events_list[0], MarketDataEvent)
+    assert events_list[0].candle == file_content_valid_candles[0]
+    assert isinstance(events_list[1], MarketDataEvent)
+    assert events_list[1].candle == file_content_valid_candles[1]
+    assert isinstance(events_list[2], MarketDataEvent)
+    assert events_list[2].candle == file_content_valid_candles[2]
+    assert isinstance(events_list[3], MarketDataEvent)
+    assert events_list[3].candle == file_content_valid_candles[3]
+    assert isinstance(events_list[4], MarketDataEvent)
+    assert events_list[4].candle == file_content_valid_candles[4]
+    assert isinstance(events_list[5], MarketDataEvent)
+    assert events_list[5].candle == CANDLES[0]
+    assert isinstance(events_list[6], MarketDataEndEvent)
+    assert events_list[6].symbol == SYMBOL

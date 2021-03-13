@@ -1,16 +1,12 @@
 from collections import deque
 from unittest.mock import PropertyMock, call, patch
 
-from bot.data_consumer import DataConsumer
-from bot.data_flow import DataFlow
+from bot.event_loop import EventLoop
 from broker.broker import Broker
 from broker.simulated_broker import SimulatedBroker
-from candles_queue.candles_queue import CandlesQueue
-from candles_queue.fake_queue import FakeQueue
 from common.clock import SimulatedClock
-from db_storage.mongodb_storage import MongoDbStorage
 from feed.feed import CsvFeed, Feed
-from indicators.indicators import IndicatorsManager
+from indicators.indicators_manager import IndicatorsManager
 from models.enums import Action, Direction, OrderStatus
 from models.multiple_order import MultipleOrder, SequentialOrder
 from models.order import Order
@@ -18,7 +14,6 @@ from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
 from portfolio.portfolio import Portfolio
-from settings import DATABASE_NAME, DATABASE_URL
 from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
@@ -26,12 +21,14 @@ from strategy.strategies.sma_crossover_strategy import (
 
 def test_init():
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
     supported_currencies = ["USD", "EUR"]
     initial_funds = 10000
 
     broker = Broker(
         clock=clock,
+        events=events,
         base_currency=base_currency,
         supported_currencies=supported_currencies,
     )
@@ -49,8 +46,9 @@ def test_init():
 @patch("portfolio.portfolio.Portfolio.total_market_value", new_callable=PropertyMock)
 def test_get_portfolio_total_market_value(total_market_value_mocked):
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.get_portfolio_total_market_value()
     total_market_value_mocked_calls = [call()]
     total_market_value_mocked.assert_has_calls(total_market_value_mocked_calls)
@@ -59,8 +57,9 @@ def test_get_portfolio_total_market_value(total_market_value_mocked):
 @patch("portfolio.portfolio.Portfolio.total_equity", new_callable=PropertyMock)
 def test_get_portfolio_total_equity(total_equity_mocked):
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.get_portfolio_total_equity()
     total_equity_mocked_calls = [call()]
     total_equity_mocked.assert_has_calls(total_equity_mocked_calls)
@@ -69,8 +68,9 @@ def test_get_portfolio_total_equity(total_equity_mocked):
 @patch("portfolio.portfolio.Portfolio.portfolio_to_dict")
 def test_get_portfolio_as_dict(portfolio_to_dict_mocked):
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.get_portfolio_as_dict()
     portfolio_to_dict_mocked_calls = [call()]
     portfolio_to_dict_mocked.assert_has_calls(portfolio_to_dict_mocked_calls)
@@ -78,9 +78,10 @@ def test_get_portfolio_as_dict(portfolio_to_dict_mocked):
 
 def test_get_portfolio_cash_balance():
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
     initial_funds = 10000
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.cash_balances[base_currency] = initial_funds
     portfolio_cash = 7000
     broker.subscribe_funds_to_portfolio(amount=portfolio_cash)
@@ -89,9 +90,10 @@ def test_get_portfolio_cash_balance():
 
 def test_subscribe_funds_to_portfolio():
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
     initial_funds = 10000
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.cash_balances[base_currency] = initial_funds
     portfolio_cash = 7000
     broker.subscribe_funds_to_portfolio(amount=portfolio_cash)
@@ -100,9 +102,10 @@ def test_subscribe_funds_to_portfolio():
 
 def test_withdraw_funds_from_portfolio():
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
     initial_funds = 10000
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.cash_balances[base_currency] = initial_funds
     subscription_cash = 7000
     withdrawal_cash = 4000
@@ -114,9 +117,10 @@ def test_withdraw_funds_from_portfolio():
 
 def test_submit_order_single_order():
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
     initial_funds = 10000
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.cash_balances[base_currency] = initial_funds
     broker.subscribe_funds_to_portfolio(10000.0)
     symbol1 = "AAA"
@@ -136,9 +140,10 @@ def test_submit_order_single_order():
 
 def test_submit_order_multiple_order():
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
     initial_funds = 10000
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.cash_balances[base_currency] = initial_funds
     broker.subscribe_funds_to_portfolio(10000.0)
     symbol1 = "AAA"
@@ -171,9 +176,10 @@ def test_submit_order_multiple_order():
 
 def test_submit_order_sequential_order():
     clock = SimulatedClock()
+    events = deque()
     base_currency = "EUR"
     initial_funds = 10000
-    broker = Broker(clock=clock, base_currency=base_currency)
+    broker = Broker(clock=clock, events=events, base_currency=base_currency)
     broker.cash_balances[base_currency] = initial_funds
     broker.subscribe_funds_to_portfolio(10000.0)
     symbol1 = "AAA"
@@ -205,77 +211,71 @@ def test_submit_order_sequential_order():
 
 def test_close_all_open_positions_at_end_of_day():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
         {"AAPL": "test/data/aapl_candles_one_day_positions_opened_end_of_day.csv"},
-        candles_queue,
+        events,
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
-    db_storage.clean_all_signals()
-    db_storage.clean_all_orders()
-    db_storage.clean_all_candles()
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000.0)
+    broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
+        events=events,
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=None,
+        feed=feed,
         order_manager=order_manager,
         strategies_classes=strategies,
         indicators_manager=indicators_manager,
     )
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
-    assert broker.get_portfolio_cash_balance() == 10016.415
+    assert broker.get_portfolio_cash_balance() == 10014.665
 
 
 def test_close_all_open_positions_at_end_of_feed_data():
     symbols = ["AAPL"]
-    candles_queue: CandlesQueue = FakeQueue("candles")
+    events = deque()
 
     feed: Feed = CsvFeed(
         {
             "AAPL": "test/data/aapl_candles_one_day_positions_opened_end_of_feed_data.csv"
         },
-        candles_queue,
+        events,
     )
-
-    db_storage = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
-    db_storage.clean_all_signals()
-    db_storage.clean_all_orders()
-    db_storage.clean_all_candles()
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
-    broker = SimulatedBroker(clock, initial_funds=10000.0)
+    broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
     order_manager = OrderManager(
-        broker=broker, position_sizer=position_sizer, order_creator=order_creator
+        events=events,
+        broker=broker,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    data_consumer = DataConsumer(
+    event_loop = EventLoop(
+        events=events,
         symbols=symbols,
-        candles_queue=candles_queue,
-        db_storage=None,
+        feed=feed,
         order_manager=order_manager,
         strategies_classes=strategies,
         indicators_manager=indicators_manager,
     )
-    data_flow = DataFlow(feed, data_consumer)
-    data_flow.start()
+    event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10014.35

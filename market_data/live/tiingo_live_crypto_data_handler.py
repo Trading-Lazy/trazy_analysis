@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from market_data.live.live_data_handler import LiveDataHandler
@@ -22,7 +22,8 @@ class TiingoLiveCryptoDataHandler(TiingoCryptoDataHandler, LiveDataHandler):
 
     @classmethod
     def generate_ticker_latest_data_url(cls, ticker: str) -> str:
-        date_today = date.today()
+        date_today = datetime.now(timezone.utc).date()
+        date_tomorrow = date_today + timedelta(days=1)
         return cls.BASE_URL_TICKER_LATEST_DATA.format(
-            ticker, date_today, date_today, cls.API_TOKEN
+            ticker, date_today, date_tomorrow, cls.API_TOKEN
         )

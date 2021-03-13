@@ -6,16 +6,16 @@ import pytest
 
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from indicators.common import PriceType
-from indicators.indicators import IndicatorsManager
+from indicators.indicator import Indicator
+from indicators.indicators_manager import IndicatorsManager
 from indicators.rolling_window import (
     PriceRollingWindowManager,
+    RollingWindow,
     RollingWindowManager,
-    RollingWindowStream,
+    TimeFramedCandleRollingWindow,
     TimeFramedCandleRollingWindowManager,
-    TimeFramedCandleRollingWindowStream,
     get_price_selector_function,
 )
-from indicators.stream import StreamData
 from models.candle import Candle
 
 SYMBOL1 = "IVV"
@@ -88,14 +88,14 @@ def test_get_price_selector_function():
 
 
 def test_rolling_window_stream_init():
-    rolling_window = RollingWindowStream(size=5, preload=False)
+    rolling_window = RollingWindow(size=5, preload=False)
     assert rolling_window.window.size == 5
     assert rolling_window.dtype is None
     assert rolling_window.nb_elts == 0
 
 
 def test_rolling_window_stream_init_prefill():
-    rolling_window = RollingWindowStream(size=5, dtype=int, preload=False)
+    rolling_window = RollingWindow(size=5, dtype=int, preload=False)
     rolling_window.prefill(filling_array=[2, 3, 4])
     expected_array = np.empty(shape=5, dtype=int)
     expected_array[-3:] = [2, 3, 4]
@@ -103,7 +103,7 @@ def test_rolling_window_stream_init_prefill():
     assert rolling_window.nb_elts == 3
     assert (rolling_window.window[-3:] == expected_array[-3:]).all()
 
-    rolling_window = RollingWindowStream(size=5, dtype=int, preload=False)
+    rolling_window = RollingWindow(size=5, dtype=int, preload=False)
     rolling_window.prefill(filling_array=[2, 3, 4, 5, 6, 7, 8])
     assert rolling_window.insert == 0
     expected_array = np.array([4, 5, 6, 7, 8], dtype=int)
@@ -112,7 +112,7 @@ def test_rolling_window_stream_init_prefill():
 
 
 def test_rolling_window_stream_push():
-    rolling_window = RollingWindowStream(size=3, dtype=int, preload=False)
+    rolling_window = RollingWindow(size=3, dtype=int, preload=False)
     assert rolling_window.nb_elts == 0
     assert rolling_window.insert == 0
 
@@ -139,8 +139,8 @@ def test_rolling_window_stream_push():
 
 
 def test_rolling_window_stream_filled():
-    stream_data = StreamData()
-    rolling_window = RollingWindowStream(size=3, source_data=stream_data, preload=False)
+    stream_data = Indicator()
+    rolling_window = RollingWindow(size=3, source_indicator=stream_data, preload=False)
     stream_data.on_next(1)
     assert not rolling_window.filled()
     stream_data.on_next(2)
@@ -150,9 +150,9 @@ def test_rolling_window_stream_filled():
 
 
 def test_rolling_window_stream_map():
-    stream_data = StreamData()
-    rolling_window = RollingWindowStream(
-        size=5, source_data=stream_data, dtype=int, preload=False
+    stream_data = Indicator()
+    rolling_window = RollingWindow(
+        size=5, source_indicator=stream_data, dtype=int, preload=False
     )
     rolling_window.prefill(filling_array=[1, 2, 3, 4, 5])
     assert rolling_window.nb_elts == 5
@@ -170,10 +170,10 @@ def test_rolling_window_stream_map():
         mapped_rolling_window.window == np.array([22, 4, 6, 8, 10], dtype=int)
     ).all()
 
-    rolling_window = RollingWindowStream(
+    rolling_window = RollingWindow(
         size=5,
         transform=lambda x: 2 * x + 1,
-        source_data=stream_data,
+        source_indicator=stream_data,
         dtype=int,
         preload=False,
     )
@@ -194,7 +194,7 @@ def test_rolling_window_stream_map():
 
 def test_rolling_window_stream_get_item_live():
     # live
-    rolling_window = RollingWindowStream(size=10, preload=False)
+    rolling_window = RollingWindow(size=10, preload=False)
     rolling_window.prefill(filling_array=[i for i in range(0, 10)])
 
     # positive integers
@@ -226,7 +226,7 @@ def test_rolling_window_stream_get_item_live():
 
 
 def test_rolling_window_stream_get_item_not_live():
-    rolling_window = RollingWindowStream(size=10, preload=True)
+    rolling_window = RollingWindow(size=10, preload=True)
     rolling_window.prefill(filling_array=[i for i in range(0, 10)])
 
     # positive integers
@@ -262,7 +262,7 @@ def test_rolling_window_stream_get_item_not_live():
 
 
 def test_time_framed_candle_rolling_window_stream_handle_new_data_1_minute_data():
-    rolling_window = TimeFramedCandleRollingWindowStream(
+    rolling_window = TimeFramedCandleRollingWindow(
         size=2, time_unit=timedelta(minutes=1), market_cal=MARKET_CAL, preload=False
     )
     rolling_window.push(CANDLE1)
@@ -274,7 +274,7 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_1_minute_data(
 
 
 def test_time_framed_candle_rolling_window_stream_handle_new_data_5_minute_data():
-    rolling_window = TimeFramedCandleRollingWindowStream(
+    rolling_window = TimeFramedCandleRollingWindow(
         size=2, time_unit=timedelta(minutes=5), market_cal=MARKET_CAL, preload=False
     )
     rolling_window.push(CANDLE1)
@@ -314,7 +314,7 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_5_minute_data(
 
 
 def test_time_framed_candle_rolling_window_stream_handle_new_data_1_day_data():
-    rolling_window = TimeFramedCandleRollingWindowStream(
+    rolling_window = TimeFramedCandleRollingWindow(
         size=2, time_unit=timedelta(days=1), market_cal=MARKET_CAL, preload=False
     )
     rolling_window.push(CANDLE1)

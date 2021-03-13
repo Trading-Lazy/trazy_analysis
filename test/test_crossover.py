@@ -1,13 +1,13 @@
 import pytest
 
 from indicators.crossover import Crossover, CrossoverState
-from indicators.stream import StreamData
+from indicators.indicator import Indicator
 
 
 @pytest.fixture
 def test_crossover_fixture_neg():
-    stream_data1 = StreamData()
-    stream_data2 = StreamData()
+    stream_data1 = Indicator()
+    stream_data2 = Indicator()
     crossover = Crossover(stream_data1, stream_data2)
     stream_data1.on_next(2)
     stream_data2.on_next(3)
@@ -16,8 +16,8 @@ def test_crossover_fixture_neg():
 
 @pytest.fixture
 def test_crossover_fixture_pos():
-    stream_data1 = StreamData()
-    stream_data2 = StreamData()
+    stream_data1 = Indicator()
+    stream_data2 = Indicator()
     crossover = Crossover(stream_data1, stream_data2)
     stream_data1.on_next(3)
     stream_data2.on_next(2)
@@ -26,16 +26,16 @@ def test_crossover_fixture_pos():
 
 @pytest.fixture
 def test_crossover_fixture_idle():
-    stream_data1 = StreamData()
-    stream_data2 = StreamData()
+    stream_data1 = Indicator()
+    stream_data2 = Indicator()
     crossover = Crossover(stream_data1, stream_data2)
     return stream_data1, stream_data2, crossover
 
 
 @pytest.fixture
 def test_crossover_fixture_idle_neg_trend():
-    stream_data1 = StreamData()
-    stream_data2 = StreamData()
+    stream_data1 = Indicator()
+    stream_data2 = Indicator()
     crossover = Crossover(stream_data1, stream_data2)
     stream_data1.on_next(2)
     stream_data2.on_next(3)
@@ -46,8 +46,8 @@ def test_crossover_fixture_idle_neg_trend():
 
 @pytest.fixture
 def test_crossover_fixture_idle_pos_trend():
-    stream_data1 = StreamData()
-    stream_data2 = StreamData()
+    stream_data1 = Indicator()
+    stream_data2 = Indicator()
     crossover = Crossover(stream_data1, stream_data2)
     stream_data1.on_next(3)
     stream_data2.on_next(2)

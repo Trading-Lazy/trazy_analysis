@@ -1,9 +1,11 @@
 from decimal import Decimal
 from enum import Enum
 
+import numpy as np
+
 from common.helper import check_type
 from indicators.common import get_state
-from indicators.stream import StreamData
+from indicators.indicator import Indicator
 
 
 class CrossoverState(Enum):
@@ -14,18 +16,16 @@ class CrossoverState(Enum):
     NEG = -1
 
 
-class Crossover(StreamData):
+class Crossover(Indicator):
     count = 0
     instances = 0
 
-    def __init__(
-        self, source_stream_data1: StreamData, source_stream_data2: StreamData
-    ):
+    def __init__(self, source_stream_data1: Indicator, source_stream_data2: Indicator):
         Crossover.instances += 1
         self.sign_stream = source_stream_data1.sub(source_stream_data2)
-        super().__init__(source_data=self.sign_stream)
-        check_type(source_stream_data1.data, [int, float, Decimal])
-        check_type(source_stream_data2.data, [int, float, Decimal])
+        super().__init__(source_indicator=self.sign_stream)
+        check_type(source_stream_data1.data, [int, float, np.float64, Decimal])
+        check_type(source_stream_data2.data, [int, float, np.float64, Decimal])
         self.state = CrossoverState.IDLE
         self.data = 0
 
