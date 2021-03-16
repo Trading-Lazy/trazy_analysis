@@ -203,6 +203,9 @@ class TimeFramedCandleRollingWindow(RollingWindow):
 class RollingWindowManager:
     def __init__(self, preload=True):
         self.cache: Dict[str, RollingWindow] = {}
+
+        # max_periods is a dictionary with symbols as the keys
+        # the values are the max look back period for this symbol
         self.max_periods: Dict[str, int] = {}
         self.preload = preload
 
@@ -216,16 +219,12 @@ class RollingWindowManager:
         return self.cache[symbol]
 
     def warmup(self, preload_data: Dict[str, np.array]):
-        for symbol in self.max_periods:
-            max_period = self.max_periods[symbol]
-            if symbol in preload_data:
-                candles_len = len(preload_data[symbol])
-                max_period = int(max(max_period, candles_len))
-                self.cache[symbol].set_size(max_period)
-                self.cache[symbol].prefill(preload_data[symbol])
-            else:
-                self.cache[symbol].set_size(max_period)
-
+        for symbol in preload_data:
+            max_period = len(preload_data[symbol])
+            self.cache[symbol] = RollingWindow()
+            self.cache[symbol].set_size(max_period)
+            self.cache[symbol].prefill(preload_data[symbol])
+            self.max_periods[symbol] = max_period
 
 class TimeFramedCandleRollingWindowManager:
     def __init__(
