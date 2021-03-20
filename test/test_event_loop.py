@@ -154,27 +154,6 @@ def test_run_strategies(run_strategy_mocked):
     run_strategy_mocked.assert_has_calls(run_strategy_calls)
 
 
-def test_run_live():
-    symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
-    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
-
-    broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator)
-    indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(
-        events=EVENTS,
-        symbols=symbols,
-        feed=FEED,
-        order_manager=order_manager,
-        indicators_manager=indicators_manager,
-        strategies_classes=strategies_classes,
-        live=True,
-    )
-    event_loop.loop()
-
-
 def test_run_backtest():
     symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]

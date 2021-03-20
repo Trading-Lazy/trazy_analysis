@@ -1,5 +1,8 @@
 import os
+import traceback
 from collections import deque
+from datetime import datetime
+from decimal import Decimal, ROUND_DOWN, ROUND_UP
 from typing import List
 
 import pandas as pd
@@ -9,7 +12,9 @@ from broker import degiroapi
 from broker.broker import Broker
 from broker.common import get_rejected_order_error_message
 from common.clock import Clock
+from common.constants import DEGIRO_DATETIME_FORMAT
 from common.helper import get_or_create_nested_dict
+from common.utils import timestamp_to_utc
 from logger import logger
 from models.enums import Action, Direction, OrderCondition, OrderType
 from models.order import Order
@@ -29,6 +34,8 @@ class DegiroBroker(Broker):
     PRODUCT_INFO_PERIOD = pd.Timedelta(value=10, unit="days")
     SYMBOL_INFO_PERIOD = pd.Timedelta(value=10, unit="days")
     TRANSACTION_LOOKBACK_PERIOD = pd.offsets.Day(1)
+    DEGIRO_PRICE_MULTIPLICATOR = Decimal("0.01")
+    DEGIRO_PRICE_DECIMAL_PLACES = 2
 
     def __init__(
         self,
@@ -53,10 +60,10 @@ class DegiroBroker(Broker):
         self.update_cash_balances()
         self.open_positions_last_update = None
         self.update_open_positions()
-        self.portfolio.subscribe_funds(self.cash_balances[base_currency])
-        self.transactions_last_update = None
+        self.transactions_last_update = self.clock.current_time()
         self.executed_orders_ids = set()
         self.open_orders_ids = set()
+        self.processed_transactions_ids = set()
         self.update_transactions()
         self.pending_orders = {}
 
@@ -107,6 +114,7 @@ class DegiroBroker(Broker):
                 continue
             cash = float(currency_cash_pair[1])
             self.cash_balances[currency] = cash
+        self.portfolio.cash = self.cash_balances[self.base_currency]
         self.cash_balances_last_update = self.clock.current_time()
 
     def update_open_positions(self):
@@ -176,9 +184,10 @@ class DegiroBroker(Broker):
             < DegiroBroker.UPDATE_TRANSACTIONS_PERIOD
         ):
             return
+        transactions_last_update = self.clock.current_time()
         # get confirmed orders that are opened
         last_orders = self.degiro.orders(
-            now - DegiroBroker.TRANSACTION_LOOKBACK_PERIOD,
+            self.transactions_last_update,
             now,
             False,
         )
@@ -191,21 +200,36 @@ class DegiroBroker(Broker):
                 or "last" not in last_order
             ):
                 continue  # pragma: no cover
+            # check time
+            last_iso = last_order["last"][:-3] + last_order["last"][-2:]
+            last_datetime = datetime.strptime(last_iso, DEGIRO_DATETIME_FORMAT)
+            if last_datetime < self.transactions_last_update:
+                continue
             product_id = last_order["productId"]
             if product_id not in potentially_executed_orders:
                 potentially_executed_orders[product_id] = [last_order]
             else:
                 potentially_executed_orders[product_id].append(last_order)
         degiro_transactions = self.degiro.transactions(
-            now - DegiroBroker.TRANSACTION_LOOKBACK_PERIOD, now
+            self.transactions_last_update, now
         )
+        processed_transactions_ids = set()
         for degiro_transaction in degiro_transactions:
+            timestampStr = (
+                degiro_transaction["date"][:-3] + degiro_transaction["date"][-2:]
+            )
+            timestamp = timestamp_to_utc(
+                datetime.strptime(timestampStr, DEGIRO_DATETIME_FORMAT)
+            )
+            if timestamp < self.transactions_last_update:
+                continue
             product_id = degiro_transaction["productId"]
             self.update_product_info(product_id)
             symbol = self.product_id_to_symbol[product_id]
             transaction_id = degiro_transaction["id"]
-            timestampStr = degiro_transaction["date"]
-            timestamp = pd.Timestamp(timestampStr, tz="UTC").to_pydatetime()
+            if transaction_id in self.processed_transactions_ids:
+                continue
+            processed_transactions_ids.add(transaction_id)
             size = int(abs(degiro_transaction["quantity"]))
             actionStr = degiro_transaction["buysell"]
             action = Action.BUY if actionStr == "B" else Action.SELL
@@ -228,7 +252,11 @@ class DegiroBroker(Broker):
             for index, potentially_executed_order in enumerate(
                 potentially_executed_orders[product_id]
             ):
-                if potentially_executed_order["last"] == timestampStr:
+                if (
+                    potentially_executed_order["created"]
+                    <= timestampStr
+                    <= potentially_executed_order["last"]
+                ):
                     order = potentially_executed_orders[product_id][index]
                     found = True
                     break
@@ -258,8 +286,10 @@ class DegiroBroker(Broker):
                 transaction_id=transaction_id,
             )
             self.portfolio.transact_symbol(transaction)
+            self.processed_transactions_ids.add(transaction_id)
         LOG.info("Transactions have been synchronized")
-        self.transactions_last_update = self.clock.current_time()
+        self.processed_transactions_ids = processed_transactions_ids
+        self.transactions_last_update = transactions_last_update
 
     def get_cash_balance(self, currency: str = None) -> float:
         self.update_cash_balances()
@@ -297,23 +327,43 @@ class DegiroBroker(Broker):
             error_message = get_rejected_order_error_message(order)
             LOG.error(error_message + "The exception is: %s", str(e))
 
+    def truncate_price(self, price: float, roungind=ROUND_DOWN) -> float:
+        decimal_price = Decimal(str(price))
+        decimal_truncated_price = decimal_price.quantize(
+            DegiroBroker.DEGIRO_PRICE_MULTIPLICATOR, rounding=roungind
+        )
+        truncated_price = round(
+            float(decimal_truncated_price), DegiroBroker.DEGIRO_PRICE_DECIMAL_PLACES
+        )
+        return truncated_price
+
     def execute_limit_order(self, limit_order: Order) -> None:
         try:
             self.update_symbol_info(limit_order.symbol)
             product_id = self.symbol_to_product_id[limit_order.symbol]
             action_func = self.get_action_func(limit_order.action)
             execution_time = 1 if limit_order.condition == OrderCondition.EOD else 3
+            rounding = ROUND_DOWN if limit_order.action == Action.BUY else ROUND_UP
+            truncated_limit = self.truncate_price(limit_order.limit, rounding)
+            LOG.info("Submit limit order to degiro")
             limit_order.order_id = action_func(
                 degiroapi.Order.Type.LIMIT,
                 product_id,
                 execution_time,
                 limit_order.size,
-                limit=limit_order.limit,
+                limit=truncated_limit,
+            )
+            LOG.info(
+                "Order successfuly submited with order id: %s", limit_order.order_id
             )
             self.open_orders_ids.add(limit_order.order_id)
         except Exception as e:
             error_message = get_rejected_order_error_message(limit_order)
-            LOG.error(error_message + "The exception is: %s", str(e))
+            LOG.error(
+                error_message + "The exception is: %s. The traceback is %s",
+                str(e),
+                traceback.format_exc(),
+            )
 
     def execute_stop_order(self, stop_order: Order) -> None:
         try:
@@ -321,20 +371,33 @@ class DegiroBroker(Broker):
             product_id = self.symbol_to_product_id[stop_order.symbol]
             action_func = self.get_action_func(stop_order.action)
             execution_time = 1 if stop_order.condition == OrderCondition.EOD else 3
+            rounding = ROUND_DOWN if stop_order.action == Action.BUY else ROUND_UP
+            truncated_stop = self.truncate_price(stop_order.stop, rounding)
+            stop_order.stop = truncated_stop
+            LOG.info("Submit stop order to degiro")
             stop_order.order_id = action_func(
                 degiroapi.Order.Type.STOPLOSS,
                 product_id,
                 execution_time,
                 stop_order.size,
-                stop_loss=stop_order.stop,
+                stop_loss=truncated_stop,
+            )
+            LOG.info(
+                "Order successfuly submited with order id: %s", stop_order.order_id
             )
             self.open_orders_ids.add(stop_order.order_id)
         except Exception as e:
             error_message = get_rejected_order_error_message(stop_order)
-            LOG.error(error_message + "The exception is: %s", str(e))
+            LOG.error(
+                error_message + "The exception is: %s. The traceback is %s",
+                str(e),
+                traceback.format_exc(),
+            )
 
     def execute_target_order(self, target_order: Order) -> None:
         price = self.current_price(target_order.symbol)
+        LOG.info("target: %s", target_order.target)
+        LOG.info("Checking if target has been reached")
         if (
             target_order.action == Action.BUY
             and price <= target_order.target
@@ -353,37 +416,68 @@ class DegiroBroker(Broker):
             stop = price - price * trailing_stop_order.stop_pct
         return stop
 
+    # def execute_trailing_stop_order(
+    #     self,
+    #     trailing_stop_order: Order,
+    # ) -> bool:
+    #     stop = self.get_trailing_stop(trailing_stop_order)
+    #     LOG.info("stop: %s", stop)
+    #     LOG.info("last stop: %s", trailing_stop_order.stop)
+    #     LOG.info("Checking if trailing stop has been reached")
+    #     if trailing_stop_order.stop is None:
+    #         trailing_stop_order.stop = stop
+    #         self.execute_stop_order(trailing_stop_order)
+    #         self.open_orders.append(trailing_stop_order)
+    #         return
+    #
+    #     if trailing_stop_order.action == Action.BUY:
+    #         if (
+    #             stop < trailing_stop_order.stop
+    #             and trailing_stop_order.order_id in self.open_orders_ids
+    #         ):
+    #             trailing_stop_order.stop = stop
+    #             self.degiro.delete_order(trailing_stop_order.order_id)
+    #             self.open_orders_ids.discard(trailing_stop_order.order_id)
+    #             self.execute_stop_order(trailing_stop_order)
+    #     else:
+    #         if (
+    #             stop > trailing_stop_order.stop
+    #             and trailing_stop_order.order_id in self.open_orders_ids
+    #         ):
+    #             trailing_stop_order.stop = stop
+    #             self.degiro.delete_order(trailing_stop_order.order_id)
+    #             self.open_orders_ids.discard(trailing_stop_order.order_id)
+    #             self.execute_stop_order(trailing_stop_order)
+
     def execute_trailing_stop_order(
         self,
         trailing_stop_order: Order,
     ) -> bool:
+        LOG.info("Checking if trailing stop loss")
+        price = self.current_price(trailing_stop_order.symbol)
         stop = self.get_trailing_stop(trailing_stop_order)
+        if trailing_stop_order.action == Action.BUY:
+            if trailing_stop_order.stop is None:
+                trailing_stop_order.stop = stop
+            else:
+                trailing_stop_order.stop = min(trailing_stop_order.stop, stop)
+        else:
+            if trailing_stop_order.stop is None:
+                trailing_stop_order.stop = stop
+            else:
+                trailing_stop_order.stop = max(trailing_stop_order.stop, stop)
+
         LOG.info("stop: %s", stop)
         LOG.info("last stop: %s", trailing_stop_order.stop)
-        if trailing_stop_order.stop is None:
-            trailing_stop_order.stop = stop
-            self.execute_stop_order(trailing_stop_order)
-            self.open_orders.append(trailing_stop_order)
-            return
-
-        if trailing_stop_order.action == Action.BUY:
-            if (
-                stop < trailing_stop_order.stop
-                and trailing_stop_order.order_id in self.open_orders_ids
-            ):
-                trailing_stop_order.stop = stop
-                self.degiro.delete_order(trailing_stop_order.order_id)
-                self.open_orders_ids.discard(trailing_stop_order.order_id)
-                self.execute_stop_order(trailing_stop_order)
+        if (
+            trailing_stop_order.action == Action.BUY
+            and price >= trailing_stop_order.stop
+            or trailing_stop_order.action == Action.SELL
+            and price <= trailing_stop_order.stop
+        ):
+            self.execute_market_order(trailing_stop_order)
         else:
-            if (
-                stop > trailing_stop_order.stop
-                and trailing_stop_order.order_id in self.open_orders_ids
-            ):
-                trailing_stop_order.stop = stop
-                self.degiro.delete_order(trailing_stop_order.order_id)
-                self.open_orders_ids.discard(trailing_stop_order.order_id)
-                self.execute_stop_order(trailing_stop_order)
+            self.open_orders.append(trailing_stop_order)
 
     def execute_order(self, order: Order) -> None:
         """
@@ -405,7 +499,6 @@ class DegiroBroker(Broker):
             self.execute_market_order(order)
 
     def synchronize(self) -> None:
-        LOG.info("Synchronize logical broker")
+        self.update_cash_balances()
         self.update_transactions()
         self.update_open_positions()
-        self.update_cash_balances()

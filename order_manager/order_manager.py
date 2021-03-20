@@ -16,7 +16,11 @@ LOG = logger.get_root_logger(
 
 class OrderManager:
     def __init__(
-        self, events: deque, broker: Broker, position_sizer: PositionSizer, order_creator: OrderCreator
+        self,
+        events: deque,
+        broker: Broker,
+        position_sizer: PositionSizer,
+        order_creator: OrderCreator,
     ):
         self.events = events
         self.broker: Broker = broker
@@ -43,7 +47,9 @@ class OrderManager:
 
         for pending_signal in pending_signals:
             self.pending_signals.append(pending_signal)
-            self.events.append(PendingSignalEvent(symbol=pending_signal.symbol, bars_delay=1))
+            self.events.append(
+                PendingSignalEvent(symbol=pending_signal.symbol, bars_delay=1)
+            )
 
     def check_signal(self, signal):
         # check if signal is still valid

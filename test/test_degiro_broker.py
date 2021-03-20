@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import call, patch
 
 import pytest
+from pytz import timezone
 
 from broker import degiroapi
 from broker.degiro_broker import DegiroBroker
@@ -504,6 +505,7 @@ def test_has_opened_position(
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
 
+@patch("common.clock.LiveClock.current_time")
 @patch("broker.degiro_broker.DegiroBroker.update_open_positions")
 @patch("broker.degiroapi.DeGiro.product_info")
 @patch("broker.degiroapi.DeGiro.transactions")
@@ -517,12 +519,37 @@ def test_update_transactions(
     transactions_mocked,
     product_info_mocked,
     update_open_positions_mocked,
+    current_time_mocked,
 ):
     getdata_mocked.return_value = GET_DATA_CASH_MOCKED_RETURN_VALUE
     orders_mocked.return_value = ORDERS_RETURN_VALUE
     transactions_mocked.return_value = TRANSACTIONS_RETURN_VALUE
 
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT
+
+    nb_current_time_calls = 12
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=8,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
+    ] + [
+        datetime(
+            year=2021,
+            month=2,
+            day=8,
+            hour=15,
+            minute=6,
+            second=5,
+            tzinfo=timezone("UTC"),
+        )
+    ]
 
     clock = LiveClock()
     events = deque()
@@ -545,7 +572,7 @@ def test_update_transactions(
         credit=-0.0,
         balance=121.341,
     )
-    assert len(degiro_broker.portfolio.history) == 2
+    assert len(degiro_broker.portfolio.history) == 1
     assert degiro_broker.portfolio.history[-1] == expected_pe
 
     assert degiro_broker.executed_orders_ids == {ORDER_ID1}
@@ -561,6 +588,7 @@ def test_update_transactions(
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
 
+@patch("common.clock.LiveClock.current_time")
 @patch("broker.degiroapi.DeGiro.sellorder")
 @patch("broker.degiroapi.DeGiro.buyorder")
 @patch("broker.degiroapi.DeGiro.search_products")
@@ -578,6 +606,7 @@ def test_execute_market_order(
     search_products_mocked,
     buyorder_mocked,
     sellorder_mocked,
+    current_time_mocked,
 ):
     getdata_mocked.side_effect = [
         GET_DATA_CASH_MOCKED_RETURN_VALUE,
@@ -587,6 +616,20 @@ def test_execute_market_order(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT + [
         PRODUCT_INFO_IFMK,
         PRODUCT_INFO_AAPL,
+    ]
+
+    nb_current_time_calls = 26
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=1,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
     ]
 
     orders_mocked.return_value = ORDERS_RETURN_VALUE
@@ -654,6 +697,7 @@ def test_execute_market_order(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
+@patch("common.clock.LiveClock.current_time")
 @patch("broker.degiroapi.DeGiro.sellorder")
 @patch("broker.degiroapi.DeGiro.buyorder")
 @patch("broker.degiroapi.DeGiro.search_products")
@@ -671,6 +715,7 @@ def test_execute_limit_order(
     search_products_mocked,
     buyorder_mocked,
     sellorder_mocked,
+    current_time_mocked,
 ):
     getdata_mocked.side_effect = [
         GET_DATA_CASH_MOCKED_RETURN_VALUE,
@@ -680,6 +725,20 @@ def test_execute_limit_order(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT + [
         PRODUCT_INFO_IFMK,
         PRODUCT_INFO_AAPL,
+    ]
+
+    nb_current_time_calls = 26
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=1,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
     ]
 
     orders_mocked.return_value = ORDERS_RETURN_VALUE
@@ -760,6 +819,7 @@ def test_execute_limit_order(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
+@patch("common.clock.LiveClock.current_time")
 @patch("broker.degiroapi.DeGiro.sellorder")
 @patch("broker.degiroapi.DeGiro.buyorder")
 @patch("broker.degiroapi.DeGiro.search_products")
@@ -777,6 +837,7 @@ def test_execute_stop_order(
     search_products_mocked,
     buyorder_mocked,
     sellorder_mocked,
+    current_time_mocked,
 ):
     getdata_mocked.side_effect = [
         GET_DATA_CASH_MOCKED_RETURN_VALUE,
@@ -786,6 +847,20 @@ def test_execute_stop_order(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT + [
         PRODUCT_INFO_IFMK,
         PRODUCT_INFO_AAPL,
+    ]
+
+    nb_current_time_calls = 26
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=1,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
     ]
 
     orders_mocked.return_value = ORDERS_RETURN_VALUE
@@ -866,6 +941,7 @@ def test_execute_stop_order(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
+@patch("common.clock.LiveClock.current_time")
 @patch("broker.degiro_broker.DegiroBroker.execute_market_order")
 @patch("broker.degiroapi.DeGiro.product_info")
 @patch("broker.degiroapi.DeGiro.transactions")
@@ -879,6 +955,7 @@ def test_execute_target_order(
     transactions_mocked,
     product_info_mocked,
     execute_market_order_mocked,
+    current_time_mocked,
 ):
     getdata_mocked.side_effect = [
         GET_DATA_CASH_MOCKED_RETURN_VALUE,
@@ -888,6 +965,20 @@ def test_execute_target_order(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT + [
         PRODUCT_INFO_IFMK,
         PRODUCT_INFO_AAPL,
+    ]
+
+    nb_current_time_calls = 26
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=1,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
     ]
 
     orders_mocked.return_value = ORDERS_RETURN_VALUE
@@ -987,7 +1078,7 @@ def test_execute_target_order(
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
 
-@patch("broker.degiroapi.DeGiro.delete_order")
+@patch("common.clock.LiveClock.current_time")
 @patch("broker.degiroapi.DeGiro.sellorder")
 @patch("broker.degiroapi.DeGiro.search_products")
 @patch("broker.degiroapi.DeGiro.product_info")
@@ -1003,7 +1094,7 @@ def test_execute_trailing_stop_order_sell(
     product_info_mocked,
     search_products_mocked,
     sellorder_mocked,
-    delete_order_mocked,
+    current_time_mocked,
 ):
     getdata_mocked.side_effect = [
         GET_DATA_CASH_MOCKED_RETURN_VALUE,
@@ -1013,6 +1104,20 @@ def test_execute_trailing_stop_order_sell(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT + [
         PRODUCT_INFO_IFMK,
         PRODUCT_INFO_AAPL,
+    ]
+
+    nb_current_time_calls = 59
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=1,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
     ]
 
     orders_mocked.return_value = ORDERS_RETURN_VALUE
@@ -1046,11 +1151,10 @@ def test_execute_trailing_stop_order_sell(
     degiro_broker.update_price(candle)
     sellorder_mocked.side_effect = [ORDER_ID2, ORDER_ID3]
     degiro_broker.execute_order(trailing_stop_order)
+
     assert len(degiro_broker.open_orders) == 1
     assert degiro_broker.open_orders.popleft() == trailing_stop_order
-    assert degiro_broker.open_orders_ids == {ORDER_ID2}
-    assert degiro_broker.executed_orders_ids == {ORDER_ID1}
-    assert trailing_stop_order.order_id == ORDER_ID2
+    assert trailing_stop_order.order_id is not None
     assert (
         trailing_stop_order.stop
         == candle.close - candle.close * trailing_stop_order.stop_pct
@@ -1068,13 +1172,27 @@ def test_execute_trailing_stop_order_sell(
     degiro_broker.update_price(candle)
 
     degiro_broker.execute_order(trailing_stop_order)
-    assert len(degiro_broker.open_orders) == 0
+
+    assert len(degiro_broker.open_orders) == 1
+    assert degiro_broker.open_orders.popleft() == trailing_stop_order
     assert (
         trailing_stop_order.stop
         == candle.close - candle.close * trailing_stop_order.stop_pct
     )
-    assert degiro_broker.open_orders_ids == {ORDER_ID3}
-    assert degiro_broker.executed_orders_ids == {ORDER_ID1}
+
+    candle = Candle(
+        symbol=SYMBOL1,
+        open=1.09,
+        high=1.10,
+        low=1.08,
+        close=1.09,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
+    degiro_broker.update_price(candle)
+
+    degiro_broker.execute_order(trailing_stop_order)
+    assert len(degiro_broker.open_orders) == 0
 
     getdata_mocked_calls = [call(degiroapi.Data.Type.CASHFUNDS)]
     getdata_mocked.assert_has_calls(getdata_mocked_calls)
@@ -1089,11 +1207,8 @@ def test_execute_trailing_stop_order_sell(
     search_products_mocked_calls = [call(SYMBOL1, limit=5)]
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
-    delete_order_mocked_calls = [call(ORDER_ID2)]
-    delete_order_mocked.assert_has_calls(delete_order_mocked_calls)
 
-
-@patch("broker.degiroapi.DeGiro.delete_order")
+@patch("common.clock.LiveClock.current_time")
 @patch("broker.degiroapi.DeGiro.buyorder")
 @patch("broker.degiroapi.DeGiro.search_products")
 @patch("broker.degiroapi.DeGiro.product_info")
@@ -1109,7 +1224,7 @@ def test_execute_trailing_stop_order_buy(
     product_info_mocked,
     search_products_mocked,
     buyorder_mocked,
-    delete_order_mocked,
+    current_time_mocked,
 ):
     getdata_mocked.side_effect = [
         GET_DATA_CASH_MOCKED_RETURN_VALUE,
@@ -1119,6 +1234,20 @@ def test_execute_trailing_stop_order_buy(
     product_info_mocked.side_effect = PRODUCT_INFO_MOCKED_SIDE_EFFECT + [
         PRODUCT_INFO_IFMK,
         PRODUCT_INFO_AAPL,
+    ]
+
+    nb_current_time_calls = 26
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=1,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
     ]
 
     orders_mocked.return_value = ORDERS_RETURN_VALUE
@@ -1155,9 +1284,7 @@ def test_execute_trailing_stop_order_buy(
     degiro_broker.execute_order(trailing_stop_order)
     assert len(degiro_broker.open_orders) == 1
     assert degiro_broker.open_orders.popleft() == trailing_stop_order
-    assert degiro_broker.open_orders_ids == {ORDER_ID2}
-    assert degiro_broker.executed_orders_ids == {ORDER_ID1}
-    assert trailing_stop_order.order_id == ORDER_ID2
+    assert trailing_stop_order.order_id is not None
     assert (
         trailing_stop_order.stop
         == candle.close + candle.close * trailing_stop_order.stop_pct
@@ -1174,13 +1301,26 @@ def test_execute_trailing_stop_order_buy(
     degiro_broker.update_price(candle)
 
     degiro_broker.execute_order(trailing_stop_order)
-    assert len(degiro_broker.open_orders) == 0
+    assert len(degiro_broker.open_orders) == 1
+    assert degiro_broker.open_orders.popleft() == trailing_stop_order
     assert (
         trailing_stop_order.stop
         == candle.close + candle.close * trailing_stop_order.stop_pct
     )
-    assert degiro_broker.open_orders_ids == {ORDER_ID3}
-    assert degiro_broker.executed_orders_ids == {ORDER_ID1}
+
+    candle = Candle(
+        symbol=SYMBOL1,
+        open=1.185,
+        high=1.19,
+        low=1.16,
+        close=1.17,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
+    degiro_broker.update_price(candle)
+
+    degiro_broker.execute_order(trailing_stop_order)
+    assert len(degiro_broker.open_orders) == 0
 
     getdata_mocked_calls = [call(degiroapi.Data.Type.CASHFUNDS)]
     getdata_mocked.assert_has_calls(getdata_mocked_calls)
@@ -1194,9 +1334,6 @@ def test_execute_trailing_stop_order_buy(
 
     search_products_mocked_calls = [call(SYMBOL1, limit=5)]
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
-
-    delete_order_mocked_calls = [call(ORDER_ID2)]
-    delete_order_mocked.assert_has_calls(delete_order_mocked_calls)
 
 
 @patch("broker.degiro_broker.DegiroBroker.update_cash_balances")

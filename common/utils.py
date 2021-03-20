@@ -1,9 +1,9 @@
+import binascii
 import os
 import time
 from datetime import datetime
 from typing import Union
 
-import binascii
 import pandas as pd
 import pytz
 from pandas.core.frame import DataFrame

@@ -42,11 +42,11 @@ def test_request_ticker_lastest_candles_tiingo(
     request_ticker_latest_data_mocked.return_value.status_code = STATUS_CODE_OK
     ticker_data = (
         "date,open,high,low,close,volume\n"
-        "2020-06-17 09:30:00-04:00,355.15,355.15,353.74,353.84,3254.0\n"
-        "2020-06-18 09:31:00-04:00,354.28,354.96,353.96,354.78,2324.0\n"
-        "2020-06-18 09:32:00-04:00,354.92,355.32,354.09,354.09,1123.0\n"
-        "2020-06-19 09:33:00-04:00,354.25,354.59,354.14,354.59,2613.0\n"
-        "2020-06-19 09:34:00-04:00,354.22,354.26,353.95,353.98,1186.0\n"
+        "2020-06-17 15:59:00-04:00,355.15,355.15,353.74,353.84,3254.0\n"
+        "2020-06-17 16:00:00-04:00,354.28,354.96,353.96,354.78,2324.0\n"
+        "2020-06-18 09:30:00-04:00,354.92,355.32,354.09,354.09,1123.0\n"
+        "2020-06-18 09:31:00-04:00,354.25,354.59,354.14,354.59,2613.0\n"
+        "2020-06-18 09:32:00-04:00,354.22,354.26,353.95,353.98,1186.0\n"
     )
     request_ticker_latest_data_mocked.return_value.content = str.encode(ticker_data)
 
@@ -60,7 +60,7 @@ def test_request_ticker_lastest_candles_tiingo(
                 close=354.09,
                 volume=1123,
                 timestamp=datetime.strptime(
-                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-18 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
             Candle(
@@ -71,7 +71,7 @@ def test_request_ticker_lastest_candles_tiingo(
                 close=354.59,
                 volume=2613,
                 timestamp=datetime.strptime(
-                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
             Candle(
@@ -82,7 +82,7 @@ def test_request_ticker_lastest_candles_tiingo(
                 close=353.98,
                 volume=1186,
                 timestamp=datetime.strptime(
-                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
         ],
@@ -101,11 +101,11 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
     request_ticker_latest_data_mocked.return_value.status_code = STATUS_CODE_OK
     ticker_data = (
         "date,open,high,low,close,volume\n"
-        "2020-06-17 09:30:00-04:00,355.15,355.15,353.74,353.84,3254.0\n"
-        "2020-06-18 09:31:00-04:00,354.28,354.96,353.96,354.78,2324.0\n"
-        "2020-06-18 09:32:00-04:00,354.92,355.32,354.09,354.09,1123.0\n"
-        "2020-06-19 09:33:00-04:00,354.25,354.59,354.14,354.59,2613.0\n"
-        "2020-06-19 09:34:00-04:00,354.22,354.26,353.95,353.98,1186.0\n"
+        "2020-06-17 15:59:00-04:00,355.15,355.15,353.74,353.84,3254.0\n"
+        "2020-06-17 16:00:00-04:00,354.28,354.96,353.96,354.78,2324.0\n"
+        "2020-06-18 09:30:00-04:00,354.92,355.32,354.09,354.09,1123.0\n"
+        "2020-06-18 09:31:00-04:00,354.25,354.59,354.14,354.59,2613.0\n"
+        "2020-06-18 09:32:00-04:00,354.22,354.26,353.95,353.98,1186.0\n"
     )
     request_ticker_latest_data_mocked.return_value.content = str.encode(ticker_data)
 
@@ -119,7 +119,7 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
                 close=353.84,
                 volume=3254,
                 timestamp=datetime.strptime(
-                    "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-17 19:59:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
             Candle(
@@ -130,7 +130,7 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
                 close=354.78,
                 volume=2324,
                 timestamp=datetime.strptime(
-                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-17 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
             Candle(
@@ -141,7 +141,7 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
                 close=354.09,
                 volume=1123,
                 timestamp=datetime.strptime(
-                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-18 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
             Candle(
@@ -152,7 +152,7 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
                 close=354.59,
                 volume=2613,
                 timestamp=datetime.strptime(
-                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
             Candle(
@@ -163,7 +163,7 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
                 close=353.98,
                 volume=1186,
                 timestamp=datetime.strptime(
-                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
         ],
