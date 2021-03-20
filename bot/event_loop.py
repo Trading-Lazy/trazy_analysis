@@ -127,6 +127,8 @@ class EventLoop:
         self.seen_candles = {}
         self._init_seen_candles()
         self.live = live
+        self.last_update = None
+        self.signals_and_orders_last_update = None
 
     def loop(self):
         data_to_process = True
@@ -134,8 +136,24 @@ class EventLoop:
             if self.live:
                 # tasks to be done regularly
                 self.broker.synchronize()
-                self.order_manager.process_pending_signals()
-                self.broker.execute_open_orders()
+                now = self.clock.current_time()
+                if (
+                    self.signals_and_orders_last_update is None
+                    or now - self.signals_and_orders_last_update
+                    >= timedelta(seconds=10)
+                ):
+                    self.order_manager.process_pending_signals()
+                    self.broker.execute_open_orders()
+                    self.signals_and_orders_last_update = self.clock.current_time()
+
+                now = self.clock.current_time()
+                if self.last_update is not None and now - self.last_update < timedelta(
+                    minutes=1
+                ):
+                    print("Toto")
+                    continue
+
+                self.last_update = self.clock.current_time()
 
             self.feed.update_latest_data()
 
