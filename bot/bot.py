@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import List, Set
 
 from bot.event_loop import EventLoop
-from broker.degiro_broker import DegiroBroker
+from broker.binance_broker import BinanceBroker
+# from broker.degiro_broker import DegiroBroker
 from common.clock import LiveClock
 from feed.feed import Feed, LiveFeed
 from indicators.indicators_manager import IndicatorsManager
+from market_data.live.binance_live_data_handler import BinanceLiveDataHandler
 from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
 from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
@@ -50,15 +52,15 @@ def get_strategies_classes(
 
 
 if __name__ == "__main__":
-    symbols = ["SNDL"]
+    symbols = ["XRPUSDT"]
     events = deque()
-    live_data_handler = TiingoLiveDataHandler()
+    live_data_handler = BinanceLiveDataHandler()
 
     feed: Feed = LiveFeed(symbols, events, live_data_handler)
 
     strategies = [SmaCrossoverStrategy]
     clock = LiveClock()
-    broker = DegiroBroker(clock, events)
+    broker = BinanceBroker(clock, events)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
         broker=broker, with_cover=True, trailing_stop_order_pct=0.05

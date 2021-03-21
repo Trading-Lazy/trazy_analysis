@@ -111,6 +111,7 @@ class EventLoop:
         indicators_manager: IndicatorsManager,
         strategies_classes: List[type] = [],
         live=False,
+        close_at_end_of_day=True,
     ):
         self.events: deque = events
         self.delayed_events = {}
@@ -127,6 +128,7 @@ class EventLoop:
         self.seen_candles = {}
         self._init_seen_candles()
         self.live = live
+        self.close_at_end_of_day = close_at_end_of_day
         self.last_update = None
         self.signals_and_orders_last_update = None
 
@@ -150,7 +152,6 @@ class EventLoop:
                 if self.last_update is not None and now - self.last_update < timedelta(
                     minutes=1
                 ):
-                    print("Toto")
                     continue
 
                 self.last_update = self.clock.current_time()
@@ -193,7 +194,7 @@ class EventLoop:
                     self.run_strategies(candle)
                     self.broker.execute_open_orders()
                     self.handle_delayed_events(candle)
-                    if self.clock.end_of_day(candle.symbol):
+                    if self.close_at_end_of_day and self.clock.end_of_day(candle.symbol):
                         bars_delay = 0
                         if not self.live:
                             bars_delay = 1

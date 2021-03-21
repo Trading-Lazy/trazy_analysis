@@ -692,7 +692,6 @@ def test_update_price(
 
 
 @patch("broker.binance_broker.BinanceBroker.update_transactions")
-@patch("broker.binance_broker.BinanceBroker.update_lot_size_info")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_account")
 @patch("binance.client.Client.get_exchange_info")
@@ -702,11 +701,10 @@ def test_update_balances_and_positions(
     get_exchange_info_mocked,
     get_account_mocked,
     get_all_tickers_mocked,
-    update_lot_size_info_mocked,
     update_transactions_mocked,
 ):
     init_mocked.return_value = None
-    get_exchange_info_mocked.return_value = GET_EXCHANGE_INFO_RETURN_VALUE
+    get_exchange_info_mocked.side_effect = [GET_EXCHANGE_INFO_RETURN_VALUE] * 2
     get_all_tickers_mocked.return_value = GET_ALL_TICKERS_RETURN_VALUE
     get_account_mocked.return_value = GET_ACCOUNT_RETURN_VALUE
     clock = LiveClock()
@@ -715,7 +713,7 @@ def test_update_balances_and_positions(
 
     assert binance_broker.cash_balances == {
         "EUR": float(INITIAL_CASH),
-        "USD": 0.0,
+        "USDT": 0.0,
     }
     assert isinstance(binance_broker.balances_last_update, datetime)
 
@@ -755,7 +753,7 @@ def test_update_balances_and_positions(
 
     assert binance_broker.get_cash_balance() == {
         "EUR": float(INITIAL_CASH),
-        "USD": 0.0,
+        "USDT": 0.0,
     }
 
     assert binance_broker.get_cash_balance("EUR") == float(INITIAL_CASH)
@@ -825,8 +823,8 @@ def test_update_transactions(
     binance_broker.update_transactions()
     assert binance_broker.transactions_last_update == timestamp
 
-    assert len(binance_broker.portfolio.history) == 5
-    assert binance_broker.portfolio.history[1] == PortfolioEvent(
+    assert len(binance_broker.portfolio.history) == 4
+    assert binance_broker.portfolio.history[0] == PortfolioEvent(
         timestamp=datetime.strptime(
             "2021-02-23 11:45:57.873000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
@@ -836,7 +834,7 @@ def test_update_transactions(
         credit=0.0,
         balance=41.064189999999996,
     )
-    assert binance_broker.portfolio.history[2] == PortfolioEvent(
+    assert binance_broker.portfolio.history[1] == PortfolioEvent(
         timestamp=datetime.strptime(
             "2021-02-23 21:29:44.610000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
@@ -846,7 +844,7 @@ def test_update_transactions(
         credit=11.41,
         balance=52.47,
     )
-    assert binance_broker.portfolio.history[3] == PortfolioEvent(
+    assert binance_broker.portfolio.history[2] == PortfolioEvent(
         timestamp=datetime.strptime(
             "2021-02-23 11:45:59.873000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
@@ -856,7 +854,7 @@ def test_update_transactions(
         credit=0.0,
         balance=37.46024002,
     )
-    assert binance_broker.portfolio.history[4] == PortfolioEvent(
+    assert binance_broker.portfolio.history[3] == PortfolioEvent(
         timestamp=datetime.strptime(
             "2021-02-23 21:29:49.610000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
