@@ -203,6 +203,9 @@ class TimeFramedCandleRollingWindow(RollingWindow):
 class RollingWindowManager:
     def __init__(self, preload=True):
         self.cache: Dict[str, RollingWindow] = {}
+
+        # max_periods is a dictionary with symbols as the keys
+        # the values are the max look back period for this symbol
         self.max_periods: Dict[str, int] = {}
         self.preload = preload
 
@@ -216,14 +219,22 @@ class RollingWindowManager:
         return self.cache[symbol]
 
     def warmup(self, preload_data: Dict[str, np.array]):
-        for symbol in self.max_periods:
-            max_period = self.max_periods[symbol]
-            if symbol in preload_data:
-                candles_len = len(preload_data[symbol])
-                max_period = int(max(max_period, candles_len))
+        if self.preload:
+            for symbol in preload_data:
+                max_period = len(preload_data[symbol])
+
+                if symbol in self.max_periods:
+                    max_period = int(max(max_period, self.max_periods[symbol]))
+
+                if symbol not in self.cache:
+                    self.cache[symbol] = RollingWindow()
                 self.cache[symbol].set_size(max_period)
                 self.cache[symbol].prefill(preload_data[symbol])
-            else:
+                self.max_periods[symbol] = max_period
+
+        else:
+            for symbol in self.max_periods:
+                max_period = self.max_periods[symbol]
                 self.cache[symbol].set_size(max_period)
 
 
@@ -259,24 +270,30 @@ class TimeFramedCandleRollingWindowManager:
             self.max_periods[symbol][time_unit] = period
         return self.cache[symbol][time_unit]
 
+
     def warmup(self):
+
         for symbol in self.max_periods:
             for time_unit in self.max_periods[symbol]:
                 max_period = self.max_periods[symbol][time_unit]
-                preload_data = self.cache[symbol][time_unit].source_indicator.window
-                candles_len = len(preload_data)
-                max_period = int(max(max_period, candles_len))
-                self.cache[symbol][time_unit].set_size(max_period)
+                preload_data_arr = self.cache[symbol][time_unit].source_indicator.window
+
                 if self.preload:
+                    candles_len = len(preload_data_arr)
+                    max_period = int(max(max_period, candles_len))
+                    self.cache[symbol][time_unit].set_size(max_period)
+
                     if time_unit == timedelta(minutes=1):
-                        self.cache[symbol][time_unit].prefill(preload_data)
+                        self.cache[symbol][time_unit].prefill(preload_data_arr)
                     else:
                         aggregated_df = CandleDataFrame.from_candle_list(
-                            symbol=symbol, candles=preload_data
+                            symbol=symbol, candles=preload_data_arr
                         ).aggregate(time_unit, self.market_cal)
                         self.cache[symbol][time_unit].prefill(
                             aggregated_df.to_candles()
                         )
+                else:
+                    self.cache[symbol][time_unit].set_size(max_period)
 
 
 class PriceRollingWindowManager:
