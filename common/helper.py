@@ -192,12 +192,10 @@ def request(url: str) -> Response:
         return response
 
 
-def resample_candle_data(
+def fill_missing_datetimes(
     df: CandleDataFrame,
     time_unit: timedelta,
-    market_cal_df: DataFrame,
 ) -> CandleDataFrame:
-    symbol = df.symbol
     resample_label = "right"
     if time_unit >= timedelta(days=1):
         resample_label = "left"
@@ -211,7 +209,7 @@ def resample_candle_data(
         }
     )
     df_close = df["close"].ffill()
-    df = df.fillna(
+    return df.fillna(
         {
             "open": df_close,
             "high": df_close,
@@ -220,6 +218,14 @@ def resample_candle_data(
         }
     )
 
+
+def resample_candle_data(
+    df: CandleDataFrame,
+    time_unit: timedelta,
+    market_cal_df: DataFrame,
+) -> CandleDataFrame:
+    symbol = df.symbol
+    df = fill_missing_datetimes(df=df, time_unit=time_unit)
     candle_dataframe = CandleDataFrame.from_dataframe(df, symbol)
 
     if time_unit >= timedelta(days=1):

@@ -1,5 +1,5 @@
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 import pytest
@@ -108,10 +108,57 @@ def test_get_periods():
     assert (periods == expected_periods).all()
 
 
+def test_get_intraday_periods():
+    start = datetime.strptime("2020-06-11 23:45:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-12 00:14:59+0000", "%Y-%m-%d %H:%M:%S%z")
+    download_frame = timedelta(minutes=5)
+    periods = get_periods(download_frame, start, end)
+
+    expected_periods = np.array(
+        [
+            [
+                datetime(2020, 6, 11, 23, 45, tzinfo=timezone.utc),
+                datetime(2020, 6, 11, 23, 49, 59, tzinfo=timezone.utc),
+            ],
+            [
+                datetime(2020, 6, 11, 23, 50, tzinfo=timezone.utc),
+                datetime(2020, 6, 11, 23, 54, 59, tzinfo=timezone.utc),
+            ],
+            [
+                datetime(2020, 6, 11, 23, 55, tzinfo=timezone.utc),
+                datetime(2020, 6, 11, 23, 59, 59, tzinfo=timezone.utc),
+            ],
+            [
+                datetime(2020, 6, 12, 0, 0, tzinfo=timezone.utc),
+                datetime(2020, 6, 12, 0, 4, 59, tzinfo=timezone.utc),
+            ],
+            [
+                datetime(2020, 6, 12, 0, 5, tzinfo=timezone.utc),
+                datetime(2020, 6, 12, 0, 9, 59, tzinfo=timezone.utc),
+            ],
+            [
+                datetime(2020, 6, 12, 0, 10, tzinfo=timezone.utc),
+                datetime(2020, 6, 12, 0, 14, 59, tzinfo=timezone.utc),
+            ],
+        ],
+    )
+    assert (periods == expected_periods).all()
+
+
 def test_get_periods_start_date_after_end_date():
     start = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     end = datetime.strptime("2020-06-11 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     download_frame = timedelta(days=3)
+    periods = get_periods(download_frame, start, end)
+
+    expected_periods = np.empty([])
+    assert (periods == expected_periods).all()
+
+
+def test_get_intraday_periods_start_date_after_end_date():
+    start = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-11 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    download_frame = timedelta(minutes=5)
     periods = get_periods(download_frame, start, end)
 
     expected_periods = np.empty([])
@@ -125,6 +172,23 @@ def test_get_periods_single_date():
     periods = get_periods(download_frame, start, end)
 
     expected_periods = np.array([(date(2020, 6, 26), date(2020, 6, 26))])
+    assert (periods == expected_periods).all()
+
+
+def test_get_intraday_periods_single_datetime():
+    start = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    download_frame = timedelta(minutes=5)
+    periods = get_periods(download_frame, start, end)
+
+    expected_periods = np.array(
+        [
+            [
+                datetime(2020, 6, 26, 16, 0, tzinfo=timezone.utc),
+                datetime(2020, 6, 26, 16, 0, tzinfo=timezone.utc),
+            ]
+        ]
+    )
     assert (periods == expected_periods).all()
 
 

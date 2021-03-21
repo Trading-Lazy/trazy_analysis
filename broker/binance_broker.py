@@ -12,8 +12,8 @@ from broker.broker import Broker
 from broker.common import get_rejected_order_error_message
 from common.clock import Clock
 from common.helper import get_or_create_nested_dict
-from common.utils import timestamp_to_utc
 from logger import logger
+from market_data.common import datetime_from_epoch
 from models.candle import Candle
 from models.enums import Action, Direction, OrderType
 from models.order import Order
@@ -41,7 +41,7 @@ class BinanceBroker(Broker):
         clock: Clock,
         events: deque,
         base_currency: str = "EUR",
-        supported_currencies: List[str] = ["EUR", "USD"],
+        supported_currencies: List[str] = ["EUR", "USDT"],
     ):
         super().__init__(
             clock=clock,
@@ -61,13 +61,11 @@ class BinanceBroker(Broker):
         self.update_price()
         self.balances_last_update = None
         self.update_balances_and_positions()
-        self.portfolio.subscribe_funds(self.cash_balances[base_currency])
         self.transactions_last_update: datetime = (
             self.clock.current_time() - BinanceBroker.TRANSACTION_LOOKBACK_PERIOD
         )
         self.open_orders_ids = set()
         self.update_transactions()
-        # self.pending_orders = {}
 
     def update_lot_size_info(self):
         now = self.clock.current_time()
@@ -126,6 +124,7 @@ class BinanceBroker(Broker):
                 continue
             self.cash_balances[currency] = open_balances[currency]
             del open_balances[currency]
+        self.portfolio.cash = self.cash_balances[self.base_currency]
 
         # open positions
         portfolio = self.portfolio
@@ -143,10 +142,13 @@ class BinanceBroker(Broker):
 
             currency_pair = symbol + self.base_currency
             currency_pair_reversed = self.base_currency + symbol
+            if currency_pair not in self.lot_size:
+                continue
+
             last_price = (
                 self.last_prices[currency_pair]
                 if currency_pair in self.last_prices
-                else self.last_prices[currency_pair_reversed]
+                else 1 / self.last_prices[currency_pair_reversed]
             )
 
             get_or_create_nested_dict(positions, currency_pair, direction)
@@ -162,7 +164,7 @@ class BinanceBroker(Broker):
         self.balances_last_update = self.clock.current_time()
 
     def has_opened_position(self, symbol: str, direction: Direction) -> bool:
-        symbol_mapped = self.symbol_mapping(symbol)
+        symbol_mapped = symbol
         self.update_balances_and_positions()
         portfolio = self.portfolio
         positions = portfolio.pos_handler.positions
@@ -198,8 +200,7 @@ class BinanceBroker(Broker):
                 trade_epoch_ms = int(trade["time"])
                 if trade_epoch_ms < epoch_ms:
                     continue
-                trade_epoch = trade_epoch_ms / 1000
-                timestamp = timestamp_to_utc(datetime.utcfromtimestamp(trade_epoch))
+                timestamp = datetime_from_epoch(trade_epoch_ms)
                 symbol = trade["symbol"]
                 size = float(trade["qty"])
                 action = Action.BUY if trade["isBuyer"] else Action.SELL
@@ -242,10 +243,10 @@ class BinanceBroker(Broker):
     ) -> int:
         if cash is None:
             cash = self.portfolio.cash
-        return cash / self.current_price(self.symbol_mapping(symbol))
+        return cash / self.current_price(symbol)
 
     def position_size(self, symbol: str, direction: Direction) -> int:
-        return super().position_size(self.symbol_mapping(symbol), direction)
+        return super().position_size(symbol, direction)
 
     def get_market_action_func(self, action: Action):
         if action == Action.BUY:
@@ -261,7 +262,7 @@ class BinanceBroker(Broker):
                 return symbol.replace(currency, mapping)
 
     def truncate_order_size(self, order: Order) -> float:
-        min_lot_size = self.lot_size[self.symbol_mapping(order.symbol)]
+        min_lot_size = self.lot_size[order.symbol]
         decimal_size = Decimal(str(order.size))
         decimal_min_lot_size = Decimal(str(min_lot_size))
         truncated_size = decimal_size.quantize(
@@ -275,7 +276,7 @@ class BinanceBroker(Broker):
             LOG.info("Submit market order to binance")
             truncated_size = self.truncate_order_size(order)
             order_response = action_func(
-                symbol=self.symbol_mapping(order.symbol), quantity=truncated_size
+                symbol=order.symbol, quantity=truncated_size
             )
             order.order_id = str(order_response["orderId"])
             order.complete()
@@ -284,7 +285,7 @@ class BinanceBroker(Broker):
             )
             if order_response["status"] != "FILLED":
                 self.open_orders_ids.add(order.order_id)
-            self.currency_pairs_traded.add(self.symbol_mapping(order.symbol))
+            self.currency_pairs_traded.add(order.symbol)
         except Exception as e:
             error_message = get_rejected_order_error_message(order)
             LOG.error(error_message + "The exception is: %s", str(e))
@@ -302,7 +303,7 @@ class BinanceBroker(Broker):
             LOG.info("Submit limit order to binance")
             truncated_size = self.truncate_order_size(limit_order)
             order_response = action_func(
-                symbol=self.symbol_mapping(limit_order.symbol),
+                symbol=limit_order.symbol,
                 quantity=truncated_size,
                 price=limit_order.limit,
             )
@@ -312,13 +313,13 @@ class BinanceBroker(Broker):
                 limit_order.order_id,
             )
             self.open_orders_ids.add(limit_order.order_id)
-            self.currency_pairs_traded.add(self.symbol_mapping(limit_order.symbol))
+            self.currency_pairs_traded.add(limit_order.symbol)
         except Exception as e:
             error_message = get_rejected_order_error_message(limit_order)
             LOG.error(error_message + "The exception is: %s", str(e))
 
     def execute_stop_order(self, stop_order: Order) -> None:
-        price = self.current_price(self.symbol_mapping(stop_order.symbol))
+        price = self.current_price(stop_order.symbol)
         if (
             stop_order.action == Action.BUY
             and price >= stop_order.stop
@@ -332,7 +333,7 @@ class BinanceBroker(Broker):
             self.open_orders_ids.add(stop_order.order_id)
 
     def execute_target_order(self, target_order: Order) -> None:
-        price = self.current_price(self.symbol_mapping(target_order.symbol))
+        price = self.current_price(target_order.symbol)
         if (
             target_order.action == Action.BUY
             and price <= target_order.target
@@ -344,7 +345,7 @@ class BinanceBroker(Broker):
             self.open_orders.append(target_order)
 
     def get_trailing_stop(self, trailing_stop_order: Order) -> float:
-        price = self.current_price(self.symbol_mapping(trailing_stop_order.symbol))
+        price = self.current_price(trailing_stop_order.symbol)
         if trailing_stop_order.action == Action.BUY:
             stop = price + price * trailing_stop_order.stop_pct
         else:
@@ -355,7 +356,7 @@ class BinanceBroker(Broker):
         self,
         trailing_stop_order: Order,
     ) -> bool:
-        price = self.current_price(self.symbol_mapping(trailing_stop_order.symbol))
+        price = self.current_price(trailing_stop_order.symbol)
         stop = self.get_trailing_stop(trailing_stop_order)
         if trailing_stop_order.action == Action.BUY:
             if trailing_stop_order.stop is None:
@@ -400,8 +401,7 @@ class BinanceBroker(Broker):
             self.execute_market_order(order)
 
     def synchronize(self) -> None:
-        LOG.info("Synchronize logical broker")
         self.update_price()
-        self.update_transactions()
         self.update_lot_size_info()
+        self.update_transactions()
         self.update_balances_and_positions()

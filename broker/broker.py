@@ -76,7 +76,7 @@ class Broker:
         """
         if base_currency not in self.supported_currencies:
             raise ValueError(
-                "Currency '%s' is not supported by QSTrader. Could not "
+                "Currency '%s' is not supported. Could not "
                 "set the base currency in the SimulatedBroker "
                 "entity." % base_currency
             )
