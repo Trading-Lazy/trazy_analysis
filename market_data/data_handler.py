@@ -1,12 +1,19 @@
 import abc
+import os
+import traceback
 from typing import List
 
 import numpy as np
 
-from common.constants import ENCODING
+import settings
+from logger import logger
+from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
 
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+)
 
 class DataHandler(metaclass=RateLimitedSingletonMeta):
     # properties
@@ -68,7 +75,15 @@ class DataHandler(metaclass=RateLimitedSingletonMeta):
 
     @classmethod
     def get_tickers_list(cls) -> np.array:  # [str]
-        response = cls.request(cls.BASE_URL_GET_TICKERS_LIST.format(cls.API_TOKEN))
+        try:
+            response = cls.request(cls.BASE_URL_GET_TICKERS_LIST.format(cls.API_TOKEN))
+        except Exception as e:
+            LOG.error(
+                CONNECTION_ERROR_MESSAGE,
+                str(e),
+                traceback.format_exc(),
+            )
+            return np.empty([], dtype="U6")
         if response:
             tickers_response = response.content.decode(ENCODING)
             return cls.parse_get_tickers_response(tickers_response)

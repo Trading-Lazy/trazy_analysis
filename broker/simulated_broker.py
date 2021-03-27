@@ -50,9 +50,9 @@ class SimulatedBroker(Broker):
             events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
+            fee_model=fee_model
         )
         self._set_cash_balances(initial_funds)
-        self.fee_model = fee_model
         self.fee_model = self._set_fee_model(fee_model)
         self.open_orders_bars_delay = 1
 

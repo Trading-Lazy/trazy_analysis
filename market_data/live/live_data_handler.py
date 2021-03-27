@@ -1,9 +1,10 @@
 import abc
+import traceback
 from typing import List
 
 from requests.models import Response
 
-from common.constants import ENCODING
+from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
 from common.helper import request
 from common.meta import RateLimitedSingletonMeta
 from market_data.common import LOG
@@ -48,7 +49,15 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
     def request_ticker_lastest_candles(
         cls, ticker: str, nb_candles: int = 1
     ) -> List[Candle]:
-        response = cls.request_ticker_latest_data(ticker)
+        try:
+            response = cls.request_ticker_latest_data(ticker)
+        except Exception as e:
+            LOG.error(
+                CONNECTION_ERROR_MESSAGE,
+                str(e),
+                traceback.format_exc(),
+            )
+            return []
         data: str = response.content.decode(ENCODING)
         if response:
             if not cls.ticker_data_is_none(data):

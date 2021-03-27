@@ -47,6 +47,9 @@ class PercentFeeModel(FeeModel):
         """
         return self.commission_pct * abs(consideration)
 
+    def calc_max_size_for_cash(self, cash: float, price: float) -> int:
+        return int(cash / (price * (1 + self.commission_pct)))
+
     def _calc_tax(
         self, symbol: str, size: int, consideration: float, broker: "Broker" = None
     ) -> float:

@@ -1,5 +1,6 @@
 import abc
 import os
+import traceback
 from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Set, Tuple
 
@@ -8,7 +9,7 @@ from pandas.core.groupby.generic import DataFrameGroupBy
 from requests.models import Response
 
 import settings
-from common.constants import ENCODING
+from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
 from common.helper import request
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
@@ -84,7 +85,15 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         none_response_periods: Set[Tuple[date, date]] = set(),
         error_response_periods: Dict[Tuple[date, date], str] = {},
     ) -> CandleDataFrame:
-        response = cls.request_ticker_data(ticker, period)
+        try:
+            response = cls.request_ticker_data(ticker, period)
+        except Exception as e:
+            LOG.error(
+                CONNECTION_ERROR_MESSAGE,
+                str(e),
+                traceback.format_exc(),
+            )
+            return CandleDataFrame(symbol=ticker)
         data: str = response.content.decode(ENCODING)
         period_tuple = (period[0], period[1])
         if response:

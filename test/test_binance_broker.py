@@ -4,6 +4,7 @@ from decimal import Decimal
 from unittest.mock import call, patch
 
 import pytest
+from pytz import timezone
 from freezegun import freeze_time
 
 from broker.binance_broker import BinanceBroker
@@ -794,6 +795,7 @@ def test_has_opened_position(
     assert not binance_broker.has_opened_position(SYMBOL3, Direction.SHORT)
 
 
+@patch("common.clock.LiveClock.current_time")
 @patch("binance.client.Client.get_my_trades")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
@@ -806,12 +808,38 @@ def test_update_transactions(
     get_exchange_info_mocked,
     get_all_tickers_mocked,
     get_my_trades_mocked,
+    current_time_mocked,
 ):
     init_mocked.return_value = None
     get_exchange_info_mocked.return_value = GET_EXCHANGE_INFO_RETURN_VALUE
     get_all_tickers_mocked.return_value = GET_ALL_TICKERS_RETURN_VALUE
     get_account_mocked.return_value = GET_ACCOUNT_RETURN_VALUE
     get_my_trades_mocked.side_effect = GET_MY_TRADES_SIDE_EFFECT
+
+    nb_current_time_calls = 11
+
+    current_time_mocked.side_effect = [
+        datetime(
+            year=2021,
+            month=2,
+            day=8,
+            hour=15,
+            minute=i,
+            second=0,
+            tzinfo=timezone("UTC"),
+        )
+        for i in range(1, nb_current_time_calls)
+    ] + [
+        datetime(
+            year=2021,
+            month=2,
+            day=8,
+            hour=15,
+            minute=10,
+            second=5,
+            tzinfo=timezone("UTC"),
+        )
+    ]
 
     clock = LiveClock()
     events = deque()
@@ -832,7 +860,7 @@ def test_update_transactions(
         description="LONG 29.5 XRPEUR 0.33822 23/02/2021",
         debit=10.006990000000002,
         credit=0.0,
-        balance=41.064189999999996,
+        balance=51.07118,
     )
     assert binance_broker.portfolio.history[1] == PortfolioEvent(
         timestamp=datetime.strptime(
@@ -842,7 +870,7 @@ def test_update_transactions(
         description="LONG 29.4 XRPEUR 0.38805 23/02/2021",
         debit=0.0,
         credit=11.41,
-        balance=52.47,
+        balance=51.07,
     )
     assert binance_broker.portfolio.history[2] == PortfolioEvent(
         timestamp=datetime.strptime(
@@ -852,7 +880,7 @@ def test_update_transactions(
         description="LONG 0.000367 BTCEUR 40825.94 23/02/2021",
         debit=15.01261998,
         credit=0.0,
-        balance=37.46024002,
+        balance=51.07118,
     )
     assert binance_broker.portfolio.history[3] == PortfolioEvent(
         timestamp=datetime.strptime(
@@ -862,17 +890,18 @@ def test_update_transactions(
         description="LONG 0.000367 BTCEUR 43825.94 23/02/2021",
         debit=0.0,
         credit=16.08,
-        balance=53.54,
+        balance=51.07,
     )
 
     get_account_mocked.assert_has_calls([call()])
     get_all_tickers_mocked.assert_has_calls([call()])
 
     get_my_trades_mocked_calls = [
-        call(symbol="XRPEUR", timestamp=1613993757000),
-        call(symbol="ETHEUR", timestamp=1613993757000),
+        call(startTime=1612796880000, symbol="ETHEUR"),
+        call(startTime=1612796880000, symbol="XRPEUR"),
+        call(startTime=1612797000000, symbol="ETHEUR"),
     ]
-    get_my_trades_mocked.assert_has_calls(get_my_trades_mocked_calls, any_order=True)
+    assert get_my_trades_mocked.assaert_has_calls(get_my_trades_mocked_calls, any_order=True)
 
 
 @patch("binance.client.Client.order_market_sell")
@@ -996,7 +1025,7 @@ def test_execute_limit_order(
 
     # test buy orders
     buy_order = Order(
-        symbol=SYMBOL3,
+        symbol=SYMBOL1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=26.97654,
@@ -1009,7 +1038,7 @@ def test_execute_limit_order(
     assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
     binance_broker.execute_order(buy_order)
     assert buy_order.order_id == "134879100"
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR", "SXPEUR"}
+    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
     assert binance_broker.open_orders_ids == {"134879100"}
 
     # test binance buyorder Exception
@@ -1017,7 +1046,7 @@ def test_execute_limit_order(
 
     # test sell orders
     sell_order = Order(
-        symbol=SYMBOL3,
+        symbol=SYMBOL1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=26.77654,
@@ -1027,20 +1056,20 @@ def test_execute_limit_order(
         clock=clock,
     )
 
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR", "SXPEUR"}
+    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
     binance_broker.execute_order(sell_order)
     assert sell_order.order_id == "134912358"
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR", "SXPEUR"}
+    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
     assert binance_broker.open_orders_ids == {"134912358", "134879100"}
 
     # check mock calls
     order_limit_buy_mocked_calls = [
-        call(price=0.3534, quantity=Decimal("26.976"), symbol="SXPEUR")
+        call(price=0.3534, quantity=Decimal("26.97654"), symbol="ETHEUR")
     ]
     order_limit_buy_mocked.assert_has_calls(order_limit_buy_mocked_calls)
 
     order_limit_sell_mocked_calls = [
-        call(price=0.4534, quantity=Decimal("26.776"), symbol="SXPEUR")
+        call(price=0.4534, quantity=Decimal("0.15067"), symbol="ETHEUR")
     ]
     order_limit_sell_mocked.assert_has_calls(order_limit_sell_mocked_calls)
 
@@ -1344,5 +1373,5 @@ def test_max_order_entry_size(
 
     assert (
         binance_broker.max_entry_order_size(symbol=SYMBOL2, direction=Direction.LONG)
-        == 130.61682864450128
+        == 130.4863423021991
     )

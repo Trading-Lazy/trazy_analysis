@@ -21,6 +21,7 @@ class OrderManager:
         broker: Broker,
         position_sizer: PositionSizer,
         order_creator: OrderCreator,
+        filter_at_end_of_day=True,
     ):
         self.events = events
         self.broker: Broker = broker
@@ -28,6 +29,7 @@ class OrderManager:
         self.order_creator = order_creator
         self.pending_signals = deque()
         self.clock = self.broker.clock
+        self.filter_at_end_of_day = filter_at_end_of_day
 
     def process_pending_signal(self, signal: Signal, pending_signals):
         LOG.info("Processing %s", str(signal))
@@ -64,7 +66,10 @@ class OrderManager:
                 (signal.is_entry_signal and not opened_position)
                 or (signal.is_exit_signal and opened_position)
             )
-            and not self.clock.end_of_day(signal.symbol)
+            and (
+                not self.filter_at_end_of_day
+                or not self.clock.end_of_day(signal.symbol)
+            )
         ):
             LOG.info("Signal is still in force and will be processed soon.")
             self.pending_signals.append(signal)

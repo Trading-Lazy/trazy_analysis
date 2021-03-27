@@ -7,6 +7,8 @@ from typing import List, Union
 import numpy as np
 
 import settings
+from broker.fee_model import FeeModel
+from broker.fixed_fee_model import FixedFeeModel
 from common.clock import Clock
 from common.helper import get_or_create_nested_dict
 from logger import logger
@@ -44,8 +46,12 @@ class Broker:
         events: deque,
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
+        fee_model: FeeModel = FixedFeeModel(),
+        execute_at_end_of_day=True,
     ):
         self.supported_currencies = supported_currencies
+        self.fee_model = fee_model
+        self.execute_at_end_of_day = execute_at_end_of_day
         self.base_currency = self._set_base_currency(base_currency)
         self.clock = clock
         self.events = events
@@ -346,7 +352,10 @@ class Broker:
             if (
                 order.status == OrderStatus.SUBMITTED
                 and order.in_force(now)
-                and not self.clock.end_of_day(order.symbol)
+                and (
+                    not self.execute_at_end_of_day
+                    or not self.clock.end_of_day(order.symbol)
+                )
             ):
                 self.execute_order(order)
             else:

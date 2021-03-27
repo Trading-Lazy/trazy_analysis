@@ -54,7 +54,7 @@ class LiveFeed(Feed):
     def update_latest_data(self):
         for symbol in self.symbols:
             candles = self.live_data_handler.request_ticker_lastest_candles(
-                symbol, nb_candles=2
+                symbol, nb_candles=10
             )
             for candle in candles:
                 if candle.timestamp + timedelta(minutes=1) < datetime.now(timezone.utc):

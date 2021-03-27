@@ -47,3 +47,21 @@ class FeeModel:
         commission = self._calc_commission(symbol, size, consideration, broker)
         tax = self._calc_tax(symbol, size, consideration, broker)
         return commission + tax
+
+
+    @abstractmethod
+    def calc_max_size_for_cash(self, cash: float, price: float) -> float:
+        """
+        Calculate the maximum order size that we can afford for
+        a cash amount for a security at a given price taking
+        into consideration the fee model.
+        Parameters
+        ----------
+        cash : `float`
+        price : `float`
+        Returns
+        -------
+        `float`
+            The maximum order size
+        """
+        raise NotImplementedError("Should implement calc_max_size_for_cash()")
