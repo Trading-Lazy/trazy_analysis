@@ -1,2 +1,1 @@
-feed: python -m feed.scheduled_feed
-broker: python -m strategy.broker
+bot: python -m bot.bot

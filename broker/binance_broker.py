@@ -1,22 +1,26 @@
 import os
+import traceback
 from collections import deque
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_DOWN
-from typing import List
+from typing import List, Dict
 
 import pandas as pd
 from binance.client import Client
 
 import settings
+from broker.binance_fee_model import BinanceFeeModel
 from broker.broker import Broker
 from broker.common import get_rejected_order_error_message
 from common.clock import Clock
+from common.constants import CONNECTION_ERROR_MESSAGE
 from common.helper import get_or_create_nested_dict
 from logger import logger
 from market_data.common import datetime_from_epoch
 from models.candle import Candle
 from models.enums import Action, Direction, OrderType
 from models.order import Order
+from portfolio.portfolio_event import PortfolioEvent
 from position.position import Position
 from position.transaction import Transaction
 
@@ -43,11 +47,14 @@ class BinanceBroker(Broker):
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USDT"],
     ):
+        fee_model = BinanceFeeModel()
         super().__init__(
             clock=clock,
             events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
+            fee_model=fee_model,
+            execute_at_end_of_day=False,
         )
         self.client = Client(
             settings.BINANCE_API_KEY,
@@ -61,20 +68,26 @@ class BinanceBroker(Broker):
         self.update_price()
         self.balances_last_update = None
         self.update_balances_and_positions()
-        self.transactions_last_update: datetime = (
-            self.clock.current_time() - BinanceBroker.TRANSACTION_LOOKBACK_PERIOD
-        )
+        self.transactions_last_update: datetime = self.clock.current_time()
         self.open_orders_ids = set()
         self.update_transactions()
 
-    def update_lot_size_info(self):
+    def update_lot_size_info(self) -> None:
         now = self.clock.current_time()
         if (
             self.lot_size_last_update is not None
             and now - self.lot_size_last_update < BinanceBroker.UPDATE_LOT_SIZE_INFO
         ):
             return
-        exchange_info = self.client.get_exchange_info()
+        try:
+            exchange_info = self.client.get_exchange_info()
+        except Exception as e:
+            LOG.warning(
+                CONNECTION_ERROR_MESSAGE,
+                str(e),
+                traceback.format_exc(),
+            )
+            return
         symbols_info = exchange_info["symbols"]
         for symbol_info in symbols_info:
             symbol = symbol_info["symbol"]
@@ -87,14 +100,22 @@ class BinanceBroker(Broker):
                 break
         self.lot_size_last_update = self.clock.current_time()
 
-    def update_price(self, candle: Candle = None):
+    def update_price(self, candle: Candle = None) -> None:
         now = self.clock.current_time()
         if (
             self.price_last_update is not None
             and now - self.price_last_update < BinanceBroker.UPDATE_PRICE_PERIOD
         ):
             return
-        prices_dict = self.client.get_all_tickers()
+        try:
+            prices_dict = self.client.get_all_tickers()
+        except Exception as e:
+            LOG.warning(
+                CONNECTION_ERROR_MESSAGE,
+                str(e),
+                traceback.format_exc(),
+            )
+            return
         for price_dict in prices_dict:
             symbol = price_dict["symbol"]
             price = float(price_dict["price"])
@@ -102,15 +123,16 @@ class BinanceBroker(Broker):
             self.portfolio.update_market_value_of_symbol(symbol, price, now)
         self.price_last_update = self.clock.current_time()
 
-    def update_balances_and_positions(self) -> float:
-        now = self.clock.current_time()
-        if (
-            self.balances_last_update is not None
-            and now - self.balances_last_update < BinanceBroker.UPDATE_BALANCES_PERIOD
-        ):
-            return
-
-        account_info = self.client.get_account()
+    def update_balances(self) -> Dict[str, float]:
+        try:
+            account_info = self.client.get_account()
+        except Exception as e:
+            LOG.warning(
+                CONNECTION_ERROR_MESSAGE,
+                str(e),
+                traceback.format_exc(),
+            )
+            return {}
         balances = account_info["balances"]
         open_balances = {
             balance["asset"]: float(balance["free"])
@@ -124,8 +146,11 @@ class BinanceBroker(Broker):
                 continue
             self.cash_balances[currency] = open_balances[currency]
             del open_balances[currency]
-        self.portfolio.cash = self.cash_balances[self.base_currency]
 
+        self.portfolio.cash = self.cash_balances[self.base_currency]
+        return open_balances
+
+    def update_positions(self, open_balances: Dict[str, float]) -> None:
         # open positions
         portfolio = self.portfolio
         positions = portfolio.pos_handler.positions
@@ -161,7 +186,21 @@ class BinanceBroker(Broker):
             )
             self.currency_pairs_traded.add(currency_pair)
 
+    def update_balances_and_positions(self) -> None:
+        now = self.clock.current_time()
+        if (
+            self.balances_last_update is not None
+            and now - self.balances_last_update < BinanceBroker.UPDATE_BALANCES_PERIOD
+        ):
+            return
+
+        open_balances = self.update_balances()
+
+        self.update_positions(open_balances)
+
         self.balances_last_update = self.clock.current_time()
+
+        LOG.info("Balances and positions have been updated")
 
     def has_opened_position(self, symbol: str, direction: Direction) -> bool:
         symbol_mapped = symbol
@@ -181,7 +220,7 @@ class BinanceBroker(Broker):
         # TODO automate bank transfers to degiro account
         pass
 
-    def update_transactions(self):
+    def update_transactions(self) -> None:
         now = self.clock.current_time()
         if (
             self.transactions_last_update is not None
@@ -192,10 +231,18 @@ class BinanceBroker(Broker):
         # get confirmed orders that are opened
         epoch_ms = int(self.transactions_last_update.timestamp()) * 1000
         for currency_pair in self.currency_pairs_traded:
-            symbol_trades = self.client.get_my_trades(
-                symbol=currency_pair,
-                timestamp=epoch_ms,
-            )
+            try:
+                symbol_trades = self.client.get_my_trades(
+                    symbol=currency_pair,
+                    startTime=epoch_ms,
+                )
+            except Exception as e:
+                LOG.warning(
+                    CONNECTION_ERROR_MESSAGE,
+                    str(e),
+                    traceback.format_exc(),
+                )
+                return
             for trade in symbol_trades:
                 trade_epoch_ms = int(trade["time"])
                 if trade_epoch_ms < epoch_ms:
@@ -220,7 +267,32 @@ class BinanceBroker(Broker):
                     timestamp=timestamp,
                     transaction_id=transaction_id,
                 )
-                self.portfolio.transact_symbol(transaction)
+                description = "%s %s %s %s %s" % (
+                    direction.name,
+                    transaction.size,
+                    transaction.symbol.upper(),
+                    transaction.price,
+                    datetime.strftime(transaction.timestamp, "%d/%m/%Y"),
+                )
+                if transaction.action == Action.BUY:
+                    pe = PortfolioEvent(
+                        timestamp=transaction.timestamp,
+                        type="symbol_transaction",
+                        description=description,
+                        debit=transaction.cost_with_commission,
+                        credit=0.0,
+                        balance=self.portfolio.cash,
+                    )
+                else:
+                    pe = PortfolioEvent(
+                        timestamp=transaction.timestamp,
+                        type="symbol_transaction",
+                        description=description,
+                        debit=0.0,
+                        credit=-1.0 * round(transaction.cost_with_commission, 2),
+                        balance=round(self.portfolio.cash, 2),
+                    )
+                self.portfolio.history.append(pe)
 
         LOG.info("Transactions have been synchronized")
         self.transactions_last_update = self.clock.current_time()
@@ -243,7 +315,8 @@ class BinanceBroker(Broker):
     ) -> int:
         if cash is None:
             cash = self.portfolio.cash
-        return cash / self.current_price(symbol)
+        price = self.current_price(symbol)
+        return self.fee_model.calc_max_size_for_cash(cash=cash, price=price)
 
     def position_size(self, symbol: str, direction: Direction) -> int:
         return super().position_size(symbol, direction)
@@ -274,7 +347,18 @@ class BinanceBroker(Broker):
         try:
             action_func = self.get_market_action_func(order.action)
             LOG.info("Submit market order to binance")
+            if order.is_exit_order and self.has_opened_position(
+                order.symbol, order.direction
+            ):
+                self.update_balances_and_positions()
+                available_size = self.portfolio.pos_handler.positions[order.symbol][
+                    order.direction
+                ].net_size
+                if order.size > available_size:
+                    LOG.info("Fixing order size")
+                    order.size = available_size
             truncated_size = self.truncate_order_size(order)
+            LOG.info("truncated order size: %s", truncated_size)
             order_response = action_func(
                 symbol=order.symbol, quantity=truncated_size
             )
@@ -301,6 +385,12 @@ class BinanceBroker(Broker):
         try:
             action_func = self.get_limit_action_func(limit_order.action)
             LOG.info("Submit limit order to binance")
+            if limit_order.is_exit_order:
+                self.update_balances_and_positions()
+                available_size = self.portfolio.pos_handler.positions[
+                    limit_order.symbol
+                ][limit_order.direction].net_size
+                limit_order.size = min(limit_order.size, available_size)
             truncated_size = self.truncate_order_size(limit_order)
             order_response = action_func(
                 symbol=limit_order.symbol,
@@ -319,6 +409,7 @@ class BinanceBroker(Broker):
             LOG.error(error_message + "The exception is: %s", str(e))
 
     def execute_stop_order(self, stop_order: Order) -> None:
+        LOG.info("Checking stop order")
         price = self.current_price(stop_order.symbol)
         if (
             stop_order.action == Action.BUY
@@ -333,6 +424,7 @@ class BinanceBroker(Broker):
             self.open_orders_ids.add(stop_order.order_id)
 
     def execute_target_order(self, target_order: Order) -> None:
+        LOG.info("Checking target order")
         price = self.current_price(target_order.symbol)
         if (
             target_order.action == Action.BUY
