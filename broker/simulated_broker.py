@@ -8,6 +8,7 @@ from broker.fee_model import FeeModel
 from broker.fixed_fee_model import FixedFeeModel
 from common.clock import Clock
 from logger import logger
+from models.asset import Asset
 from models.enums import Action, Direction, OrderType
 from models.order import Order
 from position.transaction import Transaction
@@ -50,7 +51,7 @@ class SimulatedBroker(Broker):
             events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
-            fee_model=fee_model
+            fee_model=fee_model,
         )
         self._set_cash_balances(initial_funds)
         self.fee_model = self._set_fee_model(fee_model)
@@ -115,10 +116,10 @@ class SimulatedBroker(Broker):
                 "Broker entity." % fee_model.__class__
             )
 
-    def has_opened_position(self, symbol: str, direction: Direction) -> bool:
+    def has_opened_position(self, asset: Asset, direction: Direction) -> bool:
         portfolio = self.portfolio
         positions = portfolio.pos_handler.positions
-        return symbol in positions and direction in positions[symbol]
+        return asset in positions and direction in positions[asset]
 
     def subscribe_funds_to_account(self, amount: float) -> None:
         """
@@ -206,10 +207,10 @@ class SimulatedBroker(Broker):
         order : `Order`
             The Order instance to create the Transaction for.
         """
-        price = self.current_price(order.symbol)
+        price = self.current_price(order.asset)
         consideration = price * order.size
         total_commission = self.fee_model.calc_total_cost(
-            order.symbol, order.size, consideration, self
+            order.asset, order.size, consideration, self
         )
 
         # Check that sufficient cash exists to carry out the
@@ -229,9 +230,9 @@ class SimulatedBroker(Broker):
             return
 
         # Create a transaction entity and update the portfolio
-        current_timestamp = self.clock.current_time(symbol=order.symbol)
+        current_timestamp = self.clock.current_time(asset=order.asset)
         txn = Transaction(
-            symbol=order.symbol,
+            asset=order.asset,
             size=order.size,
             action=order.action,
             direction=order.direction,
@@ -245,7 +246,7 @@ class SimulatedBroker(Broker):
             "(%s) - executed order: %s, qty: %s, price: %s, "
             "consideration: %s, commission: %s, total: %s",
             current_timestamp,
-            order.symbol,
+            order.asset,
             order.size,
             price,
             consideration,
@@ -255,13 +256,13 @@ class SimulatedBroker(Broker):
         order.complete()
         if (
             order.is_exit_order
-            and order.symbol in self.exit_orders
-            and order.direction in self.exit_orders[order.symbol]
+            and order.asset in self.exit_orders
+            and order.direction in self.exit_orders[order.asset]
         ):
-            del self.exit_orders[order.symbol][order.direction]
+            del self.exit_orders[order.asset][order.direction]
 
     def execute_limit_order(self, limit_order: Order) -> None:
-        price = self.current_price(limit_order.symbol)
+        price = self.current_price(limit_order.asset)
         if (limit_order.action == Action.BUY and price <= limit_order.limit) or (
             limit_order.action == Action.SELL and price >= limit_order.limit
         ):
@@ -270,7 +271,7 @@ class SimulatedBroker(Broker):
             self.open_orders.append(limit_order)
 
     def execute_stop_order(self, stop_order: Order) -> None:
-        price = self.current_price(stop_order.symbol)
+        price = self.current_price(stop_order.asset)
         if (
             stop_order.action == Action.BUY
             and price >= stop_order.stop
@@ -282,7 +283,7 @@ class SimulatedBroker(Broker):
             self.open_orders.append(stop_order)
 
     def execute_target_order(self, target_order: Order) -> None:
-        price = self.current_price(target_order.symbol)
+        price = self.current_price(target_order.asset)
         if (
             target_order.action == Action.BUY
             and price <= target_order.target
@@ -297,7 +298,7 @@ class SimulatedBroker(Broker):
         self,
         trailing_stop_order: Order,
     ) -> None:
-        price = self.current_price(trailing_stop_order.symbol)
+        price = self.current_price(trailing_stop_order.asset)
         if trailing_stop_order.action == Action.BUY:
             stop = price + price * trailing_stop_order.stop_pct
             if trailing_stop_order.stop is None:

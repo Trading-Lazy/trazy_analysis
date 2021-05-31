@@ -10,16 +10,19 @@ from common.types import CandleDataFrame
 from db_storage.mongodb_storage import MongoDbStorage
 from file_storage.common import DATASETS_DIR, DONE_DIR
 from file_storage.meganz_file_storage import MegaNzFileStorage
+from models.asset import Asset
 from models.candle import Candle
 from settings import DATABASE_NAME
 from strategy.candlefetcher import CandleFetcher
 from test.tools.tools import compare_candles_list
 
 SYMBOL = "IVV"
+EXCHANGE = "IEX"
+IVV_ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 CANDLES = np.array(
     [
         Candle(
-            symbol=SYMBOL,
+            asset=IVV_ASSET,
             open=94.12,
             high=94.15,
             low=94.00,
@@ -30,7 +33,7 @@ CANDLES = np.array(
             ),
         ),
         Candle(
-            symbol=SYMBOL,
+            asset=IVV_ASSET,
             open=94.07,
             high=94.10,
             low=93.95,
@@ -41,7 +44,7 @@ CANDLES = np.array(
             ),
         ),
         Candle(
-            symbol=SYMBOL,
+            asset=IVV_ASSET,
             open=94.07,
             high=94.10,
             low=93.95,
@@ -52,7 +55,7 @@ CANDLES = np.array(
             ),
         ),
         Candle(
-            symbol=SYMBOL,
+            asset=IVV_ASSET,
             open=94.17,
             high=94.18,
             low=94.05,
@@ -63,7 +66,7 @@ CANDLES = np.array(
             ),
         ),
         Candle(
-            symbol=SYMBOL,
+            asset=IVV_ASSET,
             open=94.19,
             high=94.22,
             low=94.07,
@@ -74,7 +77,7 @@ CANDLES = np.array(
             ),
         ),
         Candle(
-            symbol=SYMBOL,
+            asset=IVV_ASSET,
             open=94.19,
             high=94.22,
             low=94.07,
@@ -99,9 +102,9 @@ def test_query_candles():
     for candle in CANDLES:
         DB_STORAGE.add_candle(candle)
     start, end = CANDLES[0].timestamp, CANDLES[-1].timestamp
-    candles = CANDLE_FETCHER.query_candles(SYMBOL, start, end)
-    assert compare_candles_list(candles, CANDLES)
+    candles = CANDLE_FETCHER.query_candles(IVV_ASSET, start, end)
     DB_STORAGE.clean_all_candles()
+    assert compare_candles_list(candles, CANDLES)
 
 
 def test_fetch_candle_db_data():
@@ -110,7 +113,7 @@ def test_fetch_candle_db_data():
         DB_STORAGE.add_candle(candle)
     start = CANDLES[0].timestamp
     end = CANDLES[-1].timestamp
-    df = CANDLE_FETCHER.fetch_candle_db_data(SYMBOL, start, end)
+    df = CANDLE_FETCHER.fetch_candle_db_data(IVV_ASSET, start, end)
     expected_df_candles = {
         "timestamp": [
             "2020-05-08 14:17:00+00:00",
@@ -181,7 +184,7 @@ def test_fetch_historical_data(get_file_content_mocked):
 
     start = datetime.strptime("2020-06-17 09:33:00+0000", "%Y-%m-%d %H:%M:%S%z")
     end = datetime.strptime("2020-06-19 09:32:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    df = CANDLE_FETCHER.fetch_candle_historical_data(SYMBOL, start, end)
+    df = CANDLE_FETCHER.fetch_candle_historical_data(IVV_ASSET, start, end)
 
     expected_df_candles = {
         "timestamp": [
@@ -209,17 +212,17 @@ def test_fetch_historical_data(get_file_content_mocked):
     get_file_content_mocked_calls = [
         call(
             "{}/{}/{}/{}_{}.csv".format(
-                DATASETS_DIR, dates_str[0], DONE_DIR, SYMBOL, dates_str[0]
+                DATASETS_DIR, dates_str[0], DONE_DIR, IVV_ASSET.key(), dates_str[0]
             )
         ),
         call(
             "{}/{}/{}/{}_{}.csv".format(
-                DATASETS_DIR, dates_str[1], DONE_DIR, SYMBOL, dates_str[1]
+                DATASETS_DIR, dates_str[1], DONE_DIR, IVV_ASSET.key(), dates_str[1]
             )
         ),
         call(
             "{}/{}/{}/{}_{}.csv".format(
-                DATASETS_DIR, dates_str[2], DONE_DIR, SYMBOL, dates_str[2]
+                DATASETS_DIR, dates_str[2], DONE_DIR, IVV_ASSET.key(), dates_str[2]
             )
         ),
     ]
@@ -235,7 +238,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
     get_file_content_mocked.return_value = ""
 
     df = CANDLE_FETCHER.fetch(
-        SYMBOL,
+        IVV_ASSET,
         timedelta(minutes=5),
         datetime.strptime("2020-05-06 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
@@ -244,7 +247,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
     expected_df_candles = np.array(
         [
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.12,
                 high=94.15,
                 low=94.00,
@@ -255,7 +258,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.07,
                 high=94.10,
                 low=93.95,
@@ -266,7 +269,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.08,
                 high=94.08,
                 low=94.08,
@@ -277,7 +280,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.17,
                 high=94.18,
                 low=94.05,
@@ -288,7 +291,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.18,
                 high=94.18,
                 low=94.18,
@@ -299,7 +302,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.19,
                 high=94.22,
                 low=94.07,
@@ -313,17 +316,27 @@ def test_fetch_no_historical_data(get_file_content_mocked):
         dtype=Candle,
     )
     expected_df = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=expected_df_candles
+        asset=IVV_ASSET, candles=expected_df_candles
     )
     assert (df == expected_df).all(axis=None)
 
-    date_str = "20200508"
+    date_strs = ["20200506", "20200507", "20200508"]
     get_file_content_mocked_calls = [
         call(
             "{}/{}/{}/{}_{}.csv".format(
-                DATASETS_DIR, date_str, DONE_DIR, SYMBOL, date_str
+                DATASETS_DIR, date_strs[0], DONE_DIR, IVV_ASSET.key(), date_strs[0]
             )
-        )
+        ),
+        call(
+            "{}/{}/{}/{}_{}.csv".format(
+                DATASETS_DIR, date_strs[1], DONE_DIR, IVV_ASSET.key(), date_strs[1]
+            )
+        ),
+        call(
+            "{}/{}/{}/{}_{}.csv".format(
+                DATASETS_DIR, date_strs[2], DONE_DIR, IVV_ASSET.key(), date_strs[2]
+            )
+        ),
     ]
     get_file_content_mocked.assert_has_calls(get_file_content_mocked_calls)
 
@@ -346,7 +359,7 @@ def test_fetch_no_db_data(get_file_content_mocked):
     ]
 
     df = CANDLE_FETCHER.fetch(
-        SYMBOL,
+        IVV_ASSET,
         timedelta(minutes=5),
         datetime.strptime("2020-06-11 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-06-11 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
@@ -355,7 +368,7 @@ def test_fetch_no_db_data(get_file_content_mocked):
     expected_df_candles = np.array(
         [
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.28,
                 high=95.32,
                 low=93.96,
@@ -366,7 +379,7 @@ def test_fetch_no_db_data(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.22,
                 high=94.26,
                 low=93.95,
@@ -380,7 +393,7 @@ def test_fetch_no_db_data(get_file_content_mocked):
         dtype=Candle,
     )
     expected_df = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=expected_df_candles
+        IVV_ASSET, candles=expected_df_candles
     )
     assert (df == expected_df).all(axis=None)
 
@@ -388,7 +401,7 @@ def test_fetch_no_db_data(get_file_content_mocked):
     get_file_content_mocked_calls = [
         call(
             "{}/{}/{}/{}_{}.csv".format(
-                DATASETS_DIR, date_str, DONE_DIR, SYMBOL, date_str
+                DATASETS_DIR, date_str, DONE_DIR, IVV_ASSET.key(), date_str
             )
         )
     ]
@@ -413,7 +426,7 @@ def test_fetch(get_file_content_mocked):
     ]
 
     df = CANDLE_FETCHER.fetch(
-        SYMBOL,
+        IVV_ASSET,
         timedelta(minutes=5),
         datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
@@ -422,7 +435,7 @@ def test_fetch(get_file_content_mocked):
     expected_df_candles = np.array(
         [
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.28,
                 high=95.32,
                 low=93.95,
@@ -433,7 +446,7 @@ def test_fetch(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.12,
                 high=94.15,
                 low=94.00,
@@ -444,7 +457,7 @@ def test_fetch(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.07,
                 high=94.10,
                 low=93.95,
@@ -455,7 +468,7 @@ def test_fetch(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.08,
                 high=94.08,
                 low=94.08,
@@ -466,7 +479,7 @@ def test_fetch(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.17,
                 high=94.18,
                 low=94.05,
@@ -477,7 +490,7 @@ def test_fetch(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.18,
                 high=94.18,
                 low=94.18,
@@ -488,7 +501,7 @@ def test_fetch(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.19,
                 high=94.22,
                 low=94.07,
@@ -502,7 +515,7 @@ def test_fetch(get_file_content_mocked):
         dtype=Candle,
     )
     expected_df = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=expected_df_candles
+        IVV_ASSET, candles=expected_df_candles
     )
     assert (df == expected_df).all(axis=None)
 
@@ -510,7 +523,7 @@ def test_fetch(get_file_content_mocked):
     get_file_content_mocked_calls = [
         call(
             "{}/{}/{}/{}_{}.csv".format(
-                DATASETS_DIR, date_str, DONE_DIR, SYMBOL, date_str
+                DATASETS_DIR, date_str, DONE_DIR, IVV_ASSET.key(), date_str
             )
         )
     ]
@@ -540,7 +553,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
     ]
 
     df = CANDLE_FETCHER.fetch(
-        SYMBOL,
+        IVV_ASSET,
         pd.offsets.Day(1),
         datetime.strptime("2020-05-07 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
@@ -549,7 +562,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
     expected_df_candles = np.array(
         [
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.28,
                 high=95.32,
                 low=93.96,
@@ -560,7 +573,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
                 ),
             ),
             Candle(
-                symbol="IVV",
+                asset=IVV_ASSET,
                 open=94.22,
                 high=94.26,
                 low=93.95,
@@ -574,7 +587,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
         dtype=Candle,
     )
     expected_df = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=expected_df_candles
+        asset=IVV_ASSET, candles=expected_df_candles
     )
     assert (df == expected_df).all(axis=None)
 
@@ -582,7 +595,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
     get_file_content_mocked_calls = [
         call(
             "{}/{}/{}/{}_{}.csv".format(
-                DATASETS_DIR, date_str, DONE_DIR, SYMBOL, date_str
+                DATASETS_DIR, date_str, DONE_DIR, IVV_ASSET.key(), date_str
             )
         )
     ]
@@ -604,6 +617,6 @@ def test_fetch_none_db_storage_none_file_storage():
     )
 
     expected_df = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([], dtype=Candle)
+        asset=IVV_ASSET, candles=np.array([], dtype=Candle)
     )
     assert (df == expected_df).all(axis=None)

@@ -20,13 +20,13 @@ LOG = logger.get_root_logger(
 class Strategy(Indicator):
     def __init__(
         self,
-        symbol: str,
+        asset: str,
         order_manager: OrderManager,
         events: deque,
         indicators_manager: IndicatorsManager = IndicatorsManager(),
     ):
         super().__init__()
-        self.symbol = symbol
+        self.asset = asset
         self.order_manager = order_manager
         self.events = events
         self.indicators_manager = indicators_manager

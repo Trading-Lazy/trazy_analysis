@@ -7,6 +7,7 @@ from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
 from feed.feed import CsvFeed, Feed
 from indicators.indicators_manager import IndicatorsManager
+from models.asset import Asset
 from models.enums import Action, Direction, OrderStatus
 from models.multiple_order import MultipleOrder, SequentialOrder
 from models.order import Order
@@ -124,8 +125,9 @@ def test_submit_order_single_order():
     broker.cash_balances[base_currency] = initial_funds
     broker.subscribe_funds_to_portfolio(10000.0)
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange="BINANCE")
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -147,8 +149,9 @@ def test_submit_order_multiple_order():
     broker.cash_balances[base_currency] = initial_funds
     broker.subscribe_funds_to_portfolio(10000.0)
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange="BINANCE")
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -156,8 +159,9 @@ def test_submit_order_multiple_order():
         clock=clock,
     )
     symbol2 = "BBB"
+    asset2 = Asset(symbol=symbol2, exchange="BINANCE")
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -183,8 +187,9 @@ def test_submit_order_sequential_order():
     broker.cash_balances[base_currency] = initial_funds
     broker.subscribe_funds_to_portfolio(10000.0)
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange="BINANCE")
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -192,8 +197,9 @@ def test_submit_order_sequential_order():
         clock=clock,
     )
     symbol2 = "BBB"
+    asset2 = Asset(symbol=symbol2, exchange="BINANCE")
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -210,11 +216,12 @@ def test_submit_order_sequential_order():
 
 
 def test_close_all_open_positions_at_end_of_day():
-    symbols = ["AAPL"]
+    aapl_asset = Asset(symbol="AAPL", exchange="IEX")
+    assets = [aapl_asset]
     events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_positions_opened_end_of_day.csv"},
+        {aapl_asset: "test/data/aapl_candles_one_day_positions_opened_end_of_day.csv"},
         events,
     )
 
@@ -233,7 +240,7 @@ def test_close_all_open_positions_at_end_of_day():
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,
-        symbols=symbols,
+        assets=assets,
         feed=feed,
         order_manager=order_manager,
         strategies_classes=strategies,
@@ -245,12 +252,13 @@ def test_close_all_open_positions_at_end_of_day():
 
 
 def test_close_all_open_positions_at_end_of_feed_data():
-    symbols = ["AAPL"]
+    aapl_asset = Asset(symbol="AAPL", exchange="IEX")
+    assets = [aapl_asset]
     events = deque()
 
     feed: Feed = CsvFeed(
         {
-            "AAPL": "test/data/aapl_candles_one_day_positions_opened_end_of_feed_data.csv"
+            aapl_asset: "test/data/aapl_candles_one_day_positions_opened_end_of_feed_data.csv"
         },
         events,
     )
@@ -270,7 +278,7 @@ def test_close_all_open_positions_at_end_of_feed_data():
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,
-        symbols=symbols,
+        assets=assets,
         feed=feed,
         order_manager=order_manager,
         strategies_classes=strategies,

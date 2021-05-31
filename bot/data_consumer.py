@@ -118,16 +118,16 @@ class DataConsumer:
 
     def handle_new_candle_callback(self, candle: Candle):
         LOG.info("Dequeue new candle: %s", candle.to_json())
-        if candle.symbol in self.symbols:
+        if candle.asset in self.symbols:
             add_to_db = (
                 self.save_candles
                 and not self.db_storage.candle_with_identifier_exists(
-                    candle.symbol, candle.timestamp
+                    candle.asset, candle.timestamp
                 )
             )
             LOG.info("Add to db: %s", add_to_db)
             if not self.save_candles or add_to_db:
-                self.indicators_manager.RollingWindow(candle.symbol).push(candle)
+                self.indicators_manager.RollingWindow(candle.asset).push(candle)
                 self.run_strategies(candle)
             if add_to_db:
                 self.db_storage.add_candle(candle)

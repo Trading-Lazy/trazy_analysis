@@ -3,15 +3,18 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from common.clock import SimulatedClock
+from models.asset import Asset
 from models.enums import Action, Direction
 from models.signal import Signal
 
 clock = SimulatedClock()
+IVV_ASSET = Asset(symbol="IVV", exchange="IEX")
+GOOGL_ASSET = Asset(symbol="GOOGL", exchange="IEX")
 clock.update_time(
-    "IVV", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    IVV_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
 )
 SIGNAL1 = Signal(
-    symbol="IVV",
+    asset=IVV_ASSET,
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level="0.05",
@@ -23,7 +26,7 @@ SIGNAL1 = Signal(
     clock=clock,
 )
 SIGNAL1_DICT = {
-    "symbol": "IVV",
+    "asset": {"symbol": "IVV", "exchange": "IEX"},
     "action": "BUY",
     "direction": "LONG",
     "confidence_level": "0.05",
@@ -35,7 +38,7 @@ SIGNAL1_DICT = {
 }
 
 SIGNAL2 = Signal(
-    symbol="IVV",
+    asset=IVV_ASSET,
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level="0.05",
@@ -48,7 +51,7 @@ SIGNAL2 = Signal(
 )
 
 SIGNAL3 = Signal(
-    symbol="GOOGL",
+    asset=GOOGL_ASSET,
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level="0.05",
@@ -63,7 +66,7 @@ SIGNAL3 = Signal(
 
 def test_no_clock_no_generation_time():
     signal = Signal(
-        symbol="GOOGL",
+        asset=GOOGL_ASSET,
         action=Action.BUY,
         direction=Direction.LONG,
         confidence_level="0.05",
@@ -105,11 +108,11 @@ def test_in_force():
 
     # None timestamp
     clock.update_time(
-        "IVV", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+        IVV_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
     )
     assert SIGNAL1.in_force()
     clock.update_time(
-        "IVV", datetime.strptime("2020-05-08 14:22:00+0000", "%Y-%m-%d %H:%M:%S%z")
+        IVV_ASSET, datetime.strptime("2020-05-08 14:22:00+0000", "%Y-%m-%d %H:%M:%S%z")
     )
     assert not SIGNAL1.in_force()
 

@@ -8,6 +8,7 @@ from common.clock import Clock
 from common.helper import parse_timedelta_str
 from common.utils import generate_object_id
 from logger import logger
+from models.asset import Asset
 from models.enums import Action, Direction, OrderCondition, OrderStatus, OrderType
 from models.utils import is_closed_position
 
@@ -57,7 +58,7 @@ class OrderBase(ABC):
 class Order(OrderBase):
     def __init__(
         self,
-        symbol: str,
+        asset: Asset,
         action: Action,
         direction: Direction,
         size: float,
@@ -74,7 +75,7 @@ class Order(OrderBase):
         generation_time: datetime = datetime.now(timezone.utc),
         order_id: str = None,
     ):
-        self.symbol = symbol
+        self.asset = asset
         self.action = action
         self.direction = direction
         self.size = size
@@ -88,7 +89,7 @@ class Order(OrderBase):
             order_id = generate_object_id()
         self.order_id = order_id
         if self.clock is not None:
-            generation_time = self.clock.current_time(symbol=symbol)
+            generation_time = self.clock.current_time(asset=asset)
         self.type: OrderType = type
         self.condition: OrderCondition = condition
         super().__init__(
@@ -97,13 +98,13 @@ class Order(OrderBase):
 
     def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         if self.clock is not None:
-            submission_time = self.clock.current_time(symbol=self.symbol)
+            submission_time = self.clock.current_time(asset=self.asset)
         super().submit(submission_time)
-        LOG.info("Submitted order: %s, qty: %s", self.symbol, self.size)
+        LOG.info("Submitted order: %s, qty: %s", self.asset, self.size)
 
     def in_force(self, timestamp: datetime = None) -> bool:
         if timestamp is None:
-            timestamp = self.clock.current_time(symbol=self.symbol)
+            timestamp = self.clock.current_time(asset=self.asset)
         return super().in_force(timestamp)
 
     @property
@@ -117,7 +118,7 @@ class Order(OrderBase):
     @staticmethod
     def from_serializable_dict(order_dict: dict) -> "Order":
         order: Order = Order(
-            symbol=order_dict["symbol"],
+            asset=Asset.from_dict(order_dict["asset"]),
             action=Action[order_dict["action"]],
             direction=Direction[order_dict["direction"]],
             size=int(order_dict["size"]),
@@ -132,6 +133,7 @@ class Order(OrderBase):
 
     def to_serializable_dict(self, with_order_id=False) -> dict:
         dict = self.__dict__.copy()
+        dict["asset"] = dict["asset"].to_dict()
         dict["action"] = dict["action"].name
         dict["direction"] = dict["direction"].name
         dict["signal_id"] = str(dict["signal_id"])
@@ -153,3 +155,39 @@ class Order(OrderBase):
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
+
+    def __str__(self):
+        return (
+            "Order("
+            "asset={},"
+            "action={},"
+            "direction={},"
+            "size={},"
+            "signal_id={},"
+            "limit={},"
+            "stop={},"
+            "target={},"
+            "stop_pct={},"
+            "type={},"
+            "condition={},"
+            "time_in_force={},"
+            "status={},"
+            "generation_time={},"
+            "order_id={})".format(
+                self.asset,
+                self.action.name,
+                self.direction.name,
+                self.size,
+                self.signal_id,
+                self.limit,
+                self.stop,
+                self.target,
+                self.stop_pct,
+                self.type.name,
+                self.condition.name,
+                self.time_in_force,
+                self.status.name,
+                self.generation_time,
+                self.order_id,
+            )
+        )

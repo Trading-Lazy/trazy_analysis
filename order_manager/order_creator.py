@@ -38,7 +38,7 @@ class OrderCreator:
         self.with_bracket = with_bracket
 
     def find_best_limit(self, signal: Signal, action: Action) -> float:
-        current_price = self.broker.current_price(signal.symbol)
+        current_price = self.broker.current_price(signal.asset)
         if action == Action.BUY:
             best_limit = current_price - self.limit_order_pct * current_price
         else:
@@ -48,7 +48,7 @@ class OrderCreator:
         return best_limit
 
     def find_best_stop(self, signal: Signal, action: Action) -> float:
-        current_price = self.broker.current_price(signal.symbol)
+        current_price = self.broker.current_price(signal.asset)
         if action == Action.BUY:
             best_stop_or_target = current_price + self.stop_order_pct * current_price
         else:
@@ -62,7 +62,7 @@ class OrderCreator:
         signal: Signal,
         action: Action,
     ) -> float:
-        current_price = self.broker.current_price(signal.symbol)
+        current_price = self.broker.current_price(signal.asset)
         if action == Action.BUY:
             best_stop_or_target = current_price - self.target_order_pct * current_price
         else:
@@ -95,7 +95,7 @@ class OrderCreator:
                 stop_pct = self.find_best_trailing_stop(signal, signal.action)
 
             return Order(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 action=signal.action,
                 direction=signal.direction,
                 size=0,
@@ -113,7 +113,7 @@ class OrderCreator:
         if self.with_cover:
             stop_pct = self.find_best_trailing_stop(signal, action)
             initiation_order = Order(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 action=signal.action,
                 direction=signal.direction,
                 size=0,
@@ -123,7 +123,7 @@ class OrderCreator:
                 time_in_force=signal.time_in_force,
             )
             trailing_stop_order = Order(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 action=action,
                 direction=signal.direction,
                 size=0,
@@ -134,7 +134,7 @@ class OrderCreator:
                 time_in_force=pd.offsets.Day(1),
             )
             cover_order = CoverOrder(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 initiation_order=initiation_order,
                 stop_order=trailing_stop_order,
                 clock=clock,
@@ -144,7 +144,7 @@ class OrderCreator:
             target = self.find_best_target(signal, action)
             stop_pct = self.find_best_trailing_stop(signal, action)
             initiation_order = Order(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 action=signal.action,
                 direction=signal.direction,
                 size=0,
@@ -154,7 +154,7 @@ class OrderCreator:
                 time_in_force=signal.time_in_force,
             )
             target_order = Order(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 action=action,
                 direction=signal.direction,
                 size=0,
@@ -165,7 +165,7 @@ class OrderCreator:
                 time_in_force=pd.offsets.Day(1),
             )
             trailing_stop_order = Order(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 action=action,
                 direction=signal.direction,
                 size=0,
@@ -176,7 +176,7 @@ class OrderCreator:
                 time_in_force=pd.offsets.Day(1),
             )
             bracket_order = BracketOrder(
-                symbol=signal.symbol,
+                asset=signal.asset,
                 initiation_order=initiation_order,
                 target_order=target_order,
                 stop_order=trailing_stop_order,

@@ -10,13 +10,14 @@ from requests.models import Response
 
 import settings
 from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
-from common.helper import request
+from common.helper import request, resample_candle_data, fill_missing_datetimes
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc
 from logger import logger
 from market_data.common import LOG, get_periods
 from market_data.data_handler import DataHandler
+from models.asset import Asset
 from models.candle import Candle
 
 LOG = logger.get_root_logger(
@@ -80,7 +81,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
     @classmethod
     def request_ticker_data_for_period(
         cls,
-        ticker: str,
+        ticker: Asset,
         period: np.array,  # [date]
         none_response_periods: Set[Tuple[date, date]] = set(),
         error_response_periods: Dict[Tuple[date, date], str] = {},
@@ -120,12 +121,12 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
                 response.status_code, data
             )
         return CandleDataFrame.from_candle_list(
-            symbol=ticker, candles=np.array([], dtype=Candle)
+            asset=ticker, candles=np.array([], dtype=Candle)
         )
 
     @classmethod
     def request_ticker_data_from_periods(
-        cls, ticker: str, periods: List[Tuple[datetime, datetime]]
+        cls, ticker: Asset, periods: List[Tuple[datetime, datetime]]
     ) -> Tuple[CandleDataFrame, List[Tuple[date, date]], Dict[Tuple[date, date], str]]:
         candle_dataframes: np.array = np.empty(
             shape=periods.shape[0], dtype=CandleDataFrame
@@ -173,7 +174,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
     @classmethod
     def request_ticker_data_in_range(
         cls,
-        ticker: str,
+        ticker: Asset,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),
     ) -> Tuple[CandleDataFrame, List[Tuple[date, date]], Dict[Tuple[date, date], str]]:
@@ -183,6 +184,9 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
             none_response_periods,
             error_response_periods,
         ) = cls.request_ticker_data_from_periods(ticker, periods)
+        candle_dataframe = fill_missing_datetimes(
+            df=candle_dataframe, time_unit=timedelta(minutes=1)
+        )
         if len(periods) != 0:
             candle_dataframe = candle_dataframe.loc[start:end]
         return (
@@ -194,7 +198,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
     @classmethod
     def save_ticker_data_in_range(
         cls,
-        ticker: str,
+        ticker: Asset,
         csv_filename: str,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),

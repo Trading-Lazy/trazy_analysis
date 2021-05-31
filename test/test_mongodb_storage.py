@@ -10,6 +10,7 @@ from pymongo.results import InsertOneResult
 
 from common.clock import SimulatedClock
 from db_storage.mongodb_storage import MongoDbStorage
+from models.asset import Asset
 from models.candle import Candle
 from models.enums import Action, Direction
 from models.order import Order
@@ -40,8 +41,11 @@ DOC3_KEY = "key2"
 DOC3_VALUE = "value2"
 DOC3 = {DOC3_KEY: DOC3_VALUE, DOC1_KEY: DOC1_VALUE}
 
+AAPL_SYMBOL = "AAPL"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange="IEX")
+
 CANDLE1: Candle = Candle(
-    symbol="AAPL",
+    asset=AAPL_ASSET,
     open=10.5,
     high=10.9,
     low=10.3,
@@ -51,7 +55,7 @@ CANDLE1: Candle = Candle(
 )
 
 CANDLE2: Candle = Candle(
-    symbol="AAPL",
+    asset=AAPL_ASSET,
     open=10.4,
     high=10.8,
     low=10.4,
@@ -61,7 +65,7 @@ CANDLE2: Candle = Candle(
 )
 
 CANDLE3: Candle = Candle(
-    symbol="AAPL",
+    asset=AAPL_ASSET,
     open=10.8,
     high=11.0,
     low=10.7,
@@ -73,10 +77,10 @@ CANDLE3: Candle = Candle(
 clock = SimulatedClock()
 
 clock.update_time(
-    "AAPL", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    AAPL_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
 )
 SIGNAL1: Signal = Signal(
-    symbol="AAPL",
+    asset=AAPL_ASSET,
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level=0.05,
@@ -90,10 +94,10 @@ SIGNAL1: Signal = Signal(
 
 clock = SimulatedClock()
 clock.update_time(
-    "AAPL", datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    AAPL_ASSET, datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
 )
 SIGNAL2: Signal = Signal(
-    symbol="AAPL",
+    asset=AAPL_ASSET,
     action=Action.SELL,
     direction=Direction.LONG,
     confidence_level=0.05,
@@ -106,10 +110,10 @@ SIGNAL2: Signal = Signal(
 )
 
 clock.update_time(
-    "AAPL", datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    AAPL_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
 )
 ORDER1: Order = Order(
-    symbol="AAPL",
+    asset=AAPL_ASSET,
     action=Action.BUY,
     direction=Direction.LONG,
     size=100,
@@ -119,10 +123,10 @@ ORDER1: Order = Order(
 
 clock = SimulatedClock()
 clock.update_time(
-    "AAPL", datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    AAPL_ASSET, datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
 )
 ORDER2: Order = Order(
-    symbol="AAPL",
+    asset=AAPL_ASSET,
     action=Action.SELL,
     direction=Direction.LONG,
     size=100,
@@ -509,7 +513,7 @@ def test_get_candle_by_identifier():
 
     MONGODB_STORAGE.add_candle(CANDLE1)
     candle: Candle = MONGODB_STORAGE.get_candle_by_identifier(
-        CANDLE1.symbol, CANDLE1.timestamp
+        CANDLE1.asset, CANDLE1.timestamp
     )
     assert candle == CANDLE1
 
@@ -521,7 +525,7 @@ def test_get_candle_by_identifier_non_existing_identifier_non_existing_candle():
     MONGODB_STORAGE.clean_all_candles()
 
     candle: Candle = MONGODB_STORAGE.get_candle_by_identifier(
-        CANDLE1.symbol, CANDLE1.timestamp
+        CANDLE1.asset, CANDLE1.timestamp
     )
     assert candle is None
 
@@ -532,7 +536,7 @@ def test_candle_with_identifier_exists_true():
 
     MONGODB_STORAGE.add_candle(CANDLE1)
     assert MONGODB_STORAGE.candle_with_identifier_exists(
-        CANDLE1.symbol, CANDLE1.timestamp
+        CANDLE1.asset, CANDLE1.timestamp
     )
 
     MONGODB_STORAGE.clean_all_candles()
@@ -543,7 +547,7 @@ def test_candle_with_identifier_exists_false():
     MONGODB_STORAGE.clean_all_candles()
 
     assert not MONGODB_STORAGE.candle_with_identifier_exists(
-        CANDLE1.symbol, CANDLE1.timestamp
+        CANDLE1.asset, CANDLE1.timestamp
     )
 
 
@@ -556,7 +560,7 @@ def test_get_candles_in_range():
     MONGODB_STORAGE.add_candle(CANDLE3)
     start = time.time()
     candles: List[Candle] = MONGODB_STORAGE.get_candles_in_range(
-        CANDLE1.symbol,
+        CANDLE1.asset,
         CANDLE1.timestamp - timedelta(minutes=1),
         CANDLE1.timestamp + timedelta(minutes=1),
     )
@@ -619,7 +623,7 @@ def test_get_signal_by_identifier():
 
     MONGODB_STORAGE.add_signal(SIGNAL1)
     signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(
-        SIGNAL1.symbol, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
+        SIGNAL1.asset, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
     )
     assert signal == SIGNAL1
 
@@ -630,7 +634,7 @@ def test_get_signal_by_identifier_non_existing_signal():
     MONGODB_STORAGE.clean_all_signals()
 
     signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(
-        SIGNAL1.symbol, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
+        SIGNAL1.asset, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
     )
     assert signal is None
 

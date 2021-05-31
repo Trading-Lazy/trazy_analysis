@@ -34,6 +34,7 @@ class OrderCondition(Enum):
 
 class EventType(Enum):
     MARKET_DATA = "MARKET_DATA"
+    SYNCHRONIZED_MARKET_DATA = "MARKET_DATA"
     SIGNAL = "SIGNAL"
     MARKET_DATA_END = "MARKET_DATA_END"
     OPEN_ORDERS = "OPEN_ORDERS"

@@ -4,6 +4,7 @@ from datetime import timedelta
 from common.clock import Clock
 from indicators.crossover import Crossover
 from indicators.indicators_manager import IndicatorsManager
+from models.asset import Asset
 from models.candle import Candle
 from models.enums import Action, Direction
 from models.signal import Signal
@@ -17,19 +18,19 @@ class SmaCrossoverStrategy(Strategy):
 
     def __init__(
         self,
-        symbol: str,
+        asset: Asset,
         order_manager: OrderManager,
         events: deque,
         indicators_manager: IndicatorsManager = IndicatorsManager(),
     ):
-        super().__init__(symbol, order_manager, events, indicators_manager)
+        super().__init__(asset, order_manager, events, indicators_manager)
         self.short_sma = self.indicators_manager.Sma(
-            symbol,
+            asset,
             period=SmaCrossoverStrategy.SHORT_SMA,
             time_unit=timedelta(minutes=1),
         )
         self.long_sma = self.indicators_manager.Sma(
-            symbol,
+            asset,
             period=SmaCrossoverStrategy.LONG_SMA,
             time_unit=timedelta(minutes=1),
         )
@@ -46,7 +47,7 @@ class SmaCrossoverStrategy(Strategy):
                 direction=Direction.LONG,
                 confidence_level=1.0,
                 strategy=self.name,
-                symbol=candle.symbol,
+                asset=self.asset,
                 root_candle_timestamp=candle.timestamp,
                 parameters={},
                 clock=clock,
@@ -58,7 +59,7 @@ class SmaCrossoverStrategy(Strategy):
                 direction=Direction.LONG,
                 confidence_level=1.0,
                 strategy=self.name,
-                symbol=candle.symbol,
+                asset=self.asset,
                 root_candle_timestamp=candle.timestamp,
                 parameters={},
                 clock=clock,

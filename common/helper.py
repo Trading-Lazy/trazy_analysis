@@ -1,4 +1,7 @@
+import json
+import os
 import re
+import traceback
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -11,11 +14,20 @@ from pandas_market_calendars import MarketCalendar
 from pandasql import sqldf
 from requests import Response
 
+import logger
+import settings
 from common.calendar import is_business_day, is_business_hour
+from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
 from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc
 
 MINUTE_IN_ONE_HOUR = 60
+MAP_TICKER_KUCOIN_SYMBOL_LAST_UPDATE = None
+UPDATE_KUCOIN_SYMBOLS_MAPPING = timedelta(days=1)
+TICKER_TO_KUCOIN_SYMBOL = {}
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+)
 
 
 class TimeInterval:
@@ -224,9 +236,9 @@ def resample_candle_data(
     time_unit: timedelta,
     market_cal_df: DataFrame,
 ) -> CandleDataFrame:
-    symbol = df.symbol
+    asset = df.asset
     df = fill_missing_datetimes(df=df, time_unit=time_unit)
-    candle_dataframe = CandleDataFrame.from_dataframe(df, symbol)
+    candle_dataframe = CandleDataFrame.from_dataframe(df, asset)
 
     if time_unit >= timedelta(days=1):
         market_cal_df.index = timestamp_to_utc(market_cal_df.index)
@@ -241,7 +253,7 @@ def resample_candle_data(
                 b.market_close)
         """
         df_resampled = sqldf(s, locals())
-        df_resampled = CandleDataFrame.from_dataframe(df_resampled, symbol)
+        df_resampled = CandleDataFrame.from_dataframe(df_resampled, asset)
     return df_resampled
 
 
@@ -273,7 +285,7 @@ def check_type(object, allowed_types: List[type]):
         )
 
 
-def parse_timedelta_str(timedelta_str) -> timedelta:
+def parse_timedelta_str(timedelta_str: str) -> timedelta:
     if "day" in timedelta_str:
         match = re.match(
             r"(?P<days>[-\d]+) day[s]*, (?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d[\.\d+]*)",
@@ -284,3 +296,39 @@ def parse_timedelta_str(timedelta_str) -> timedelta:
             r"(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d[\.\d+]*)", timedelta_str
         )
     return timedelta(**{key: float(val) for key, val in match.groupdict().items()})
+
+
+def map_ticker_to_kucoin_symbol(ticker: str) -> str:
+    now = datetime.now(tz=timezone.utc)
+    global TICKER_TO_KUCOIN_SYMBOL
+    if (
+        MAP_TICKER_KUCOIN_SYMBOL_LAST_UPDATE is not None
+        and now - MAP_TICKER_KUCOIN_SYMBOL_LAST_UPDATE < UPDATE_KUCOIN_SYMBOLS_MAPPING
+    ):
+        return TICKER_TO_KUCOIN_SYMBOL
+    try:
+        from market_data.kucoin_data_handler import KucoinDataHandler
+
+        response = request(KucoinDataHandler.BASE_URL_GET_TICKERS_LIST)
+    except Exception as e:
+        LOG.error(
+            CONNECTION_ERROR_MESSAGE,
+            str(e),
+            traceback.format_exc(),
+        )
+        return []
+    tickers_response: str = response.content.decode(ENCODING)
+    if response:
+        tickers_dict = json.loads(tickers_response)
+        tickers_info = tickers_dict["data"]
+        tickers_with_hyphen = [ticker_info["symbol"] for ticker_info in tickers_info]
+        TICKER_TO_KUCOIN_SYMBOL = {
+            ticker.replace("-", ""): ticker for ticker in tickers_with_hyphen
+        }
+    else:
+        LOG.error(
+            "Error while getting the list of kucoin avalaible symbols for updating mapping. This happened when trying to update the mapping of the ticker %s",
+            ticker,
+        )
+        return ticker
+    return TICKER_TO_KUCOIN_SYMBOL[ticker]

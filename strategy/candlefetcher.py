@@ -13,6 +13,7 @@ from common.types import CandleDataFrame
 from db_storage.db_storage import DbStorage
 from file_storage.common import DATASETS_DIR, DONE_DIR
 from file_storage.file_storage import FileStorage
+from models.asset import Asset
 from models.candle import Candle
 
 
@@ -29,36 +30,36 @@ class CandleFetcher:
 
     def query_candles(
         self,
-        symbol: str,
+        asset: Asset,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),
     ) -> List[Candle]:
         candles = self.db_storage.get_candles_in_range(
-            symbol=symbol, start=start, end=end
+            asset=asset, start=start, end=end
         )
         return candles
 
     def fetch_candle_db_data(
         self,
-        symbol: str,
+        asset: Asset,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),
     ) -> CandleDataFrame:
         if self.db_storage is None:
-            return CandleDataFrame(symbol=symbol)
-        candles = self.query_candles(symbol, start, end)
-        df = CandleDataFrame.from_candle_list(symbol=symbol, candles=candles)
+            return CandleDataFrame(asset=asset)
+        candles = self.query_candles(asset, start, end)
+        df = CandleDataFrame.from_candle_list(asset=asset, candles=candles)
         return df
 
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)
     def fetch_candle_historical_data(
         self,
-        symbol: str,
+        asset: Asset,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),
     ) -> CandleDataFrame:
         if self.file_storage is None:
-            return CandleDataFrame(symbol=symbol)
+            return CandleDataFrame(asset=asset)
         start_date = start.date()
         end_date = end.date()
         contents: List[CandleDataFrame] = []
@@ -67,7 +68,7 @@ class CandleFetcher:
             date_str = date.strftime(DATE_DIR_FORMAT)
             content = self.file_storage.get_file_content(
                 "{}/{}/{}/{}_{}.csv".format(
-                    DATASETS_DIR, date_str, DONE_DIR, symbol, date_str
+                    DATASETS_DIR, date_str, DONE_DIR, asset.key(), date_str
                 )
             )
             if not content:
@@ -87,12 +88,12 @@ class CandleFetcher:
                     "volume": int,
                 },
             )
-            contents.append(CandleDataFrame.from_dataframe(df, symbol))
+            contents.append(CandleDataFrame.from_dataframe(df, asset))
 
         if not contents:
-            return CandleDataFrame(symbol=symbol)
+            return CandleDataFrame(asset=asset)
 
-        merged_df = CandleDataFrame.concat(contents, symbol)
+        merged_df = CandleDataFrame.concat(contents, asset)
         start_str = start.strftime("%Y-%m-%d %H:%M:%S%z")
         end_str = end.strftime("%Y-%m-%d %H:%M:%S%z")
         return merged_df.loc[start_str:end_str]

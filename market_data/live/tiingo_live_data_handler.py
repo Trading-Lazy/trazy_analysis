@@ -3,6 +3,7 @@ from typing import List
 
 from market_data.live.live_data_handler import LiveDataHandler
 from market_data.tiingo_data_handler import TiingoDataHandler
+from models.asset import Asset
 from models.candle import Candle
 
 
@@ -17,13 +18,13 @@ class TiingoLiveDataHandler(TiingoDataHandler, LiveDataHandler):
     )
 
     @classmethod
-    def parse_ticker_latest_data(cls, symbol: str, data: str) -> List[Candle]:
-        candle_df = cls.ticker_data_to_dataframe(symbol, data)
+    def parse_ticker_latest_data(cls, asset: Asset, data: str) -> List[Candle]:
+        candle_df = cls.ticker_data_to_dataframe(asset, data)
         return candle_df.to_candles()
 
     @classmethod
-    def generate_ticker_latest_data_url(cls, ticker: str) -> str:
+    def generate_ticker_latest_data_url(cls, ticker: Asset) -> str:
         date_today = date.today()
         return cls.BASE_URL_TICKER_LATEST_DATA.format(
-            ticker, date_today, date_today, cls.API_TOKEN
+            ticker.symbol, date_today, date_today, cls.API_TOKEN
         )

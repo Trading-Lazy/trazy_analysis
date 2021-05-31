@@ -8,6 +8,7 @@ from pytz import timezone
 from broker import degiroapi
 from broker.degiro_broker import DegiroBroker
 from common.clock import LiveClock
+from models.asset import Asset
 from models.candle import Candle
 from models.enums import Action, Direction, OrderType
 from models.order import Order
@@ -57,9 +58,13 @@ GET_DATA_PORTFOLIO_MOCKED_RETURN_VALUE = [
     },
 ]
 
+EXCHANGE = "DEGIRO"
 SYMBOL1 = "IFMK"
+ASSET1 = Asset(symbol=SYMBOL1, exchange=EXCHANGE)
 SYMBOL2 = "LQQ"
+ASSET2 = Asset(symbol=SYMBOL2, exchange=EXCHANGE)
 SYMBOL3 = "AAPL"
+ASSET3 = Asset(symbol=SYMBOL3, exchange=EXCHANGE)
 
 PRODUCT_INFO_IFMK = {
     "id": str(PRODUCT_ID1),
@@ -349,8 +354,8 @@ def test_update_symbol_cached_info(
     clock = LiveClock()
     events = deque()
     degiro_broker = DegiroBroker(clock=clock, events=events)
-    degiro_broker.symbol_info_last_update[SYMBOL1] = clock.current_time()
-    degiro_broker.update_symbol_info(SYMBOL1)
+    degiro_broker.asset_info_last_update[ASSET1] = clock.current_time()
+    degiro_broker.update_asset_info(ASSET1)
 
     search_products_mocked.assert_not_called()
 
@@ -419,7 +424,7 @@ def test_update_open_positions(
     sell_size1 = 0
     direction = Direction.LONG
     expected_position1 = Position(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         price=price1,
         buy_size=buy_size1,
         sell_size=sell_size1,
@@ -430,7 +435,7 @@ def test_update_open_positions(
     buy_size2 = 2
     sell_size2 = 0
     expected_position2 = Position(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         price=price2,
         buy_size=buy_size2,
         sell_size=sell_size2,
@@ -442,7 +447,7 @@ def test_update_open_positions(
     sell_size3 = -3
     direction = Direction.SHORT
     expected_position3 = Position(
-        symbol=SYMBOL3,
+        asset=ASSET3,
         price=price3,
         buy_size=buy_size3,
         sell_size=sell_size3,
@@ -450,9 +455,9 @@ def test_update_open_positions(
     )
 
     expected_positions = {
-        SYMBOL1: {Direction.LONG: expected_position1},
-        SYMBOL2: {Direction.LONG: expected_position2},
-        SYMBOL3: {Direction.SHORT: expected_position3},
+        ASSET1: {Direction.LONG: expected_position1},
+        ASSET2: {Direction.LONG: expected_position2},
+        ASSET3: {Direction.SHORT: expected_position3},
     }
 
     assert degiro_broker.portfolio.pos_handler.positions == expected_positions
@@ -493,10 +498,10 @@ def test_has_opened_position(
     events = deque()
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
-    assert degiro_broker.has_opened_position(SYMBOL1, Direction.LONG)
-    assert not degiro_broker.has_opened_position(SYMBOL1, Direction.SHORT)
-    assert degiro_broker.has_opened_position(SYMBOL2, Direction.LONG)
-    assert not degiro_broker.has_opened_position(SYMBOL2, Direction.SHORT)
+    assert degiro_broker.has_opened_position(ASSET1, Direction.LONG)
+    assert not degiro_broker.has_opened_position(ASSET1, Direction.SHORT)
+    assert degiro_broker.has_opened_position(ASSET2, Direction.LONG)
+    assert not degiro_broker.has_opened_position(ASSET2, Direction.SHORT)
 
     getdata_mocked_calls = [call(degiroapi.Data.Type.PORTFOLIO, filter_zero=True)]
     getdata_mocked.assert_has_calls(getdata_mocked_calls)
@@ -562,15 +567,15 @@ def test_update_transactions(
     assert degiro_broker.transactions_last_update == timestamp
 
     TIMESTAMP = datetime.strptime("2021-02-08 16:01:14+0000", "%Y-%m-%d %H:%M:%S%z")
-    event_type = "symbol_transaction"
-    description = "LONG 1 IFMK 3.739 08/02/2021"
+    event_type = "asset_transaction"
+    description = "LONG 1 DEGIRO-IFMK 3.739 08/02/2021"
     expected_pe = PortfolioEvent(
         timestamp=TIMESTAMP,
         type=event_type,
         description=description,
         debit=3.739,
         credit=-0.0,
-        balance=121.341,
+        balance=125.08,
     )
     assert len(degiro_broker.portfolio.history) == 1
     assert degiro_broker.portfolio.history[-1] == expected_pe
@@ -642,7 +647,7 @@ def test_execute_market_order(
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
     buy_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -665,7 +670,7 @@ def test_execute_market_order(
     degiro_broker.execute_order(buy_order)
 
     sell_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -693,7 +698,7 @@ def test_execute_market_order(
     product_info_mocked_calls = [call(PRODUCT_ID1)]
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
-    search_products_mocked_calls = [call(SYMBOL1, limit=5)]
+    search_products_mocked_calls = [call(ASSET1.symbol, limit=5)]
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
@@ -751,7 +756,7 @@ def test_execute_limit_order(
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
     buy_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -780,7 +785,7 @@ def test_execute_limit_order(
     degiro_broker.execute_order(buy_order)
 
     sell_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -815,7 +820,7 @@ def test_execute_limit_order(
     product_info_mocked_calls = [call(PRODUCT_ID1)]
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
-    search_products_mocked_calls = [call(SYMBOL1, limit=5)]
+    search_products_mocked_calls = [call(ASSET1.symbol, limit=5)]
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
@@ -873,7 +878,7 @@ def test_execute_stop_order(
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
     buy_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -902,7 +907,7 @@ def test_execute_stop_order(
     degiro_broker.execute_order(buy_order)
 
     sell_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -937,7 +942,7 @@ def test_execute_stop_order(
     product_info_mocked_calls = [call(PRODUCT_ID1)]
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
-    search_products_mocked_calls = [call(SYMBOL1, limit=5)]
+    search_products_mocked_calls = [call(ASSET1.symbol, limit=5)]
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
@@ -990,7 +995,7 @@ def test_execute_target_order(
 
     # target order sell
     target_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -1000,7 +1005,7 @@ def test_execute_target_order(
         clock=clock,
     )
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.105,
         high=1.12,
         low=1.10,
@@ -1014,7 +1019,7 @@ def test_execute_target_order(
     assert degiro_broker.open_orders.popleft() == target_order
 
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=3.105,
         high=3.12,
         low=3.10,
@@ -1028,7 +1033,7 @@ def test_execute_target_order(
 
     # target order buy
     target_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -1038,7 +1043,7 @@ def test_execute_target_order(
         clock=clock,
     )
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.105,
         high=1.12,
         low=1.10,
@@ -1052,7 +1057,7 @@ def test_execute_target_order(
     assert degiro_broker.open_orders.popleft() == target_order
 
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=0.495,
         high=0.502,
         low=0.493,
@@ -1130,7 +1135,7 @@ def test_execute_trailing_stop_order_sell(
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -1140,7 +1145,7 @@ def test_execute_trailing_stop_order_sell(
         clock=clock,
     )
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.105,
         high=1.12,
         low=1.10,
@@ -1161,7 +1166,7 @@ def test_execute_trailing_stop_order_sell(
     )
 
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.145,
         high=1.16,
         low=1.14,
@@ -1181,7 +1186,7 @@ def test_execute_trailing_stop_order_sell(
     )
 
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.09,
         high=1.10,
         low=1.08,
@@ -1204,7 +1209,7 @@ def test_execute_trailing_stop_order_sell(
     product_info_mocked_calls = [call(PRODUCT_ID1)]
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
-    search_products_mocked_calls = [call(SYMBOL1, limit=5)]
+    search_products_mocked_calls = [call(ASSET1.symbol, limit=5)]
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
@@ -1260,7 +1265,7 @@ def test_execute_trailing_stop_order_buy(
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.BUY,
         direction=Direction.SHORT,
         size=1,
@@ -1270,7 +1275,7 @@ def test_execute_trailing_stop_order_buy(
         clock=clock,
     )
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.145,
         high=1.16,
         low=1.14,
@@ -1290,7 +1295,7 @@ def test_execute_trailing_stop_order_buy(
         == candle.close + candle.close * trailing_stop_order.stop_pct
     )
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.105,
         high=1.12,
         low=1.10,
@@ -1309,7 +1314,7 @@ def test_execute_trailing_stop_order_buy(
     )
 
     candle = Candle(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         open=1.185,
         high=1.19,
         low=1.16,
@@ -1332,7 +1337,7 @@ def test_execute_trailing_stop_order_buy(
     product_info_mocked_calls = [call(PRODUCT_ID1)]
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
-    search_products_mocked_calls = [call(SYMBOL1, limit=5)]
+    search_products_mocked_calls = [call(ASSET1.symbol, limit=5)]
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 

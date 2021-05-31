@@ -17,27 +17,27 @@ class PositionHandler:
         """
         self.positions = {}
 
-    def position_size(self, symbol: str, direction: Direction) -> int:
-        return self.positions[symbol][direction].net_size
+    def position_size(self, asset: str, direction: Direction) -> int:
+        return self.positions[asset][direction].net_size
 
     def transact_position(self, transaction: Transaction) -> None:
         """
         Execute the transaction and update the appropriate
-        position for the transaction's symbol accordingly.
+        position for the transaction's asset accordingly.
         """
-        symbol = transaction.symbol
-        get_or_create_nested_dict(self.positions, symbol)
-        if transaction.direction in self.positions[symbol]:
-            self.positions[symbol][transaction.direction].transact(transaction)
+        asset = transaction.asset
+        get_or_create_nested_dict(self.positions, asset)
+        if transaction.direction in self.positions[asset]:
+            self.positions[asset][transaction.direction].transact(transaction)
         else:
             position = Position.open_from_transaction(transaction)
-            self.positions[symbol][transaction.direction] = position
+            self.positions[asset][transaction.direction] = position
 
         # If the position has zero size remove it
-        if self.positions[symbol][transaction.direction].net_size == 0:
-            del self.positions[symbol][transaction.direction]
-            if len(self.positions[symbol]) == 0:
-                del self.positions[symbol]
+        if self.positions[asset][transaction.direction].net_size == 0:
+            del self.positions[asset][transaction.direction]
+            if len(self.positions[asset]) == 0:
+                del self.positions[asset]
 
     def total_market_value(self) -> float:
         """
@@ -74,8 +74,8 @@ class PositionHandler:
         Calculate the sum of all the positions' P&Ls.
         """
         total_pnl = 0.0
-        for symbol_values in self.positions.values():
-            for pos in symbol_values.values():
+        for asset_values in self.positions.values():
+            for pos in asset_values.values():
                 total_pnl += pos.total_pnl
         return total_pnl
 

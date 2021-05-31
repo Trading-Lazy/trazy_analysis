@@ -10,6 +10,7 @@ from common.types import CandleDataFrame
 from db_storage.db_storage import DbStorage
 from file_storage.file_storage import FileStorage
 from market_data.historical.historical_data_handler import HistoricalDataHandler
+from models.asset import Asset
 from strategy.candlefetcher import CandleFetcher
 
 
@@ -22,12 +23,12 @@ class Loader:
 class HistoricalDataLoader:
     def __init__(
         self,
-        symbols: List[str],
+        assets: List[str],
         historical_data_handler: HistoricalDataHandler,
         start: datetime,
         end: datetime,
     ):
-        self.symbols = symbols
+        self.assets = assets
         self.historical_data_handler = historical_data_handler
         self.start = start
         self.end = end
@@ -35,17 +36,17 @@ class HistoricalDataLoader:
         self.candle_dataframes = {}
 
     def load(self):
-        for symbol in self.symbols:
+        for asset in self.assets:
             self.historical_data_handler = self.historical_data_handler
             (
                 candle_dataframe,
                 _,
                 _,
             ) = self.historical_data_handler.request_ticker_data_in_range(
-                symbol, self.start, self.end
+                asset, self.start, self.end
             )
-            self.candle_dataframes[symbol] = candle_dataframe
-            self.candles[symbol] = self.candle_dataframes[symbol].to_candles()
+            self.candle_dataframes[asset] = candle_dataframe
+            self.candles[asset] = self.candle_dataframes[asset].to_candles()
 
 
 class CsvLoader:
@@ -68,18 +69,18 @@ class CsvLoader:
             "close": str,
             "volume": float,
         }
-        for symbol, csv_filename in self.csv_filenames.items():
+        for asset, csv_filename in self.csv_filenames.items():
             dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=self.sep)
-            self.candle_dataframes[symbol] = CandleDataFrame.from_dataframe(
-                dataframe, symbol
+            self.candle_dataframes[asset] = CandleDataFrame.from_dataframe(
+                dataframe, asset
             )
-            self.candles[symbol] = self.candle_dataframes[symbol].to_candles()
+            self.candles[asset] = self.candle_dataframes[asset].to_candles()
 
 
 class ExternalStorageLoader:
     def __init__(
         self,
-        symbols: List[str],
+        assets: List[Asset],
         time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(timezone.utc),
@@ -87,7 +88,7 @@ class ExternalStorageLoader:
         file_storage: FileStorage = None,
         market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
     ):
-        self.symbols = symbols
+        self.assets = assets
         self.time_unit = time_unit
         self.start = start
         self.end = end
@@ -103,8 +104,8 @@ class ExternalStorageLoader:
         self.candle_dataframes = {}
 
     def load(self):
-        for symbol in self.symbols:
-            self.candle_dataframes[symbol] = self.candle_fetcher.fetch(
-                symbol, self.time_unit, self.start, self.end
+        for asset in self.assets:
+            self.candle_dataframes[asset] = self.candle_fetcher.fetch(
+                asset, self.time_unit, self.start, self.end
             )
-            self.candles[symbol] = self.candle_dataframes[symbol].to_candles()
+            self.candles[asset] = self.candle_dataframes[asset].to_candles()

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
+from models.asset import Asset
 from models.enums import Action, Direction
 from models.signal import Signal
 from order_manager.order_creator import OrderCreator
@@ -20,15 +21,17 @@ def test_process_check_signals(
     clock = SimulatedClock()
     events = deque()
     symbol = "IVV"
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
     timestamp = datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(symbol, timestamp)
+    clock.update(asset, timestamp)
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker=broker)
     order_manager = OrderManager(events, broker, position_sizer, order_creator)
     signal = Signal(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         confidence_level="0.05",

@@ -5,6 +5,7 @@ from typing import Any
 
 import settings
 from logger import logger
+from models.asset import Asset
 from models.enums import Action, Direction
 from position.transaction import Transaction
 
@@ -16,21 +17,21 @@ LOG = logger.get_root_logger(
 class Position:
     """
     Handles the accounting of entering a new position in an
-    symbol along with subsequent modifications via additional
+    asset along with subsequent modifications via additional
     trades.
     The approach taken here separates the long and short side
     for accounting purposes. It also includes an unrealised and
     realised running profit & loss of the position.
     Parameters
     ----------
-    symbol : `str`
-        The symbol symbol string.
+    asset : `Asset`
+        The asset object.
     price : `float`
         The initial price of the Position.
     buy_size : `int`
-        The amount of the symbol bought.
+        The amount of the asset bought.
     sell_size : `int`
-        The amount of the symbol sold.
+        The amount of the asset sold.
     direction: `Direction`
         The position type LONG or SHORT
     avg_bought : `float`
@@ -45,7 +46,7 @@ class Position:
 
     def __init__(
         self,
-        symbol: str,
+        asset: Asset,
         price: float,
         buy_size: int,
         sell_size: int,
@@ -56,7 +57,7 @@ class Position:
         sell_commission: float = 0.0,
         timestamp: datetime = datetime.now(timezone.utc),
     ) -> None:
-        self.symbol = symbol
+        self.asset = asset
         self.price = price
         self.buy_size = buy_size
         self.sell_size = sell_size
@@ -81,7 +82,7 @@ class Position:
         `Position`
             The instantiated position.
         """
-        symbol = transaction.symbol
+        asset = transaction.asset
         current_price = transaction.price
         direction = transaction.direction
         timestamp = transaction.timestamp
@@ -102,7 +103,7 @@ class Position:
             sell_commission = transaction.commission
 
         return cls(
-            symbol,
+            asset,
             current_price,
             buy_size,
             sell_size,
@@ -220,7 +221,7 @@ class Position:
     def realised_pnl(self) -> float:
         """
         Calculates the profit & loss (P&L) that has been 'realised' via
-        two opposing symbol transactions in the Position to date.
+        two opposing asset transactions in the Position to date.
         Returns
         -------
         `float`
@@ -272,7 +273,7 @@ class Position:
     def update_price(self, price, timestamp=datetime.now(timezone.utc)) -> float:
         """
         Updates the Position's awareness of the current market price
-        of the symbol.
+        of the asset.
         Parameters
         ----------
         price : `float`
@@ -280,8 +281,8 @@ class Position:
         """
         if price <= 0.0:
             raise ValueError(
-                'Market price "%s" of symbol "%s" must be positive to '
-                "update the position." % (price, self.symbol)
+                'Market price "%s" of asset "%s" must be positive to '
+                "update the position." % (price, self.asset)
             )
         else:
             self.price = price
@@ -342,17 +343,17 @@ class Position:
     def transact(self, transaction: Transaction) -> None:
         """
         Calculates the adjustments to the Position that occur
-        once new units in an symbol are bought and sold.
+        once new units in an asset are bought and sold.
         Parameters
         ----------
         transaction : `Transaction`
             The Transaction to update the Position with.
         """
-        if self.symbol != transaction.symbol:
+        if self.asset != transaction.asset:
             raise ValueError(
-                "Failed to update Position with symbol %s when "
-                "carrying out transaction in symbol %s. "
-                % (self.symbol, transaction.symbol)
+                "Failed to update Position with asset %s when "
+                "carrying out transaction in asset %s. "
+                % (self.asset, transaction.asset)
             )
 
         if self.direction != transaction.direction:

@@ -9,6 +9,7 @@ from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
 from feed.feed import CsvFeed, Feed
 from indicators.indicators_manager import IndicatorsManager
+from models.asset import Asset
 from models.candle import Candle
 from models.enums import Action, Direction, OrderType
 from models.order import Order
@@ -20,6 +21,10 @@ from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
 from test.tools.tools import not_raises
+
+EXCHANGE = "IEX"
+AAPL_SYMBOL = "AAPL"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 
 
 def test_initial_settings_for_default_simulated_broker():
@@ -203,10 +208,11 @@ def test_get_account_total_market_value():
     sb.subscribe_funds_to_portfolio(100000.0)
 
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update_time(symbol1, timestamp)
+    clock.update_time(asset1, timestamp)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -214,7 +220,7 @@ def test_get_account_total_market_value():
         clock=clock,
     )
     candle1 = Candle(
-        symbol=symbol1,
+        asset=asset1,
         open=567.0,
         high=567.0,
         low=567.0,
@@ -228,9 +234,10 @@ def test_get_account_total_market_value():
     sb.execute_open_orders()
 
     symbol2 = "BBB"
-    clock.update_time(symbol2, timestamp)
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
+    clock.update_time(asset2, timestamp)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -238,7 +245,7 @@ def test_get_account_total_market_value():
         clock=clock,
     )
     candle2 = Candle(
-        symbol=symbol2,
+        asset=asset2,
         open=123.0,
         high=123.0,
         low=123.0,
@@ -347,9 +354,10 @@ def test_get_portfolio_total_market_value():
 def test_submit_order():
     # Positive direction
     symbol = "EQ:RDSB"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     candle = Candle(
-        symbol=symbol,
+        asset=asset,
         open=53.47,
         high=53.47,
         low=53.47,
@@ -359,7 +367,7 @@ def test_submit_order():
     )
 
     clock = SimulatedClock()
-    clock.update_time(symbol, timestamp)
+    clock.update_time(asset, timestamp)
     events = deque()
     sbwp = SimulatedBroker(clock=clock, events=events)
     sbwp.subscribe_funds_to_account(175000.0)
@@ -367,7 +375,7 @@ def test_submit_order():
     sbwp.update_price(candle)
     size = 1000
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=size,
@@ -381,9 +389,9 @@ def test_submit_order():
     assert port.cash == 46530.0
     assert port.total_market_value == 53470.0
     assert port.total_equity == 100000.0
-    assert port.pos_handler.positions[symbol][Direction.LONG].unrealised_pnl == 0.0
-    assert port.pos_handler.positions[symbol][Direction.LONG].market_value == 53470.0
-    assert port.pos_handler.positions[symbol][Direction.LONG].net_size == 1000
+    assert port.pos_handler.positions[asset][Direction.LONG].unrealised_pnl == 0.0
+    assert port.pos_handler.positions[asset][Direction.LONG].market_value == 53470.0
+    assert port.pos_handler.positions[asset][Direction.LONG].net_size == 1000
 
     # Negative direction
     sbwp = SimulatedBroker(clock=clock, events=events)
@@ -392,7 +400,7 @@ def test_submit_order():
     sbwp.update_price(candle)
     size = 1000
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.SELL,
         direction=Direction.SHORT,
         size=size,
@@ -406,9 +414,9 @@ def test_submit_order():
     assert port.cash == 153470.00
     assert port.total_market_value == -53470.00
     assert port.total_equity == 100000.0
-    assert port.pos_handler.positions[symbol][Direction.SHORT].unrealised_pnl == 0.0
-    assert port.pos_handler.positions[symbol][Direction.SHORT].market_value == -53470.00
-    assert port.pos_handler.positions[symbol][Direction.SHORT].net_size == -1000
+    assert port.pos_handler.positions[asset][Direction.SHORT].unrealised_pnl == 0.0
+    assert port.pos_handler.positions[asset][Direction.SHORT].market_value == -53470.00
+    assert port.pos_handler.positions[asset][Direction.SHORT].net_size == -1000
 
 
 def test_execute_market_order():
@@ -421,10 +429,11 @@ def test_execute_market_order():
     sb.subscribe_funds_to_portfolio(100000.0)
 
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update_time(symbol, timestamp)
+    clock.update_time(asset, timestamp)
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -432,7 +441,7 @@ def test_execute_market_order():
         clock=clock,
     )
     candle = Candle(
-        symbol=symbol,
+        asset=asset,
         open=567.0,
         high=567.0,
         low=567.0,
@@ -454,11 +463,11 @@ def test_execute_market_order():
 
 
 def test_execute_limit_order():
-    symbols = ["AAPL"]
+    assets = [AAPL_ASSET]
     events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_limit_order.csv"}, events
+        {AAPL_ASSET: "test/data/aapl_candles_one_day_limit_order.csv"}, events
     )
 
     strategies = [SmaCrossoverStrategy]
@@ -479,7 +488,7 @@ def test_execute_limit_order():
     )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
-        symbols=symbols,
+        assets=assets,
         events=events,
         feed=feed,
         order_manager=order_manager,
@@ -493,11 +502,11 @@ def test_execute_limit_order():
 
 
 def test_execute_stop_order():
-    symbols = ["AAPL"]
+    assets = [AAPL_ASSET]
     events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_stop_order.csv"}, events
+        {AAPL_ASSET: "test/data/aapl_candles_one_day_stop_order.csv"}, events
     )
 
     strategies = [SmaCrossoverStrategy]
@@ -516,7 +525,7 @@ def test_execute_stop_order():
     )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
-        symbols=symbols,
+        assets=assets,
         events=events,
         feed=feed,
         order_manager=order_manager,
@@ -530,11 +539,11 @@ def test_execute_stop_order():
 
 
 def test_execute_target_order():
-    symbols = ["AAPL"]
+    assets = [AAPL_ASSET]
     events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_target_order.csv"}, events
+        {AAPL_ASSET: "test/data/aapl_candles_one_day_target_order.csv"}, events
     )
 
     strategies = [SmaCrossoverStrategy]
@@ -555,7 +564,7 @@ def test_execute_target_order():
     )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
-        symbols=symbols,
+        assets=assets,
         events=events,
         feed=feed,
         order_manager=order_manager,
@@ -569,11 +578,11 @@ def test_execute_target_order():
 
 
 def test_execute_trailing_stop_order():
-    symbols = ["AAPL"]
+    assets = [AAPL_ASSET]
     events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_trailing_stop_order.csv"},
+        {AAPL_ASSET: "test/data/aapl_candles_one_day_trailing_stop_order.csv"},
         events,
     )
 
@@ -595,7 +604,7 @@ def test_execute_trailing_stop_order():
     )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
-        symbols=symbols,
+        assets=assets,
         events=events,
         feed=feed,
         order_manager=order_manager,
@@ -609,11 +618,11 @@ def test_execute_trailing_stop_order():
 
 
 def test_execute_cover_order():
-    symbols = ["AAPL"]
+    assets = [AAPL_ASSET]
     events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, events
+        {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
 
     strategies = [SmaCrossoverStrategy]
@@ -630,7 +639,7 @@ def test_execute_cover_order():
     )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
-        symbols=symbols,
+        assets=assets,
         events=events,
         feed=feed,
         order_manager=order_manager,
@@ -644,11 +653,11 @@ def test_execute_cover_order():
 
 
 def test_execute_bracket_order():
-    symbols = ["AAPL"]
+    assets = [AAPL_ASSET]
     events = deque()
 
     feed: Feed = CsvFeed(
-        {"AAPL": "test/data/aapl_candles_one_day_cover_order.csv"}, events
+        {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
 
     strategies = [SmaCrossoverStrategy]
@@ -665,7 +674,7 @@ def test_execute_bracket_order():
     )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
-        symbols=symbols,
+        assets=assets,
         events=events,
         feed=feed,
         order_manager=order_manager,

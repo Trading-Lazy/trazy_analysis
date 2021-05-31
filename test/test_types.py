@@ -7,11 +7,12 @@ import pytest
 from common.constants import DATE_FORMAT
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from common.types import CandleDataFrame
+from models.asset import Asset
 from models.candle import Candle
 
 SYMBOL = "IVV"
 CANDLE1 = Candle(
-    symbol=SYMBOL,
+    asset=Asset(symbol=SYMBOL, exchange="IEX"),
     open=323.69,
     high=323.81,
     low=323.67,
@@ -20,7 +21,7 @@ CANDLE1 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:24:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE2 = Candle(
-    symbol=SYMBOL,
+    asset=Asset(symbol=SYMBOL, exchange="IEX"),
     open=323.81,
     high=324.21,
     low=323.81,
@@ -29,7 +30,7 @@ CANDLE2 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE3 = Candle(
-    symbol=SYMBOL,
+    asset=Asset(symbol=SYMBOL, exchange="IEX"),
     open=324.1,
     high=324.1,
     low=323.97,
@@ -38,7 +39,7 @@ CANDLE3 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:26:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE4 = Candle(
-    symbol=SYMBOL,
+    asset=Asset(symbol=SYMBOL, exchange="IEX"),
     open=323.93,
     high=323.95,
     low=323.83,
@@ -51,7 +52,7 @@ MARKET_CAL = EuronextExchangeCalendar()
 
 def test_candle_dataframe():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL,
+        asset=Asset(symbol=SYMBOL, exchange="IEX"),
         candles=np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle),
     )
 
@@ -86,13 +87,13 @@ def test_candle_dataframe():
     expected_df = expected_df.drop(["timestamp"], axis=1)
 
     assert (candle_dataframe == expected_df).all(axis=None)
-    assert candle_dataframe.symbol == SYMBOL
+    assert candle_dataframe.asset == Asset(symbol=SYMBOL, exchange="IEX")
 
 
 def test_candle_dataframe_duplicate_index_in_init():
     with pytest.raises(ValueError):
         CandleDataFrame.from_candle_list(
-            symbol=SYMBOL,
+            Asset(symbol=SYMBOL, exchange="IEX"),
             candles=np.array(
                 [CANDLE1, CANDLE2, CANDLE3, CANDLE4, CANDLE4], dtype=Candle
             ),
@@ -101,7 +102,8 @@ def test_candle_dataframe_duplicate_index_in_init():
 
 def test_candle_dataframe_add_candle():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([CANDLE1, CANDLE2, CANDLE3], dtype=Candle)
+        Asset(symbol=SYMBOL, exchange="IEX"),
+        candles=np.array([CANDLE1, CANDLE2, CANDLE3], dtype=Candle),
     )
     expected_df_candles = {
         "timestamp": [
@@ -158,7 +160,7 @@ def test_candle_dataframe_add_candle():
 
 def test_candle_dataframe_duplicate_index_in_add_candle():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL,
+        Asset(symbol=SYMBOL, exchange="IEX"),
         candles=np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle),
     )
     with pytest.raises(ValueError):
@@ -167,7 +169,7 @@ def test_candle_dataframe_duplicate_index_in_add_candle():
 
 def test_get_candle():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL,
+        Asset(symbol=SYMBOL, exchange="IEX"),
         candles=np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle),
     )
     assert candle_dataframe.get_candle(0) == CANDLE1
@@ -186,7 +188,7 @@ def test_get_candle_symbol_not_set():
 
 def test_to_candles():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL,
+        Asset(symbol=SYMBOL, exchange="IEX"),
         candles=np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle),
     )
     assert (
@@ -205,10 +207,12 @@ def test_to_candles_symbol_not_set():
 
 def test_append():
     candle_dataframe1 = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([CANDLE1, CANDLE2], dtype=Candle)
+        Asset(symbol=SYMBOL, exchange="IEX"),
+        candles=np.array([CANDLE1, CANDLE2], dtype=Candle),
     )
     candle_dataframe2 = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([CANDLE3, CANDLE4], dtype=Candle)
+        Asset(symbol=SYMBOL, exchange="IEX"),
+        candles=np.array([CANDLE3, CANDLE4], dtype=Candle),
     )
     concatenated_candle_dataframe = candle_dataframe1.append(candle_dataframe2)
     assert (
@@ -223,15 +227,17 @@ def test_append():
             dtype=Candle,
         )
     ).all()
-    assert concatenated_candle_dataframe.symbol == SYMBOL
+    assert concatenated_candle_dataframe.asset == Asset(symbol=SYMBOL, exchange="IEX")
 
 
 def test_append_duplicate_index():
     candle_dataframe1 = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([CANDLE1, CANDLE2], dtype=Candle)
+        Asset(symbol=SYMBOL, exchange="IEX"),
+        candles=np.array([CANDLE1, CANDLE2], dtype=Candle),
     )
     candle_dataframe2 = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([CANDLE1, CANDLE3, CANDLE4], dtype=Candle)
+        Asset(symbol=SYMBOL, exchange="IEX"),
+        candles=np.array([CANDLE1, CANDLE3, CANDLE4], dtype=Candle),
     )
     with pytest.raises(Exception):
         candle_dataframe1.append(candle_dataframe2)
@@ -239,14 +245,16 @@ def test_append_duplicate_index():
 
 def test_from_candle_list_empty_candles_list():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([], dtype=Candle)
+        Asset(symbol=SYMBOL, exchange="IEX"), candles=np.array([], dtype=Candle)
     )
     assert (candle_dataframe.to_candles() == np.array([], dtype=Candle)).all()
 
 
 def test_from_candle_list():
     candles = np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle)
-    candle_dataframe = CandleDataFrame.from_candle_list(symbol=SYMBOL, candles=candles)
+    candle_dataframe = CandleDataFrame.from_candle_list(
+        asset=Asset(SYMBOL, "IEX"), candles=candles
+    )
     assert (candle_dataframe.to_candles() == candles).all()
 
 
@@ -281,7 +289,7 @@ def test_from_dataframe_index_is_set():
     df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
     df = df.drop(["timestamp"], axis=1)
 
-    candle_dataframe = CandleDataFrame.from_dataframe(df, SYMBOL)
+    candle_dataframe = CandleDataFrame.from_dataframe(df, Asset(SYMBOL, exchange="IEX"))
     assert (
         candle_dataframe.to_candles()
         == np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle)
@@ -319,7 +327,7 @@ def test_from_dataframe_index_is_not_set():
     df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
     df = df.drop(["timestamp"], axis=1)
 
-    candle_dataframe = CandleDataFrame.from_dataframe(df, SYMBOL)
+    candle_dataframe = CandleDataFrame.from_dataframe(df, Asset(SYMBOL, exchange="IEX"))
     assert (
         candle_dataframe.to_candles()
         == np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle)
@@ -340,7 +348,8 @@ def test_concat():
     candle_dataframe3 = CandleDataFrame(candles_data=candles_data3)
 
     concatenated_candle_dataframe = CandleDataFrame.concat(
-        [candle_dataframe1, candle_dataframe2, candle_dataframe3], SYMBOL
+        [candle_dataframe1, candle_dataframe2, candle_dataframe3],
+        Asset(SYMBOL, exchange="IEX"),
     )
     assert (
         concatenated_candle_dataframe.to_candles()
@@ -354,7 +363,7 @@ def test_concat():
             dtype=Candle,
         )
     ).all()
-    assert concatenated_candle_dataframe.symbol == SYMBOL
+    assert concatenated_candle_dataframe.asset == Asset(SYMBOL, exchange="IEX")
 
 
 def test_concat_duplicate_index():
@@ -378,7 +387,7 @@ def test_concat_duplicate_index():
 
 def test_aggregate():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL,
+        asset=Asset(symbol=SYMBOL, exchange="IEX"),
         candles=np.array([CANDLE1, CANDLE2, CANDLE3, CANDLE4], dtype=Candle),
     )
     aggregated_candle_dataframe = candle_dataframe.aggregate(
@@ -386,7 +395,7 @@ def test_aggregate():
     )
     assert len(aggregated_candle_dataframe) == 3
     assert aggregated_candle_dataframe.get_candle(0) == Candle(
-        symbol=SYMBOL,
+        asset=Asset(symbol=SYMBOL, exchange="IEX"),
         open=323.69,
         high=324.21,
         low=323.67,
@@ -395,7 +404,7 @@ def test_aggregate():
         timestamp=datetime.strptime("2020-05-07 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
     assert aggregated_candle_dataframe.get_candle(1) == Candle(
-        symbol=SYMBOL,
+        asset=Asset(symbol=SYMBOL, exchange="IEX"),
         open=324.10,
         high=324.10,
         low=323.97,
@@ -404,7 +413,7 @@ def test_aggregate():
         timestamp=datetime.strptime("2020-05-07 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
     assert aggregated_candle_dataframe.get_candle(2) == Candle(
-        symbol=SYMBOL,
+        asset=Asset(symbol=SYMBOL, exchange="IEX"),
         open=323.93,
         high=323.95,
         low=323.83,
@@ -412,15 +421,15 @@ def test_aggregate():
         volume=300,
         timestamp=datetime.strptime("2020-05-07 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
-    assert aggregated_candle_dataframe.symbol == SYMBOL
+    assert aggregated_candle_dataframe.asset == Asset(symbol=SYMBOL, exchange="IEX")
 
 
 def test_aggregate_empty_candle_dataframe():
     candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=SYMBOL, candles=np.array([], dtype=Candle)
+        Asset(symbol=SYMBOL, exchange="IEX"), candles=np.array([], dtype=Candle)
     )
     aggregated_candle_dataframe = candle_dataframe.aggregate(
         timedelta(minutes=1), MARKET_CAL
     )
     assert (candle_dataframe == aggregated_candle_dataframe).all(axis=None)
-    assert aggregated_candle_dataframe.symbol == SYMBOL
+    assert aggregated_candle_dataframe.asset == Asset(symbol=SYMBOL, exchange="IEX")

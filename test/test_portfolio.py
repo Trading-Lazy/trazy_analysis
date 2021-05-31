@@ -3,6 +3,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
+from models.asset import Asset
 from models.enums import Action, Direction
 from portfolio.portfolio import Portfolio
 from portfolio.portfolio_event import PortfolioEvent
@@ -213,10 +214,12 @@ def test_transact_symbol_behaviour():
     )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
 
     # Test transact_symbol raises for incorrect time
     tn_early = Transaction(
-        symbol=symbol,
+        asset=asset,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -269,7 +272,7 @@ def test_transact_symbol_behaviour():
         balance=100000.00,
     )
     tn_even_later = Transaction(
-        symbol=symbol,
+        asset=asset,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -287,7 +290,7 @@ def test_transact_symbol_behaviour():
     assert port.total_realised_pnl == 0
     assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
-    description = "LONG 100 AAA 567.0 07/10/2017"
+    description = "LONG 100 IEX-AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",
@@ -321,10 +324,12 @@ def test_transact_symbol_behaviour_short():
     )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
 
     # Test transact_symbol raises for incorrect time
     tn_early = Transaction(
-        symbol=symbol,
+        asset=asset,
         size=100,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -375,7 +380,7 @@ def test_transact_symbol_behaviour_short():
         balance=100000.00,
     )
     tn_even_later = Transaction(
-        symbol=symbol,
+        asset=asset,
         size=100,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -393,7 +398,7 @@ def test_transact_symbol_behaviour_short():
     assert port.total_realised_pnl == 0
     assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
-    description = "SHORT 100 AAA 567.0 07/10/2017"
+    description = "SHORT 100 IEX-AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",
@@ -427,6 +432,8 @@ def test_transact_symbol_not_enough_cash():
     )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
 
     # Test transact_symbol raises for transaction total
     # cost exceeding total cash
@@ -440,7 +447,7 @@ def test_transact_symbol_not_enough_cash():
     assert port.total_pnl == 0
 
     tn_even_later = Transaction(
-        symbol=symbol,
+        asset=asset,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -488,13 +495,16 @@ def test_portfolio_to_dict_for_two_holdings():
     update_timestamp = datetime.strptime(
         "2017-10-08 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
     )
+    exchange = "IEX"
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=exchange)
     symbol2 = "BBB"
+    asset2 = Asset(symbol=symbol2, exchange=exchange)
 
     port = Portfolio(portfolio_id="1234", timestamp=start_timestamp)
     port.subscribe_funds(100000.0, timestamp=start_timestamp)
     tn_symbol1 = Transaction(
-        symbol=symbol1,
+        asset=asset1,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -506,7 +516,7 @@ def test_portfolio_to_dict_for_two_holdings():
     port.transact_symbol(tn_symbol1)
 
     tn_symbol2 = Transaction(
-        symbol=symbol2,
+        asset=asset2,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -516,9 +526,9 @@ def test_portfolio_to_dict_for_two_holdings():
         timestamp=symbol2_timestamp,
     )
     port.transact_symbol(tn_symbol2)
-    port.update_market_value_of_symbol(symbol2, 134.0, update_timestamp)
+    port.update_market_value_of_symbol(asset2, 134.0, update_timestamp)
     test_holdings = {
-        symbol1: {
+        asset1: {
             Direction.LONG: {
                 "size": 100,
                 "market_value": float("56700.0"),
@@ -527,7 +537,7 @@ def test_portfolio_to_dict_for_two_holdings():
                 "total_pnl": -15.78,
             }
         },
-        symbol2: {
+        asset2: {
             Direction.LONG: {
                 "size": 100,
                 "market_value": float("13400.0"),
@@ -542,10 +552,10 @@ def test_portfolio_to_dict_for_two_holdings():
     # This is needed because we're not using Decimal
     # datatypes and have to compare slightly differing
     # floating point representations
-    for symbol in (symbol1, symbol2):
-        for key, val in test_holdings[symbol].items():
-            assert port_holdings[symbol][key] == pytest.approx(
-                test_holdings[symbol][key], 0.01
+    for asset in (asset1, asset2):
+        for key, val in test_holdings[asset].items():
+            assert port_holdings[asset][key] == pytest.approx(
+                test_holdings[asset][key], 0.01
             )
 
 
@@ -561,7 +571,9 @@ def test_update_market_value_of_symbol_not_in_list():
     )
     port = Portfolio(timestamp=start_timestamp)
     symbol = "AAA"
-    update = port.update_market_value_of_symbol(symbol, 54.34, later_timestamp)
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
+    update = port.update_market_value_of_symbol(asset, 54.34, later_timestamp)
     assert update is None
 
 
@@ -579,9 +591,11 @@ def test_update_market_value_of_symbol_negative_price():
     port = Portfolio(timestamp=start_timestamp)
 
     symbol = "AAA"
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
     port.subscribe_funds(100000.0, timestamp=later_timestamp)
     tn_symbol = Transaction(
-        symbol=symbol,
+        asset=asset,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -592,7 +606,7 @@ def test_update_market_value_of_symbol_negative_price():
     )
     port.transact_symbol(tn_symbol)
     with pytest.raises(ValueError):
-        port.update_market_value_of_symbol(symbol, -54.34, later_timestamp)
+        port.update_market_value_of_symbol(asset, -54.34, later_timestamp)
 
 
 def test_update_market_value_of_symbol_earlier_date():
@@ -612,9 +626,11 @@ def test_update_market_value_of_symbol_earlier_date():
     port = Portfolio(portfolio_id="1234", timestamp=start_timestamp)
 
     symbol = "AAA"
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
     port.subscribe_funds(100000.0, timestamp=later_timestamp)
     tn_symbol = Transaction(
-        symbol=symbol,
+        asset=asset,
         size=100,
         action=Action.BUY,
         direction=Direction.LONG,

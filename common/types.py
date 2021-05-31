@@ -6,6 +6,7 @@ from pandas import DataFrame, DatetimeIndex
 from pandas_market_calendars import MarketCalendar
 
 from common.utils import timestamp_to_utc, validate_dataframe_columns
+from models.asset import Asset
 from models.candle import Candle
 
 
@@ -18,10 +19,10 @@ class CandleDataFrame(DataFrame):
     def _constructor(self):
         return CandleDataFrame
 
-    _metadata = ["symbol"]
+    _metadata = ["asset"]
 
     def __init__(self, *args, **kwargs):
-        self.symbol: str = kwargs.pop("symbol", None)
+        self.asset: Asset = kwargs.pop("asset", None)
         candles_data_in_init = "candles_data" in kwargs
         if candles_data_in_init:
             candles_data = kwargs.pop("candles_data")
@@ -29,8 +30,8 @@ class CandleDataFrame(DataFrame):
         super().__init__(*args, **kwargs)
         if candles_data_in_init:
             datetime_index_exist = isinstance(self.index, DatetimeIndex)
-            if "symbol" in self.columns.tolist():
-                self.drop(["symbol"], axis=1, inplace=True)
+            if "asset" in self.columns.tolist():
+                self.drop(["asset"], axis=1, inplace=True)
             if not datetime_index_exist:
                 validate_dataframe_columns(self, CandleDataFrame.ALL_COLUMNS)
                 self["timestamp"] = pd.to_datetime(self["timestamp"])
@@ -60,11 +61,11 @@ class CandleDataFrame(DataFrame):
         self.sort_index(inplace=True)
 
     def get_candle(self, index: int) -> Candle:
-        if self.symbol is None:
-            raise Exception("CandleDataFrame symbol is not set")
+        if self.asset is None:
+            raise Exception("CandleDataFrame asset is not set")
         row = self.iloc[index]
         return Candle(
-            symbol=self.symbol,
+            asset=self.asset,
             open=float(row["open"]),
             high=float(row["high"]),
             low=float(row["low"]),
@@ -74,13 +75,13 @@ class CandleDataFrame(DataFrame):
         )
 
     def to_candles(self) -> np.array:
-        if self.symbol is None:
-            raise Exception("CandleDataFrame symbol is not set")
+        if self.asset is None:
+            raise Exception("CandleDataFrame asset is not set")
         map_index_to_values = self.to_dict(orient="index")
         candles = np.empty(shape=len(map_index_to_values), dtype=Candle)
         for index, timestamp in enumerate(map_index_to_values):
             candle_dict = map_index_to_values[timestamp]
-            candle_dict["symbol"] = self.symbol
+            candle_dict["asset"] = self.asset.to_dict()
             candle_dict["timestamp"] = timestamp
             candle = Candle.from_serializable_dict(candle_dict)
             candles[index] = candle
@@ -89,27 +90,27 @@ class CandleDataFrame(DataFrame):
     def append(self, *args, **kwargs) -> "CandleDataFrame":
         kwargs.pop("verify_integrity", None)
         candle_dataframe = super().append(*args, **kwargs, verify_integrity=True)
-        candle_dataframe.symbol = self.symbol
+        candle_dataframe.asset = self.asset
         candle_dataframe.sort_index(inplace=True)
         return candle_dataframe
 
     @staticmethod
-    def from_candle_list(symbol: str, candles: np.array):  # [Candle]
+    def from_candle_list(asset: Asset, candles: np.array):  # [Candle]
         if candles.size == 0:
-            return CandleDataFrame(symbol=symbol)
+            return CandleDataFrame(asset=asset)
         candles_data = [candle.to_serializable_dict() for candle in candles]
-        return CandleDataFrame(symbol=symbol, candles_data=candles_data)
+        return CandleDataFrame(asset=asset, candles_data=candles_data)
 
     @staticmethod
-    def from_dataframe(df: DataFrame, symbol: str) -> "CandleDataFrame":
-        return CandleDataFrame(symbol=symbol, candles_data=df)
+    def from_dataframe(df: DataFrame, asset: Asset) -> "CandleDataFrame":
+        return CandleDataFrame(asset=asset, candles_data=df)
 
     @staticmethod
-    def concat(candle_dataframes: np.array, symbol: str) -> "CandleDataFrame":
+    def concat(candle_dataframes: np.array, asset: Asset) -> "CandleDataFrame":
         concatenated_candle_dataframe = pd.concat(
             candle_dataframes, verify_integrity=True
         )
-        concatenated_candle_dataframe.symbol = symbol
+        concatenated_candle_dataframe.asset = asset
         concatenated_candle_dataframe.sort_index(inplace=True)
         return concatenated_candle_dataframe
 
@@ -117,7 +118,7 @@ class CandleDataFrame(DataFrame):
         self, time_unit: timedelta, market_cal: MarketCalendar
     ) -> "CandleDataFrame":
         if self.empty:
-            return CandleDataFrame(symbol=self.symbol)
+            return CandleDataFrame(asset=self.asset)
         start = self.index[0]
         end = self.index[-1]
         market_cal_df = market_cal.schedule(

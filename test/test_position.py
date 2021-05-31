@@ -2,9 +2,12 @@ from datetime import datetime
 
 import pytest
 
+from models.asset import Asset
 from models.enums import Action, Direction
 from position.position import Position
 from position.transaction import Transaction
+
+EXCHANGE = "IEX"
 
 
 def test_update_price_failure_with_earlier_timestamp():
@@ -14,6 +17,7 @@ def test_update_price_failure_with_earlier_timestamp():
     """
     # Initial long details
     symbol = "MSFT"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 193.74
@@ -22,7 +26,7 @@ def test_update_price_failure_with_earlier_timestamp():
 
     # Create the initial transaction and position
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -33,7 +37,7 @@ def test_update_price_failure_with_earlier_timestamp():
     )
     position = Position.open_from_transaction(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
 
     # Update the market price
@@ -50,6 +54,7 @@ def test_update_price_failure_with_negative_price():
     """
     # Initial long details
     symbol = "MSFT"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 193.74
@@ -58,7 +63,7 @@ def test_update_price_failure_with_negative_price():
 
     # Create the initial transaction and position
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -69,7 +74,7 @@ def test_update_price_failure_with_negative_price():
     )
     position = Position.open_from_transaction(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -87,6 +92,7 @@ def test_basic_long_equities_position():
     """
     # Initial long details
     symbol = "MSFT"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 193.74
@@ -95,7 +101,7 @@ def test_basic_long_equities_position():
 
     # Create the initial transaction and position
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -106,7 +112,7 @@ def test_basic_long_equities_position():
     )
     position = Position.open_from_transaction(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -145,6 +151,7 @@ def test_position_long_twice():
     """
     # Initial long details
     symbol = "MSFT"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 193.74
@@ -153,7 +160,7 @@ def test_position_long_twice():
 
     # Create the initial transaction and position
     first_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -164,7 +171,7 @@ def test_position_long_twice():
     )
     position = Position.open_from_transaction(first_transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -177,7 +184,7 @@ def test_position_long_twice():
     second_order_id = "234"
     second_commission = 1.0
     second_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=second_size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -218,6 +225,7 @@ def test_position_long_close():
     """
     # Initial long details
     symbol = "AMZN"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 2615.27
@@ -226,7 +234,7 @@ def test_position_long_close():
 
     # Create the initial transaction and position
     first_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -237,7 +245,7 @@ def test_position_long_close():
     )
     position = Position.open_from_transaction(first_transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -250,7 +258,7 @@ def test_position_long_close():
     second_order_id = "234"
     second_commission = 6.81
     second_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=second_size,
         action=Action.SELL,
         direction=Direction.LONG,
@@ -291,6 +299,7 @@ def test_position_long_and_short():
     """
     # Initial long details
     symbol = "SPY"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 307.05
@@ -299,7 +308,7 @@ def test_position_long_and_short():
 
     # Create the initial transaction and position
     first_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -310,7 +319,7 @@ def test_position_long_and_short():
     )
     position = Position.open_from_transaction(first_transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -323,7 +332,7 @@ def test_position_long_and_short():
     second_order_id = "234"
     second_commission = 1.42
     second_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=second_size,
         action=Action.SELL,
         direction=Direction.LONG,
@@ -366,6 +375,7 @@ def test_position_long_short_long_short_ending_long():
     """
     # First trade (first long)
     symbol = "SPY"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 453
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 312.96
@@ -374,7 +384,7 @@ def test_position_long_short_long_short_ending_long():
 
     # Create the initial transaction and position
     first_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -392,7 +402,7 @@ def test_position_long_short_long_short_ending_long():
     order_id = "101"
     commission = 4.8
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.LONG,
@@ -410,7 +420,7 @@ def test_position_long_short_long_short_ending_long():
     order_id = "102"
     commission = 2.68
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -428,7 +438,7 @@ def test_position_long_short_long_short_ending_long():
     order_id = "103"
     commission = 6.28
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.LONG,
@@ -439,7 +449,7 @@ def test_position_long_short_long_short_ending_long():
     )
     position.transact(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -469,6 +479,7 @@ def test_basic_short_equities_position():
     """
     # Initial short details
     symbol = "TLT"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 162.39
@@ -477,7 +488,7 @@ def test_basic_short_equities_position():
 
     # Create the initial transaction and position
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -488,7 +499,7 @@ def test_basic_short_equities_position():
     )
     position = Position.open_from_transaction(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -529,6 +540,7 @@ def test_position_short_twice():
     """
     # Initial short details
     symbol = "MSFT"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 194.55
@@ -537,7 +549,7 @@ def test_position_short_twice():
 
     # Create the initial transaction and position
     first_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -548,7 +560,7 @@ def test_position_short_twice():
     )
     position = Position.open_from_transaction(first_transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -561,7 +573,7 @@ def test_position_short_twice():
     second_order_id = "234"
     second_commission = 1.27
     second_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=second_size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -602,6 +614,7 @@ def test_position_short_close():
     """
     # Initial short details
     symbol = "TSLA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 982.13
@@ -610,7 +623,7 @@ def test_position_short_close():
 
     # Create the initial transaction and position
     first_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -621,7 +634,7 @@ def test_position_short_close():
     )
     position = Position.open_from_transaction(first_transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -634,7 +647,7 @@ def test_position_short_close():
     second_order_id = "234"
     second_commission = 1.0
     second_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=second_size,
         action=Action.BUY,
         direction=Direction.SHORT,
@@ -675,6 +688,7 @@ def test_position_short_and_long():
     """
     # Initial short details
     symbol = "TLT"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 100
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 162.39
@@ -683,7 +697,7 @@ def test_position_short_and_long():
 
     # Create the initial transaction and position
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -694,7 +708,7 @@ def test_position_short_and_long():
     )
     position = Position.open_from_transaction(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -707,7 +721,7 @@ def test_position_short_and_long():
     second_order_id = "234"
     second_commission = 1.0
     second_transaction = Transaction(
-        symbol,
+        asset=asset,
         size=second_size,
         action=Action.BUY,
         direction=Direction.SHORT,
@@ -750,13 +764,14 @@ def test_position_short_long_short_long_ending_short():
     """
     # First trade (first short)
     symbol = "AGG"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 762
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 117.74
     order_id = "100"
     commission = 5.35
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -774,7 +789,7 @@ def test_position_short_long_short_long_ending_short():
     order_id = "101"
     commission = 2.31
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.SHORT,
@@ -792,7 +807,7 @@ def test_position_short_long_short_long_ending_short():
     order_id = "102"
     commission = 4.18
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -810,7 +825,7 @@ def test_position_short_long_short_long_ending_short():
     order_id = "103"
     commission = 2.06
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.SHORT,
@@ -821,7 +836,7 @@ def test_position_short_long_short_long_ending_short():
     )
     position.transact(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -854,13 +869,14 @@ def test_position_limit_reached_long():
     """
     # First trade (first long)
     symbol = "AGG"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 762
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 117.74
     order_id = "100"
     commission = 5.35
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -878,7 +894,7 @@ def test_position_limit_reached_long():
     order_id = "101"
     commission = 2.31
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.LONG,
@@ -889,7 +905,7 @@ def test_position_limit_reached_long():
     )
     position.transact(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -922,13 +938,14 @@ def test_position_limit_reached_short():
     """
     # First trade (first short)
     symbol = "AGG"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size = 762
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price = 117.74
     order_id = "100"
     commission = 5.35
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -946,7 +963,7 @@ def test_position_limit_reached_short():
     order_id = "101"
     commission = 2.31
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size,
         action=Action.BUY,
         direction=Direction.SHORT,
@@ -957,7 +974,7 @@ def test_position_limit_reached_short():
     )
     position.transact(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 
@@ -990,13 +1007,14 @@ def test_position_direction_different_from_transaction():
     """
     # First trade (first short)
     symbol = "AGG"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     size1 = 762
     timestamp1 = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     price1 = 117.74
     order_id1 = "100"
     commission1 = 5.35
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size1,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -1014,7 +1032,7 @@ def test_position_direction_different_from_transaction():
     order_id2 = "101"
     commission2 = 2.31
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=size2,
         action=Action.SELL,
         direction=Direction.SHORT,
@@ -1026,7 +1044,7 @@ def test_position_direction_different_from_transaction():
     with pytest.raises(ValueError):
         position.transact(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price1
     assert position.last_price_update == timestamp1
 
@@ -1056,10 +1074,12 @@ def test_transact_for_incorrect_symbol():
     match the position's symbol, raises an Exception.
     """
     symbol1 = "AAPL"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     symbol2 = "AMZN"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
 
     position = Position(
-        symbol1,
+        asset=asset1,
         price=950.0,
         buy_size=100,
         sell_size=0,
@@ -1073,7 +1093,7 @@ def test_transact_for_incorrect_symbol():
 
     new_timestamp = datetime.strptime("2020-06-16 16:00:00", "%Y-%m-%d %H:%M:%S")
     transaction = Transaction(
-        symbol2,
+        asset=asset2,
         size=50,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -1094,6 +1114,7 @@ def test_transact_with_size_zero():
     position values.
     """
     symbol = "AAPL"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     price = 950.0
     buy_size = 100
     sell_size = 0
@@ -1104,7 +1125,7 @@ def test_transact_with_size_zero():
     timestamp = datetime.strptime("2020-06-16 15:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
 
     position = Position(
-        symbol,
+        asset=asset,
         price=price,
         buy_size=buy_size,
         sell_size=sell_size,
@@ -1118,7 +1139,7 @@ def test_transact_with_size_zero():
 
     new_timestamp = datetime.strptime("2020-06-16 16:00:00", "%Y-%m-%d %H:%M:%S")
     transaction = Transaction(
-        symbol,
+        asset=asset,
         size=0,
         action=Action.BUY,
         direction=Direction.LONG,
@@ -1130,7 +1151,7 @@ def test_transact_with_size_zero():
 
     position.transact(transaction)
 
-    assert position.symbol == symbol
+    assert position.asset == asset
     assert position.price == price
     assert position.last_price_update == timestamp
 

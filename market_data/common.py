@@ -22,7 +22,9 @@ def get_intraday_periods(
     now = datetime.now(timezone.utc)
     end = min(end, now)
     nb_seconds = (end - start).total_seconds() + 1
-    nb_periods_decimal = Decimal.from_float(nb_seconds) / Decimal.from_float(download_frame.total_seconds())
+    nb_periods_decimal = Decimal.from_float(nb_seconds) / Decimal.from_float(
+        download_frame.total_seconds()
+    )
     nb_periods = int(nb_periods_decimal.quantize(exp=1, rounding=ROUND_UP))
     periods = np.array(
         [
@@ -38,7 +40,6 @@ def get_intraday_periods(
     return periods
 
 
-
 def get_daily_periods(
     download_frame: timedelta,
     start: datetime,
@@ -48,7 +49,9 @@ def get_daily_periods(
     date_today = date.today()
     end_date = min(end.date(), date_today)
     nb_days = (end_date - start_date).days + 1
-    nb_periods_decimal = Decimal.from_float(nb_days) / Decimal.from_float(download_frame.days)
+    nb_periods_decimal = Decimal.from_float(nb_days) / Decimal.from_float(
+        download_frame.days
+    )
     nb_periods = int(nb_periods_decimal.quantize(exp=1, rounding=ROUND_UP))
     periods = np.array(
         [

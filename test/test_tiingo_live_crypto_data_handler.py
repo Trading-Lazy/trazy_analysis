@@ -5,9 +5,12 @@ import numpy as np
 from freezegun import freeze_time
 
 from market_data.live.tiingo_live_crypto_data_handler import TiingoLiveCryptoDataHandler
+from models.asset import Asset
 from models.candle import Candle
 
 SYMBOL = "BTCUSD"
+EXCHANGE = "BINANCE"
+ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 TOKEN = "abcde"
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
@@ -87,7 +90,7 @@ def test_parse_ticker_latest_data_points():
     expected_candles = np.array(
         [
             Candle(
-                symbol=SYMBOL,
+                asset=ASSET,
                 open=17042.224796462127,
                 high=17068.325134477574,
                 low=17041.08813324084,
@@ -98,7 +101,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=ASSET,
                 open=16912.399791210508,
                 high=16935.48154468411,
                 low=16898.50928968564,
@@ -109,7 +112,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=ASSET,
                 open=17035.623180823583,
                 high=17060.86908710398,
                 low=17032.290027982737,
@@ -120,7 +123,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=ASSET,
                 open=16978.25334442074,
                 high=17011.583797102718,
                 low=16974.70938582292,
@@ -131,7 +134,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=ASSET,
                 open=17112.281365604864,
                 high=17278.87984139109,
                 low=17044.220843317977,
@@ -142,7 +145,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=ASSET,
                 open=17238.0199449088,
                 high=17324.83886467445,
                 low=17234.716552011258,
@@ -157,7 +160,7 @@ def test_parse_ticker_latest_data_points():
     )
     assert (
         expected_candles
-        == TiingoLiveCryptoDataHandler.parse_ticker_latest_data(SYMBOL, data)
+        == TiingoLiveCryptoDataHandler.parse_ticker_latest_data(ASSET, data)
     ).all()
 
 

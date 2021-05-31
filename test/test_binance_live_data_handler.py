@@ -5,9 +5,12 @@ import numpy as np
 from freezegun import freeze_time
 
 from market_data.live.binance_live_data_handler import BinanceLiveDataHandler
+from models.asset import Asset
 from models.candle import Candle
 
 SYMBOL = "BTCUSDT"
+EXCHANGE = "BINANCE"
+ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 TOKEN = "abcde"
 
 
@@ -89,7 +92,7 @@ def test_parse_ticker_latest_data_points():
     expected_candles = np.array(
         [
             Candle(
-                symbol="BTCUSDT",
+                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
                 open=7922.99,
                 high=7936.99,
                 low=7919.84,
@@ -98,7 +101,7 @@ def test_parse_ticker_latest_data_points():
                 timestamp=datetime(2018, 4, 13, tzinfo=timezone.utc),
             ),
             Candle(
-                symbol="BTCUSDT",
+                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
                 open=7935.54,
                 high=7954.99,
                 low=7930.09,
@@ -107,7 +110,7 @@ def test_parse_ticker_latest_data_points():
                 timestamp=datetime(2018, 4, 13, 0, 1, tzinfo=timezone.utc),
             ),
             Candle(
-                symbol="BTCUSDT",
+                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
                 open=7950.0,
                 high=7954.98,
                 low=7946.0,
@@ -116,7 +119,7 @@ def test_parse_ticker_latest_data_points():
                 timestamp=datetime(2018, 4, 13, 0, 2, tzinfo=timezone.utc),
             ),
             Candle(
-                symbol="BTCUSDT",
+                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
                 open=7950.26,
                 high=7959.72,
                 low=7950.0,
@@ -125,7 +128,7 @@ def test_parse_ticker_latest_data_points():
                 timestamp=datetime(2018, 4, 13, 0, 3, tzinfo=timezone.utc),
             ),
             Candle(
-                symbol="BTCUSDT",
+                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
                 open=7957.0,
                 high=7979.0,
                 low=7942.35,
@@ -137,7 +140,7 @@ def test_parse_ticker_latest_data_points():
         dtype=Candle,
     )
     assert (
-        expected_candles == BinanceLiveDataHandler.parse_ticker_latest_data(SYMBOL, data)
+        expected_candles == BinanceLiveDataHandler.parse_ticker_latest_data(ASSET, data)
     ).all()
 
 

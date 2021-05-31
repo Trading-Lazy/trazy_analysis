@@ -2,6 +2,7 @@ import abc
 from datetime import datetime
 from typing import List
 
+from models.asset import Asset
 from models.candle import Candle
 from models.order import Order
 
@@ -65,7 +66,7 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_candles_in_range(
-        self, symbol: str, start: datetime, end: datetime
+        self, asset: Asset, start: datetime, end: datetime
     ) -> List[Candle]:  # pragma: no cover
         raise NotImplementedError
 

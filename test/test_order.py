@@ -1,15 +1,20 @@
 from datetime import datetime
 
 from common.clock import SimulatedClock
+from models.asset import Asset
 from models.enums import Action, Direction, OrderStatus, OrderType
 from models.order import Order, OrderBase
 
 
+EXCHANGE = "IEX"
+
+
 def test_add_on_complete_callback():
     symbol = "BBB"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -55,11 +60,12 @@ def test_submit_order_base():
 
 def test_submit_order():
     symbol = "BBB"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(symbol, timestamp)
+    clock.update(asset, timestamp)
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -118,11 +124,12 @@ def test_time_in_force_order_base():
 
 def test_time_in_force_order():
     symbol = "BBB"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(symbol, timestamp)
+    clock.update(asset, timestamp)
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -150,8 +157,9 @@ def test_time_in_force_order():
 
 def test_is_entry_or_exit_order():
     symbol = "BBB"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -164,7 +172,7 @@ def test_is_entry_or_exit_order():
 
 def test_from_serializable_dict():
     serializable_dict = {
-        "symbol": "AAA",
+        "asset": {"symbol": "AAA", "exchange": "IEX"},
         "signal_id": "1",
         "action": "BUY",
         "direction": "LONG",
@@ -180,11 +188,12 @@ def test_from_serializable_dict():
     }
     order = Order.from_serializable_dict(serializable_dict)
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(symbol, timestamp)
+    clock.update(asset, timestamp)
     expected_order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -197,11 +206,12 @@ def test_from_serializable_dict():
 
 def test_to_serializable_dict():
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
     order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -210,7 +220,7 @@ def test_to_serializable_dict():
     )
     order.submit()
     expected_dict = {
-        "symbol": "AAA",
+        "asset": {"symbol": "AAA", "exchange": "IEX"},
         "signal_id": "1",
         "action": "BUY",
         "direction": "LONG",
@@ -227,11 +237,12 @@ def test_to_serializable_dict():
 
 def test_eq_ne():
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol1, timestamp)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -239,7 +250,7 @@ def test_eq_ne():
         clock=clock,
     )
     order2 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -248,8 +259,9 @@ def test_eq_ne():
     )
 
     symbol2 = "BBB"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order3 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.SHORT,
         size=200,
@@ -263,10 +275,11 @@ def test_eq_ne():
 
 def test_limit_order():
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     limit = 15
     limit_order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -281,10 +294,11 @@ def test_limit_order():
 
 def test_stop_order():
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     stop = 15
     stop_order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -299,10 +313,11 @@ def test_stop_order():
 
 def test_trailing_stop_order():
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     stop_pct = 0.01
     trailing_stop_order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -317,10 +332,11 @@ def test_trailing_stop_order():
 
 def test_trailing_stop_order_eq():
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     stop_pct = 0.01
     trailing_stop_order1 = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -330,7 +346,7 @@ def test_trailing_stop_order_eq():
         clock=clock,
     )
     trailing_stop_order2 = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,

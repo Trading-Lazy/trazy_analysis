@@ -6,6 +6,7 @@ from pandas_market_calendars import MarketCalendar
 
 from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
 from common.utils import timestamp_to_utc
+from models.asset import Asset
 
 
 class Clock:
@@ -15,29 +16,33 @@ class Clock:
         self.market_cal = market_cal
 
     @abc.abstractmethod
-    def current_time(self, tz="UTC", symbol: str = "") -> datetime:  # pragma: no cover
+    def current_time(
+        self, tz="UTC", asset: Asset = Asset(symbol="", exchange="")
+    ) -> datetime:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_time(self, symbol: str, timestamp: datetime) -> None:  # pragma: no cover
+    def update_time(
+        self, asset: Asset, timestamp: datetime
+    ) -> None:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_bars(self, symbol: str) -> None:  # pragma: no cover
+    def update_bars(self, asset: Asset) -> None:  # pragma: no cover
         raise NotImplementedError
 
-    def update(self, symbol: str, timestamp: datetime):
-        self.update_bars(symbol)
-        self.update_time(symbol, timestamp)
+    def update(self, asset: Asset, timestamp: datetime):
+        self.update_bars(asset)
+        self.update_time(asset, timestamp)
 
     @abc.abstractmethod
-    def bars(self, symbol) -> int:  # pragma: no cover
+    def bars(self, asset: Asset) -> int:  # pragma: no cover
         raise NotImplementedError
 
     def end_of_day(
-        self, symbol: str, threshold: timedelta = timedelta(minutes=5)
+        self, asset: Asset, threshold: timedelta = timedelta(minutes=5)
     ) -> bool:
-        now = self.current_time(symbol=symbol)
+        now = self.current_time(asset=asset)
         date = now.date()
         time = self.market_cal.close_time_default
         end_of_day_datetime = datetime(
@@ -54,16 +59,18 @@ class Clock:
 
 
 class LiveClock(Clock):
-    def current_time(self, tz=timezone.utc, symbol: str = "") -> datetime:
+    def current_time(self, tz=timezone.utc, asset: Asset = "") -> datetime:
         return datetime.now(tz=tz)
 
-    def update_time(self, symbol: str, timestamp: datetime) -> None:  # pragma: no cover
+    def update_time(
+        self, asset: Asset, timestamp: datetime
+    ) -> None:  # pragma: no cover
         pass
 
-    def update_bars(self, symbol: str) -> None:  # pragma: no cover
+    def update_bars(self, asset: Asset) -> None:  # pragma: no cover
         pass
 
-    def bars(self, symbol) -> int:  # pragma: no cover
+    def bars(self, asset: Asset) -> int:  # pragma: no cover
         return 0
 
 
@@ -75,21 +82,23 @@ class SimulatedClock(Clock):
         self.time_dict: Dict[str, datetime] = {}
         self.bars_dict: Dict[str, int] = {}
 
-    def update_time(self, symbol: str, timestamp: datetime) -> None:
-        self.time_dict[symbol] = timestamp
+    def update_time(self, asset: Asset, timestamp: datetime) -> None:
+        self.time_dict[asset] = timestamp
 
-    def update_bars(self, symbol: str) -> None:
-        if symbol not in self.bars_dict:
-            self.bars_dict[symbol] = 1
+    def update_bars(self, asset: Asset) -> None:
+        if asset not in self.bars_dict:
+            self.bars_dict[asset] = 1
         else:
-            self.bars_dict[symbol] += 1
+            self.bars_dict[asset] += 1
 
-    def current_time(self, tz=timezone.utc, symbol: str = "") -> datetime:
-        if symbol not in self.time_dict:
-            self.time_dict[symbol] = datetime.now(timezone.utc)
-        return self.time_dict[symbol]
+    def current_time(
+        self, tz=timezone.utc, asset: Asset = Asset(symbol="", exchange="")
+    ) -> datetime:
+        if asset not in self.time_dict:
+            self.time_dict[asset] = datetime.now(timezone.utc)
+        return self.time_dict[asset]
 
-    def bars(self, symbol) -> int:
-        if symbol not in self.bars_dict:
+    def bars(self, asset) -> int:
+        if asset not in self.bars_dict:
             return 0
-        return self.bars_dict[symbol]
+        return self.bars_dict[asset]

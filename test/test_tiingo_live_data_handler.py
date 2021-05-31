@@ -4,9 +4,12 @@ import numpy as np
 from freezegun import freeze_time
 
 from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
+from models.asset import Asset
 from models.candle import Candle
 
-SYMBOL = "AAPL"
+AAPL_SYMBOL = "AAPL"
+EXCHANGE = "IEX"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 TOKEN = "abcde"
 
 
@@ -22,7 +25,7 @@ def test_parse_ticker_latest_data_points():
     expected_candles = np.array(
         [
             Candle(
-                symbol="AAPL",
+                asset=AAPL_ASSET,
                 open=355.15,
                 high=355.15,
                 low=353.74,
@@ -33,7 +36,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol="AAPL",
+                asset=AAPL_ASSET,
                 open=354.28,
                 high=354.96,
                 low=353.96,
@@ -44,7 +47,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol="AAPL",
+                asset=AAPL_ASSET,
                 open=354.92,
                 high=355.32,
                 low=354.09,
@@ -55,7 +58,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol="AAPL",
+                asset=AAPL_ASSET,
                 open=354.25,
                 high=354.59,
                 low=354.14,
@@ -66,7 +69,7 @@ def test_parse_ticker_latest_data_points():
                 ),
             ),
             Candle(
-                symbol="AAPL",
+                asset=AAPL_ASSET,
                 open=354.22,
                 high=354.26,
                 low=353.95,
@@ -80,7 +83,8 @@ def test_parse_ticker_latest_data_points():
         dtype=Candle,
     )
     assert (
-        expected_candles == TiingoLiveDataHandler.parse_ticker_latest_data(SYMBOL, data)
+        expected_candles
+        == TiingoLiveDataHandler.parse_ticker_latest_data(AAPL_ASSET, data)
     ).all()
 
 
@@ -95,4 +99,6 @@ def test_generate_ticker_latest_data_points_url():
         "resampleFreq=1min&"
         "token=abcde"
     )
-    assert expected_url == TiingoLiveDataHandler.generate_ticker_latest_data_url(SYMBOL)
+    assert expected_url == TiingoLiveDataHandler.generate_ticker_latest_data_url(
+        AAPL_ASSET
+    )

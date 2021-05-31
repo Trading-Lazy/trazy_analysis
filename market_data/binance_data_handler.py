@@ -9,6 +9,7 @@ from common.helper import fill_missing_datetimes
 from common.types import CandleDataFrame
 from market_data.common import datetime_from_epoch
 from market_data.data_handler import DataHandler
+from models.asset import Asset
 from models.candle import Candle
 from settings import BINANCE_API_KEY
 
@@ -49,21 +50,23 @@ class BinanceDataHandler(DataHandler):
         return symbols
 
     @classmethod
-    def ticker_data_to_dataframe(cls, symbol: str, data: str) -> CandleDataFrame:
+    def ticker_data_to_dataframe(cls, asset: Asset, data: str) -> CandleDataFrame:
         raw_candles = json.loads(data)
-        candles = np.array([
-            Candle(
-                symbol=symbol,
-                open=float(raw_candle[1]),
-                high=float(raw_candle[2]),
-                low=float(raw_candle[3]),
-                close=float(raw_candle[4]),
-                volume=float(raw_candle[5]),
-                timestamp=datetime_from_epoch(raw_candle[0]),
-            )
-            for raw_candle in raw_candles
-        ])
-        candle_df = CandleDataFrame.from_candle_list(symbol=symbol, candles=candles)
+        candles = np.array(
+            [
+                Candle(
+                    asset=asset,
+                    open=float(raw_candle[1]),
+                    high=float(raw_candle[2]),
+                    low=float(raw_candle[3]),
+                    close=float(raw_candle[4]),
+                    volume=float(raw_candle[5]),
+                    timestamp=datetime_from_epoch(raw_candle[0]),
+                )
+                for raw_candle in raw_candles
+            ]
+        )
+        candle_df = CandleDataFrame.from_candle_list(asset=asset, candles=candles)
         candle_df = fill_missing_datetimes(df=candle_df, time_unit=timedelta(minutes=1))
-        candle_df = CandleDataFrame.from_dataframe(candle_df, symbol)
+        candle_df = CandleDataFrame.from_dataframe(candle_df, asset)
         return candle_df
