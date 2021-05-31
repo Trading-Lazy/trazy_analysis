@@ -50,15 +50,15 @@ class OrderManager:
         for pending_signal in pending_signals:
             self.pending_signals.append(pending_signal)
             self.events.append(
-                PendingSignalEvent(symbol=pending_signal.symbol, bars_delay=1)
+                PendingSignalEvent(asset=pending_signal.asset, bars_delay=1)
             )
 
     def check_signal(self, signal):
         # check if signal is still valid
         LOG.info("Received new signal %s", str(signal))
-        now = self.clock.current_time(symbol=signal.symbol)
+        now = self.clock.current_time(asset=signal.asset)
         opened_position = self.broker.has_opened_position(
-            signal.symbol, signal.direction
+            signal.asset, signal.direction
         )
         if (
             signal.in_force(now)
@@ -67,10 +67,9 @@ class OrderManager:
                 or (signal.is_exit_signal and opened_position)
             )
             and (
-                not self.filter_at_end_of_day
-                or not self.clock.end_of_day(signal.symbol)
+                not self.filter_at_end_of_day or not self.clock.end_of_day(signal.asset)
             )
         ):
             LOG.info("Signal is still in force and will be processed soon.")
             self.pending_signals.append(signal)
-            self.events.append(PendingSignalEvent(symbol=signal.symbol))
+            self.events.append(PendingSignalEvent(asset=signal.asset))

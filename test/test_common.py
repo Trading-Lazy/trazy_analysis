@@ -12,6 +12,7 @@ from file_storage.common import concat_path
 from indicators.common import get_state
 from indicators.crossover import CrossoverState
 from market_data.common import get_periods
+from models.asset import Asset
 from models.enums import Action, Direction, OrderType
 from models.order import Order
 
@@ -202,7 +203,7 @@ def test_get_state():
 def test_get_rejected_order_error_message():
     clock = LiveClock()
     order = Order(
-        symbol="IFMK",
+        asset=Asset(symbol="IFMK", exchange="IEX"),
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -210,5 +211,5 @@ def test_get_rejected_order_error_message():
         type=OrderType.MARKET,
         clock=clock,
     )
-    expected_error_message = "MARKET order (symbol=IFMK, action=BUY, direction=LONG, size=1) could not be executed."
+    expected_error_message = "MARKET order (asset=IEX-IFMK, action=BUY, direction=LONG, size=1) could not be executed."
     assert get_rejected_order_error_message(order) == expected_error_message

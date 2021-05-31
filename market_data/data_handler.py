@@ -15,6 +15,7 @@ LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
 )
 
+
 class DataHandler(metaclass=RateLimitedSingletonMeta):
     # properties
     @property

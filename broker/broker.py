@@ -48,10 +48,12 @@ class Broker:
         supported_currencies: List[str] = ["EUR", "USD"],
         fee_model: FeeModel = FixedFeeModel(),
         execute_at_end_of_day=True,
+        exchange="universal",
     ):
         self.supported_currencies = supported_currencies
         self.fee_model = fee_model
         self.execute_at_end_of_day = execute_at_end_of_day
+        self.exchange = exchange
         self.base_currency = self._set_base_currency(base_currency)
         self.clock = clock
         self.events = events
@@ -121,7 +123,7 @@ class Broker:
 
     @abstractmethod
     def has_opened_position(
-        self, symbol: str, direction: Direction
+        self, asset: str, direction: Direction
     ) -> bool:  # pragma: no cover
         raise NotImplementedError("Should implement has_opened_position()")
 
@@ -141,13 +143,13 @@ class Broker:
 
     @abstractmethod
     def max_entry_order_size(
-        self, symbol: str, direction: Direction, cash: float = None
+        self, asset: str, direction: Direction, cash: float = None
     ) -> int:  # pragma: no cover
         raise NotImplementedError("Should implement max_entry_order_size()")
 
     @abstractmethod
     def position_size(
-        self, symbol: str, direction: Direction
+        self, asset: str, direction: Direction
     ) -> int:  # pragma: no cover
         raise NotImplementedError("Should implement position_size()")
 
@@ -189,7 +191,7 @@ class Broker:
     def get_portfolio_as_dict(self) -> dict:
         """
         Return a particular portfolio as
-        a dictionary with Asset symbol strings as keys, with various
+        a dictionary with Asset asset strings as keys, with various
         attributes as sub-dictionaries.
         Parameters
         ----------
@@ -275,35 +277,35 @@ class Broker:
 
         if order.is_exit_order:
             if (
-                order.symbol in self.exit_orders
-                and order.direction in self.exit_orders[order.symbol]
+                order.asset in self.exit_orders
+                and order.direction in self.exit_orders[order.asset]
             ):
-                exit_order = self.exit_orders[order.symbol][order.direction]
+                exit_order = self.exit_orders[order.asset][order.direction]
                 if isinstance(exit_order, OcoOrder):
                     exit_order.add_order(order)
                 else:
                     oco_order = OcoOrder(orders=[exit_order, order])
-                    self.exit_orders[order.symbol][order.direction] = oco_order
+                    self.exit_orders[order.asset][order.direction] = oco_order
             else:
                 get_or_create_nested_dict(
-                    self.exit_orders, order.symbol, order.direction
+                    self.exit_orders, order.asset, order.direction
                 )
-                self.exit_orders[order.symbol][order.direction] = order
+                self.exit_orders[order.asset][order.direction] = order
 
-    def put_all_orders_in_queue_recursive(self, order: Order, seen_symbols):
+    def put_all_orders_in_queue_recursive(self, order: Order, seen_assets):
         if isinstance(order, MultipleOrder):
             for single_order in order.orders:
-                self.put_all_orders_in_queue_recursive(single_order, seen_symbols)
+                self.put_all_orders_in_queue_recursive(single_order, seen_assets)
         else:
             self.handle_exit_order(order)
             self.open_orders.append(order)
-            if order.symbol in seen_symbols:
+            if order.asset in seen_assets:
                 return
-            seen_symbols.add(order.symbol)
+            seen_assets.add(order.asset)
 
     def put_all_orders_in_queue(self, order: Order):
-        seen_symbols = set()
-        self.put_all_orders_in_queue_recursive(order, seen_symbols)
+        seen_assets = set()
+        self.put_all_orders_in_queue_recursive(order, seen_assets)
 
     def submit_order(self, order: Order) -> None:
         """
@@ -323,17 +325,17 @@ class Broker:
         elif isinstance(order, MultipleOrder):
             LOG.info("Multiple order submitted")
         else:
-            LOG.info("Submitted order: %s, qty: %s", order.symbol, order.size)
+            LOG.info("Submitted order: %s, qty: %s", order.asset, order.size)
 
     def max_entry_order_size(
-        self, symbol: str, direction: Direction, cash: float = None
+        self, asset: str, direction: Direction, cash: float = None
     ) -> int:
         if cash is None:
             cash = self.portfolio.cash
-        return cash // self.current_price(symbol)
+        return cash // self.current_price(asset)
 
-    def position_size(self, symbol: str, direction: Direction) -> int:
-        return self.portfolio.pos_handler.position_size(symbol, direction)
+    def position_size(self, asset: str, direction: Direction) -> int:
+        return self.portfolio.pos_handler.position_size(asset, direction)
 
     @abstractmethod
     def execute_order(self, order: Order) -> None:  # pragma: no cover
@@ -348,13 +350,13 @@ class Broker:
             index += 1
 
         for order in orders:
-            now = self.clock.current_time(symbol=order.symbol)
+            now = self.clock.current_time(asset=order.asset)
             if (
                 order.status == OrderStatus.SUBMITTED
                 and order.in_force(now)
                 and (
                     not self.execute_at_end_of_day
-                    or not self.clock.end_of_day(order.symbol)
+                    or not self.clock.end_of_day(order.asset)
                 )
             ):
                 self.execute_order(order)
@@ -364,38 +366,38 @@ class Broker:
                     order.order_id,
                 )
 
-    def current_price(self, symbol: str):
-        return self.last_prices[symbol]
+    def current_price(self, asset: str):
+        return self.last_prices[asset]
 
     def update_price(self, candle: Candle):
-        self.last_prices[candle.symbol] = candle.close
+        self.last_prices[candle.asset] = candle.close
         self.portfolio.update_market_value_of_symbol(
-            candle.symbol, candle.close, candle.timestamp
+            candle.asset, candle.close, candle.timestamp
         )
 
     def synchronize(self):  # pragma: no cover
         pass
 
-    def close_all_open_positions(self, symbol: str, end_of_day: bool = True):
+    def close_all_open_positions(self, asset: str, end_of_day: bool = True):
         # if we are close to the end of the day, we can start making market order to close all positions
-        if end_of_day and not self.clock.end_of_day(symbol):
+        if end_of_day and not self.clock.end_of_day(asset):
             return
 
         pos_handler = self.portfolio.pos_handler
         positions = pos_handler.positions
 
-        if symbol not in positions:
+        if asset not in positions:
             return
 
         close_orders = []
-        for direction in positions[symbol]:
-            position = positions[symbol][direction]
+        for direction in positions[asset]:
+            position = positions[asset][direction]
             order = Order(
-                symbol=symbol,
+                asset=asset,
                 action=Action.SELL if direction == Direction.LONG else Action.BUY,
                 direction=direction,
                 size=position.net_size,
-                signal_id=f"SimulatedBroker-{symbol}",
+                signal_id=f"SimulatedBroker-{asset}",
                 type=OrderType.MARKET,
                 clock=self.clock,
             )

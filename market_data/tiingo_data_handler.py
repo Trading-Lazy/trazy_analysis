@@ -10,6 +10,7 @@ from common.helper import resample_candle_data
 from common.types import CandleDataFrame
 from common.utils import lists_equal
 from market_data.data_handler import DataHandler
+from models.asset import Asset
 from settings import TIINGO_API_TOKEN
 
 
@@ -50,7 +51,7 @@ class TiingoDataHandler(DataHandler):
         return tickers
 
     @classmethod
-    def ticker_data_to_dataframe(cls, symbol: str, data: str) -> CandleDataFrame:
+    def ticker_data_to_dataframe(cls, asset: Asset, data: str) -> CandleDataFrame:
         df = pd.read_csv(
             io.StringIO(data.strip()),
             sep=",",
@@ -60,7 +61,7 @@ class TiingoDataHandler(DataHandler):
             index_col="date",
         )
         df.index = pd.to_datetime(df.index, utc=True)
-        candle_df = CandleDataFrame.from_dataframe(df, symbol)
+        candle_df = CandleDataFrame.from_dataframe(df, asset)
         if candle_df.shape[0] > 1:
             start_timestamp = candle_df.get_candle(0).timestamp
             end_timestamp = candle_df.get_candle(-1).timestamp

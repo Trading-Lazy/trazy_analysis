@@ -2,11 +2,15 @@ from datetime import datetime
 
 import pytest
 
+from models.asset import Asset
 from models.enums import Action, Direction
 from position.transaction import Transaction
 
+AAPL_SYMBOL = "AAPL"
+EXCHANGE = "IEX"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 TRANSACTION = Transaction(
-    "AAPL",
+    asset=AAPL_ASSET,
     size=168,
     action=Action.BUY,
     direction=Direction.LONG,
@@ -23,7 +27,7 @@ def test_transaction_representation():
     correctly recreates the object.
     """
     exp_repr = (
-        "Transaction(symbol=AAPL, "
+        'Transaction(asset=Asset(symbol="AAPL",exchange="IEX"), '
         "size=168, action=BUY, direction=LONG, timestamp=2015-05-06 00:00:00, price=56.18, order_id=153)"
     )
     assert repr(TRANSACTION) == exp_repr

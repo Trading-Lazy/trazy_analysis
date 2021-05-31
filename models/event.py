@@ -1,3 +1,9 @@
+from datetime import datetime
+from typing import List, Dict
+
+import numpy as np
+
+from models.asset import Asset
 from models.candle import Candle
 from models.enums import EventType
 from models.signal import Signal
@@ -8,40 +14,58 @@ class Event:
         self.type = type
 
 
-class SymbolSpecificEvent(Event):
-    def __init__(self, type: EventType, symbol: str, bars_delay: int = 0):
+class AssetSpecificEvent(Event):
+    def __init__(self, type: EventType, asset: str, bars_delay: int = 0):
         super().__init__(type)
+        self.asset = asset
         self.bars_delay = bars_delay
-        self.symbol = symbol
 
 
-class MarketDataEvent(SymbolSpecificEvent):
-    def __init__(self, candle: Candle, bars_delay: int = 0):
-        super().__init__(EventType.MARKET_DATA, candle.symbol, bars_delay)
-        self.candle: Candle = candle
+class DataEvent(Event):
+    def __init__(
+        self,
+        type: EventType,
+        assets: List[Asset],
+        timestamp: datetime,
+        bars_delay: int = 0,
+    ):
+        super().__init__(type)
+        self.assets = assets
+        self.timestamp = timestamp
+        self.bars_delay = bars_delay
 
 
-class MarketEodDataEvent(SymbolSpecificEvent):
-    def __init__(self, symbol: str, bars_delay: int = 0):
-        super().__init__(EventType.MARKET_EOD_DATA, symbol, bars_delay)
+class MarketDataEvent(DataEvent):
+    def __init__(
+        self, candles: Dict[Asset, np.array], timestamp: datetime, bars_delay: int = 0
+    ):
+        super().__init__(
+            EventType.MARKET_DATA, list(candles.keys()), timestamp, bars_delay
+        )
+        self.candles: Dict[str, np.array] = candles
 
 
-class MarketDataEndEvent(SymbolSpecificEvent):
-    def __init__(self, symbol: str, bars_delay: int = 0):
-        super().__init__(EventType.MARKET_DATA_END, symbol, bars_delay)
+class MarketEodDataEvent(DataEvent):
+    def __init__(self, assets: List[Asset], timestamp: datetime, bars_delay: int = 0):
+        super().__init__(EventType.MARKET_EOD_DATA, assets, timestamp, bars_delay)
 
 
-class SignalEvent(SymbolSpecificEvent):
+class MarketDataEndEvent(DataEvent):
+    def __init__(self, assets: List[Asset], timestamp: datetime, bars_delay: int = 0):
+        super().__init__(EventType.MARKET_DATA_END, assets, timestamp, bars_delay)
+
+
+class SignalEvent(AssetSpecificEvent):
     def __init__(self, signal: Signal, bars_delay: int = 0):
-        super().__init__(EventType.SIGNAL, signal.symbol, bars_delay)
+        super().__init__(EventType.SIGNAL, signal.asset, bars_delay)
         self.signal = signal
 
 
-class OpenOrdersEvent(SymbolSpecificEvent):
-    def __init__(self, symbol: str, bars_delay: int = 0):
-        super().__init__(EventType.OPEN_ORDERS, symbol, bars_delay)
+class OpenOrdersEvent(AssetSpecificEvent):
+    def __init__(self, asset: str, bars_delay: int = 0):
+        super().__init__(EventType.OPEN_ORDERS, asset, bars_delay)
 
 
-class PendingSignalEvent(SymbolSpecificEvent):
-    def __init__(self, symbol: str, bars_delay: int = 0):
-        super().__init__(EventType.PENDING_SIGNAL, symbol, bars_delay)
+class PendingSignalEvent(AssetSpecificEvent):
+    def __init__(self, asset: str, bars_delay: int = 0):
+        super().__init__(EventType.PENDING_SIGNAL, asset, bars_delay)

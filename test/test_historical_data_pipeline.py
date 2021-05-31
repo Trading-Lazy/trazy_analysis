@@ -19,6 +19,7 @@ from market_data.historical.iex_cloud_historical_data_handler import (
 from market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
+from models.asset import Asset
 from models.candle import Candle
 
 TIINGO_HISTORICAL_DATA_HANDLER = TiingoHistoricalDataHandler()
@@ -26,15 +27,17 @@ IEX_CLOUD_HISTORICAL_DATA_HANDLER = IexCloudHistoricalDataHandler()
 STORAGE = MegaNzFileStorage()
 STATUS_CODE_OK = 200
 STATUS_CODE_KO = 404
+AAPL_SYMBOL = "aapl"
+EXCHANGE = "IEX"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 
 
 @patch("file_storage.meganz_file_storage.MegaNzFileStorage.write")
 def test_write_candle_dataframe_in_file_storage(write_mocked):
-    ticker = "aapl"
     candles = np.array(
         [
             Candle(
-                symbol="aapl",
+                asset=AAPL_ASSET,
                 open=355.15,
                 high=355.15,
                 low=353.74,
@@ -45,7 +48,7 @@ def test_write_candle_dataframe_in_file_storage(write_mocked):
                 ),
             ),
             Candle(
-                symbol="aapl",
+                asset=AAPL_ASSET,
                 open=354.28,
                 high=354.96,
                 low=353.96,
@@ -56,7 +59,7 @@ def test_write_candle_dataframe_in_file_storage(write_mocked):
                 ),
             ),
             Candle(
-                symbol="aapl",
+                asset=AAPL_ASSET,
                 open=354.92,
                 high=355.32,
                 low=354.09,
@@ -67,7 +70,7 @@ def test_write_candle_dataframe_in_file_storage(write_mocked):
                 ),
             ),
             Candle(
-                symbol="aapl",
+                asset=AAPL_ASSET,
                 open=354.25,
                 high=354.59,
                 low=354.14,
@@ -78,7 +81,7 @@ def test_write_candle_dataframe_in_file_storage(write_mocked):
                 ),
             ),
             Candle(
-                symbol="aapl",
+                asset=AAPL_ASSET,
                 open=354.22,
                 high=354.26,
                 low=353.95,
@@ -91,23 +94,37 @@ def test_write_candle_dataframe_in_file_storage(write_mocked):
         ],
         dtype=Candle,
     )
-    candle_dataframe = CandleDataFrame.from_candle_list(symbol=ticker, candles=candles)
+    candle_dataframe = CandleDataFrame.from_candle_list(
+        asset=AAPL_ASSET, candles=candles
+    )
     historical_data_pipeline = HistoricalDataPipeline(
         TIINGO_HISTORICAL_DATA_HANDLER, STORAGE
     )
     historical_data_pipeline.write_candle_dataframe_in_file_storage(
-        ticker, candle_dataframe
+        AAPL_ASSET, candle_dataframe
     )
     expected_dates = ["20200617", "20200618", "20200619"]
     expected_output_filenames = [
         "{}/{}/{}/{}_{}.csv".format(
-            DATASETS_DIR, expected_dates[0], DONE_DIR, ticker, expected_dates[0]
+            DATASETS_DIR,
+            expected_dates[0],
+            DONE_DIR,
+            AAPL_ASSET.key(),
+            expected_dates[0],
         ),
         "{}/{}/{}/{}_{}.csv".format(
-            DATASETS_DIR, expected_dates[1], DONE_DIR, ticker, expected_dates[1]
+            DATASETS_DIR,
+            expected_dates[1],
+            DONE_DIR,
+            AAPL_ASSET.key(),
+            expected_dates[1],
         ),
         "{}/{}/{}/{}_{}.csv".format(
-            DATASETS_DIR, expected_dates[2], DONE_DIR, ticker, expected_dates[2]
+            DATASETS_DIR,
+            expected_dates[2],
+            DONE_DIR,
+            AAPL_ASSET.key(),
+            expected_dates[2],
         ),
     ]
     expected_contents = [
@@ -198,7 +215,11 @@ def test_get_todo_dates_no_available_date_for_download(ls_mocked):
 @patch("file_storage.meganz_file_storage.MegaNzFileStorage.write")
 @patch("file_storage.meganz_file_storage.MegaNzFileStorage.create_directory")
 def test_write_tickers_list_in_file_storage(create_directory_mocked, write_mocked):
-    tickers = ["aapl", "googl", "amzn"]
+    tickers = [
+        AAPL_ASSET,
+        Asset(symbol="googl", exchange=EXCHANGE),
+        Asset(symbol="amzn", exchange=EXCHANGE),
+    ]
     date_today = date(2020, 3, 1)
 
     historical_data_pipeline = HistoricalDataPipeline(
@@ -215,7 +236,7 @@ def test_write_tickers_list_in_file_storage(create_directory_mocked, write_mocke
         TICKERS_FILE_BASE_NAME,
         date_today.strftime(DATE_DIR_FORMAT),
     )
-    ticker_csv = "tickers\n" "aapl\n" "googl\n" "amzn\n"
+    ticker_csv = "tickers\n" "IEX-aapl\n" "IEX-googl\n" "IEX-amzn\n"
     write_mocked_calls = [call(ticker_filename, ticker_csv)]
     write_mocked.assert_has_calls(write_mocked_calls)
 
@@ -349,7 +370,7 @@ def test_get_all_tickers_for_all_periods(
     aapl_candles = np.array(
         [
             Candle(
-                symbol="aapl",
+                asset=AAPL_ASSET,
                 open=355.15,
                 high=355.15,
                 low=353.74,
@@ -360,7 +381,7 @@ def test_get_all_tickers_for_all_periods(
                 ),
             ),
             Candle(
-                symbol="aapl",
+                asset=AAPL_ASSET,
                 open=354.28,
                 high=354.96,
                 low=353.96,
@@ -374,13 +395,13 @@ def test_get_all_tickers_for_all_periods(
         dtype=Candle,
     )
     aapl_candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol="aapl", candles=aapl_candles
+        asset=AAPL_ASSET, candles=aapl_candles
     )
 
     googl_candles = np.array(
         [
             Candle(
-                symbol="googl",
+                asset=Asset(symbol="googl", exchange="IEX"),
                 open=354.92,
                 high=355.32,
                 low=354.09,
@@ -391,7 +412,7 @@ def test_get_all_tickers_for_all_periods(
                 ),
             ),
             Candle(
-                symbol="googl",
+                asset=Asset(symbol="googl", exchange="IEX"),
                 open=354.25,
                 high=354.59,
                 low=354.14,
@@ -405,13 +426,13 @@ def test_get_all_tickers_for_all_periods(
         dtype=Candle,
     )
     googl_candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol="googl", candles=googl_candles
+        asset=Asset(symbol="googl", exchange="IEX"), candles=googl_candles
     )
 
     amzn_candles = np.array(
         [
             Candle(
-                symbol="amzn",
+                asset=Asset(symbol="amzn", exchange="IEX"),
                 open=354.22,
                 high=354.26,
                 low=353.95,
@@ -422,7 +443,7 @@ def test_get_all_tickers_for_all_periods(
                 ),
             ),
             Candle(
-                symbol="amzn",
+                asset=Asset(symbol="amzn", exchange="IEX"),
                 open=354.13,
                 high=354.26,
                 low=353.01,
@@ -436,7 +457,7 @@ def test_get_all_tickers_for_all_periods(
         dtype=Candle,
     )
     amzn_candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol="amzn", candles=amzn_candles
+        asset=Asset(symbol="amzn", exchange="IEX"), candles=amzn_candles
     )
 
     request_ticker_data_from_periods_mocked.side_effect = [

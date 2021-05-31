@@ -1,17 +1,18 @@
 from datetime import datetime, timezone
 
 from common.utils import generate_object_id
+from models.asset import Asset
 from models.enums import Action, Direction
 
 
 class Transaction:
     """
-    Handles the transaction of a symbol, as used in the
+    Handles the transaction of a asset, as used in the
     Position class.
     Parameters
     ----------
-    symbol : `str`
-        The symbol symbol of the transaction
+    asset : `str`
+        The asset asset of the transaction
     size : `int`
         Whole number size of shares in the transaction
     timestamp : `datetime`
@@ -26,7 +27,7 @@ class Transaction:
 
     def __init__(
         self,
-        symbol: str,
+        asset: Asset,
         size: int,
         action,
         direction: Direction,
@@ -36,7 +37,7 @@ class Transaction:
         timestamp: datetime = datetime.now(timezone.utc),
         transaction_id: str = None,
     ):
-        self.symbol = symbol
+        self.asset = asset
         self.size = size
         self.action = action
         self.direction = direction
@@ -58,11 +59,11 @@ class Transaction:
             The string representation of the Transaction.
         """
         return (
-            "%s(symbol=%s, size=%s, action=%s, direction=%s, timestamp=%s, "
+            "%s(asset=%s, size=%s, action=%s, direction=%s, timestamp=%s, "
             "price=%s, order_id=%s)"
             % (
                 type(self).__name__,
-                self.symbol,
+                self.asset,
                 self.size,
                 self.action.name,
                 self.direction.name,

@@ -18,6 +18,7 @@ from file_storage.file_storage import FileStorage
 from logger import logger
 from market_data.common import get_periods
 from market_data.historical.historical_data_handler import HistoricalDataHandler
+from models.asset import Asset
 
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
@@ -40,13 +41,13 @@ class HistoricalDataPipeline:
         self.file_storage = file_storage
 
     def write_candle_dataframe_in_file_storage(
-        self, ticker: str, candle_dataframe: str
+        self, ticker: Asset, candle_dataframe: str
     ) -> None:
         groups_df = candle_dataframe.groupby(lambda ind: ind.strftime("%Y%m%d"))
         for date_str, group_df in groups_df:
             path = concat_path(DATASETS_DIR, date_str)
             self.file_storage.write(
-                "{}/{}/{}_{}.csv".format(path, DONE_DIR, ticker, date_str),
+                "{}/{}/{}_{}.csv".format(path, DONE_DIR, ticker.key(), date_str),
                 group_df.to_csv(),
             )
 
@@ -90,10 +91,10 @@ class HistoricalDataPipeline:
         return todo_dates
 
     def write_tickers_list_in_file_storage(
-        self, date_today: date, tickers: List[str]
+        self, date_today: date, tickers: List[Asset]
     ) -> None:
         tickers_df = pd.DataFrame()
-        tickers_df["tickers"] = tickers
+        tickers_df["tickers"] = [ticker.key() for ticker in tickers]
         self.file_storage.create_directory(DATASETS_DIR, TICKERS_DIR)
         self.file_storage.write(
             "{}/{}/{}_{}.csv".format(

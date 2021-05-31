@@ -5,6 +5,7 @@ from common.helper import get_or_create_nested_dict
 from indicators.common import PriceType
 from indicators.indicator import Indicator
 from indicators.rolling_window import PriceRollingWindowManager, RollingWindow
+from models.asset import Asset
 
 
 class Sma(RollingWindow):
@@ -88,30 +89,30 @@ class SmaManager:
 
     def __call__(
         self,
-        symbol: str,
+        asset: Asset,
         period: int,
         time_unit: pd.offsets.DateOffset,
         price_type: PriceType = PriceType.CLOSE,
     ) -> Sma:
-        get_or_create_nested_dict(self.cache, symbol, period, time_unit)
+        get_or_create_nested_dict(self.cache, asset, period, time_unit)
 
-        if price_type not in self.cache[symbol][period][time_unit]:
+        if price_type not in self.cache[asset][period][time_unit]:
             price_rolling_window = self.price_rolling_window_manager(
-                symbol, period, time_unit, price_type
+                asset, period, time_unit, price_type
             )
-            self.cache[symbol][period][time_unit][price_type] = Sma(
+            self.cache[asset][period][time_unit][price_type] = Sma(
                 period, price_rolling_window, dtype=float, preload=self.preload
             )
-        return self.cache[symbol][period][time_unit][price_type]
+        return self.cache[asset][period][time_unit][price_type]
 
     def warmup(self):
-        for symbol in self.cache:
-            for period in self.cache[symbol]:
-                for time_unit in self.cache[symbol][period]:
-                    for price_type in self.cache[symbol][period][time_unit]:
-                        sma_stream = self.cache[symbol][period][time_unit][price_type]
+        for asset in self.cache:
+            for period in self.cache[asset]:
+                for time_unit in self.cache[asset][period]:
+                    for price_type in self.cache[asset][period][time_unit]:
+                        sma_stream = self.cache[asset][period][time_unit][price_type]
                         sma_stream.set_size(sma_stream.rolling_window_stream.size)
                         if self.preload:
-                            self.cache[symbol][period][time_unit][
+                            self.cache[asset][period][time_unit][
                                 price_type
                             ].initialize_sum()

@@ -4,13 +4,16 @@ from datetime import timedelta
 from threading import Thread
 from typing import Any, List
 
+import numpy as np
+
 import logger
 import settings
 from feed.feed import Feed
 from indicators.indicators_manager import IndicatorsManager
+from models.asset import Asset
 from models.candle import Candle
 from models.enums import EventType
-from models.event import MarketEodDataEvent, SymbolSpecificEvent
+from models.event import MarketEodDataEvent, AssetSpecificEvent, DataEvent
 from order_manager.order_manager import OrderManager
 from strategy.strategy import Strategy
 
@@ -61,11 +64,11 @@ class ExpiringSet:
 
 class EventLoop:
     def _init_strategy_instance(self, strategy_class: type):
-        for symbol in self.symbols:
+        for asset in self.assets:
             if issubclass(strategy_class, Strategy):
                 self.strategy_instances.append(
                     strategy_class(
-                        symbol,
+                        asset,
                         self.order_manager,
                         self.events,
                         self.indicators_manager,
@@ -77,8 +80,8 @@ class EventLoop:
             self._init_strategy_instance(strategy_class)
 
     def _init_seen_candles(self):
-        for symbol in self.symbols:
-            self.seen_candles[symbol] = ExpiringSet()
+        for asset in self.assets:
+            self.seen_candles[asset] = ExpiringSet()
 
     def run_strategy(self, strategy: Strategy, candle: Candle):
         strategy.process_candle(candle, self.clock)
@@ -91,21 +94,39 @@ class EventLoop:
                 strategy.order_manager.broker.get_portfolio_cash_balance(),
             )
 
-    def handle_delayed_events(self, candle: Candle):
-        symbol_delayed_events = []
-        if candle.symbol in self.delayed_events:
-            for event in self.delayed_events[candle.symbol]:
+    def run_synchronized_strategy(self, candles: np.array):
+        for strategy in self.strategy_instances:
+            strategy.process_candle(candles, self.clock)
+            LOG.info(
+                "Strategy results: %s",
+                strategy.order_manager.broker.get_portfolio_cash_balance(),
+            )
+
+    def handle_asset_delayed_events(self, candle: Candle):
+        asset_delayed_events = []
+        if candle.asset in self.asset_delayed_events:
+            for event in self.asset_delayed_events[candle.asset]:
                 event.bars_delay -= 1
                 if event.bars_delay == 0:
                     self.events.append(event)
                 else:
-                    symbol_delayed_events.append(event)
-            self.delayed_events[candle.symbol] = symbol_delayed_events
+                    asset_delayed_events.append(event)
+            self.asset_delayed_events[candle.asset] = asset_delayed_events
+
+    def handle_delayed_events(self):
+        delayed_events = []
+        for event in self.delayed_events:
+            event.bars_delay -= 1
+            if event.bars_delay == 0:
+                self.events.append(event)
+            else:
+                delayed_events.append(event)
+        self.delayed_events = delayed_events
 
     def __init__(
         self,
         events: deque,
-        symbols: List[str],
+        assets: List[Asset],
         feed: Feed,
         order_manager: OrderManager,
         indicators_manager: IndicatorsManager,
@@ -114,8 +135,9 @@ class EventLoop:
         close_at_end_of_day=True,
     ):
         self.events: deque = events
-        self.delayed_events = {}
-        self.symbols = sorted(set(symbols))
+        self.asset_delayed_events = {}
+        self.delayed_events = []
+        self.assets = sorted(set(assets))
         self.feed = feed
         self.order_manager = order_manager
         self.broker = self.order_manager.broker
@@ -166,55 +188,81 @@ class EventLoop:
                 if event is None:
                     continue
 
-                if isinstance(event, SymbolSpecificEvent):
-                    if event.bars_delay > 0:
-                        if event.symbol not in self.delayed_events:
-                            self.delayed_events[event.symbol] = [event]
+                if event.bars_delay > 0:
+                    if isinstance(event, AssetSpecificEvent):
+                        if event.asset not in self.asset_delayed_events:
+                            self.asset_delayed_events[event.asset] = [event]
                         else:
-                            self.delayed_events[event.symbol].append(event)
-                        continue
+                            self.asset_delayed_events[event.asset].append(event)
+                    elif isinstance(event, DataEvent):
+                        self.delayed_events.append(event)
+                    continue
 
                 if event.type == EventType.MARKET_DATA:
-                    candle = event.candle
-                    timestamp_str = str(candle.timestamp)
-                    if timestamp_str in self.seen_candles[candle.symbol]:
-                        LOG.info(
-                            "Candle with symbol %s and timestamp %s has already been processed",
-                            candle.symbol,
-                            timestamp_str,
-                        )
-                        continue
-                    self.seen_candles[candle.symbol].add(timestamp_str)
-                    LOG.info("Dequeue new candle: %s", candle.to_json())
-                    self.indicators_manager.RollingWindow(candle.symbol).push(candle)
-                    self.clock.update(
-                        candle.symbol, candle.timestamp + timedelta(minutes=1)
-                    )
-                    self.broker.update_price(candle)
-                    self.run_strategies(candle)
-                    self.broker.execute_open_orders()
-                    self.handle_delayed_events(candle)
-                    if self.close_at_end_of_day and self.clock.end_of_day(candle.symbol):
+                    candles = event.candles
+                    eod_assets = []
+                    for asset in candles:
+                        candles = candles[asset]
+                        for candle in candles:
+                            timestamp_str = str(candle.timestamp)
+                            if timestamp_str in self.seen_candles[candle.asset]:
+                                LOG.info(
+                                    "Candle with asset %s and timestamp %s has already been processed",
+                                    candle.asset,
+                                    timestamp_str,
+                                )
+                                continue
+                            self.seen_candles[candle.asset].add(timestamp_str)
+                            LOG.info("Dequeue new candle: %s", candle.to_json())
+                            self.indicators_manager.RollingWindow(candle.asset).push(
+                                candle
+                            )
+                            self.clock.update(
+                                candle.asset, candle.timestamp + timedelta(minutes=1)
+                            )
+                            self.broker.update_price(candle)
+                            self.run_strategies(candle)
+                            self.broker.execute_open_orders()
+                            self.handle_asset_delayed_events(candle)
+                            self.handle_delayed_events()
+                            if self.close_at_end_of_day and self.clock.end_of_day(
+                                candle.asset
+                            ):
+                                eod_assets.append(candle.asset)
+                    if len(eod_assets) != 0:
                         bars_delay = 0
                         if not self.live:
                             bars_delay = 1
-                        self.events.append(
-                            MarketEodDataEvent(candle.symbol, bars_delay)
+                        timestamp = min(
+                            [
+                                self.clock.current_time(asset=asset)
+                                for asset in eod_assets
+                            ]
                         )
+                        self.events.append(
+                            MarketEodDataEvent(
+                                assets=eod_assets,
+                                timestamp=timestamp,
+                                bars_delay=bars_delay,
+                            )
+                        )
+
                 elif event.type == EventType.OPEN_ORDERS:
                     self.broker.execute_open_orders()
                 elif event.type == EventType.PENDING_SIGNAL:
                     self.order_manager.process_pending_signals()
                 elif event.type == EventType.MARKET_EOD_DATA:
-                    symbol = event.symbol
-                    self.broker.close_all_open_positions(symbol)
+                    assets = event.assets
+                    for asset in assets:
+                        self.broker.close_all_open_positions(asset)
                 elif event.type == EventType.SIGNAL:
                     signal = event.signal
                     self.order_manager.check_signal(signal)
                 elif event.type == EventType.MARKET_DATA_END:
-                    symbol = event.symbol
-                    self.broker.close_all_open_positions(
-                        symbol=symbol, end_of_day=False
-                    )
+                    assets = event.assets
+                    for asset in assets:
+                        self.broker.close_all_open_positions(
+                            asset=asset, end_of_day=False
+                        )
                     data_to_process = False
                     break

@@ -5,11 +5,11 @@ import pandas as pd
 from market_data.historical.binance_historical_data_handler import (
     BinanceHistoricalDataHandler,
 )
-from market_data.historical.tiingo_historical_crypto_data_handler import (
-    TiingoHistoricalCryptoDataHandler,
-)
+from models.asset import Asset
 
 SYMBOL = "BTCUSDT"
+EXCHANGE = "BINANCE"
+ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 
 
 def test_parse_get_tickers_response():
@@ -162,7 +162,7 @@ def test_parse_get_tickers_response():
     )
     expected_parsed_response = ["ETHBTC", "LTCBTC"]
     assert (
-        TiingoHistoricalCryptoDataHandler.parse_get_tickers_response(tickers_response)
+        BinanceHistoricalDataHandler.parse_get_tickers_response(tickers_response)
         == expected_parsed_response
     )
 
@@ -247,7 +247,7 @@ def test_ticker_data_to_dataframe():
             ],
         ]
     )
-    df = BinanceHistoricalDataHandler.ticker_data_to_dataframe(SYMBOL, data)
+    df = BinanceHistoricalDataHandler.ticker_data_to_dataframe(ASSET, data)
 
     expected_df_columns_values = {
         "date": [

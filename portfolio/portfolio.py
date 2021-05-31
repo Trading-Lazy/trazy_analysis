@@ -8,6 +8,7 @@ import settings
 from common.constants import DATE_FORMAT
 from common.helper import get_or_create_nested_dict
 from logger import logger
+from models.asset import Asset
 from models.enums import Action
 from portfolio.portfolio_event import PortfolioEvent
 from position.position_handler import PositionHandler
@@ -216,7 +217,7 @@ class Portfolio:
         description = "%s %s %s %s %s" % (
             direction,
             txn.size,
-            txn.symbol.upper(),
+            txn.asset.key().upper(),
             txn.price,
             datetime.strftime(txn.timestamp, "%d/%m/%Y"),
         )
@@ -234,7 +235,7 @@ class Portfolio:
                 "- Debit: %s, Balance: %s"
                 % (
                     txn.timestamp.strftime(DATE_FORMAT),
-                    txn.symbol,
+                    txn.asset,
                     txn.action.name,
                     direction,
                     self.portfolio_id,
@@ -256,7 +257,7 @@ class Portfolio:
                 "- Credit: %s, Balance: %s"
                 % (
                     txn.timestamp.strftime(DATE_FORMAT),
-                    txn.symbol,
+                    txn.asset,
                     txn.action.name,
                     direction,
                     self.portfolio_id,
@@ -277,10 +278,10 @@ class Portfolio:
             The portfolio holdings.
         """
         holdings = {}
-        for symbol, values in self.pos_handler.positions.items():
-            get_or_create_nested_dict(holdings, symbol)
+        for asset, values in self.pos_handler.positions.items():
+            get_or_create_nested_dict(holdings, asset)
             for direction, pos in values.items():
-                holdings[symbol][direction] = {
+                holdings[asset][direction] = {
                     "size": pos.net_size,
                     "market_value": pos.market_value,
                     "unrealised_pnl": pos.unrealised_pnl,
@@ -290,23 +291,23 @@ class Portfolio:
         return holdings
 
     def update_market_value_of_symbol(
-        self, symbol: str, current_price: float, timestamp=datetime.now(timezone.utc)
+        self, asset: Asset, current_price: float, timestamp=datetime.now(timezone.utc)
     ) -> None:
         """
-        Update the market value of the symbol to the current
+        Update the market value of the asset to the current
         trade price.
         """
-        if symbol not in self.pos_handler.positions:
+        if asset not in self.pos_handler.positions:
             return
         else:
             if current_price < 0.0:
                 raise ValueError(
                     "Current trade price of %s is negative for "
-                    "symbol %s. Cannot update position." % (current_price, symbol)
+                    "asset %s. Cannot update position." % (current_price, asset)
                 )
 
-            for direction in self.pos_handler.positions[symbol]:
-                self.pos_handler.positions[symbol][direction].update_price(
+            for direction in self.pos_handler.positions[asset]:
+                self.pos_handler.positions[asset][direction].update_price(
                     current_price, timestamp
                 )
 

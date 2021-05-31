@@ -12,6 +12,7 @@ from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc
 from indicators.common import PriceType
 from indicators.indicator import Indicator
+from models.asset import Asset
 from models.candle import Candle
 
 
@@ -191,7 +192,7 @@ class TimeFramedCandleRollingWindow(RollingWindow):
                     self.aggregated_candle = self.aggregated_df.get_candle(0)
                     super().handle_new_data(self.aggregated_candle)
                 self.aggregated_df = CandleDataFrame.from_candle_list(
-                    symbol=new_data.symbol, candles=np.array([new_data], dtype=Candle)
+                    asset=new_data.asset, candles=np.array([new_data], dtype=Candle)
                 )
                 self.aggregate_oldest_timestamp = round_time(
                     new_data.timestamp, self.time_unit
@@ -204,38 +205,38 @@ class RollingWindowManager:
     def __init__(self, preload=True):
         self.cache: Dict[str, RollingWindow] = {}
 
-        # max_periods is a dictionary with symbols as the keys
-        # the values are the max look back period for this symbol
+        # max_periods is a dictionary with assets as the keys
+        # the values are the max look back period for this asset
         self.max_periods: Dict[str, int] = {}
         self.preload = preload
 
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)
-    def __call__(self, symbol: str, period: int = 5) -> RollingWindow:
-        if symbol not in self.cache:
-            self.max_periods[symbol] = period
-            self.cache[symbol] = RollingWindow(dtype=Candle, preload=self.preload)
-        elif period > self.max_periods[symbol]:
-            self.max_periods[symbol] = period
-        return self.cache[symbol]
+    def __call__(self, asset: Asset, period: int = 5) -> RollingWindow:
+        if asset not in self.cache:
+            self.max_periods[asset] = period
+            self.cache[asset] = RollingWindow(dtype=Candle, preload=self.preload)
+        elif period > self.max_periods[asset]:
+            self.max_periods[asset] = period
+        return self.cache[asset]
 
     def warmup(self, preload_data: Dict[str, np.array]):
         if self.preload:
-            for symbol in preload_data:
-                max_period = len(preload_data[symbol])
+            for asset in preload_data:
+                max_period = len(preload_data[asset])
 
-                if symbol in self.max_periods:
-                    max_period = int(max(max_period, self.max_periods[symbol]))
+                if asset in self.max_periods:
+                    max_period = int(max(max_period, self.max_periods[asset]))
 
-                if symbol not in self.cache:
-                    self.cache[symbol] = RollingWindow()
-                self.cache[symbol].set_size(max_period)
-                self.cache[symbol].prefill(preload_data[symbol])
-                self.max_periods[symbol] = max_period
+                if asset not in self.cache:
+                    self.cache[asset] = RollingWindow()
+                self.cache[asset].set_size(max_period)
+                self.cache[asset].prefill(preload_data[asset])
+                self.max_periods[asset] = max_period
 
         else:
-            for symbol in self.max_periods:
-                max_period = self.max_periods[symbol]
-                self.cache[symbol].set_size(max_period)
+            for asset in self.max_periods:
+                max_period = self.max_periods[asset]
+                self.cache[asset].set_size(max_period)
 
 
 class TimeFramedCandleRollingWindowManager:
@@ -253,47 +254,44 @@ class TimeFramedCandleRollingWindowManager:
 
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)
     def __call__(
-        self, symbol: str, period: int, time_unit: pd.offsets.DateOffset
+        self, asset: Asset, period: int, time_unit: pd.offsets.DateOffset
     ) -> TimeFramedCandleRollingWindow:
-        get_or_create_nested_dict(self.cache, symbol)
-        get_or_create_nested_dict(self.max_periods, symbol)
-        rolling_window = self.rolling_window_manager(symbol, period)
-        if time_unit not in self.cache[symbol]:
-            self.cache[symbol][time_unit] = TimeFramedCandleRollingWindow(
+        get_or_create_nested_dict(self.cache, asset)
+        get_or_create_nested_dict(self.max_periods, asset)
+        rolling_window = self.rolling_window_manager(asset, period)
+        if time_unit not in self.cache[asset]:
+            self.cache[asset][time_unit] = TimeFramedCandleRollingWindow(
                 time_unit=time_unit,
                 market_cal=self.market_cal,
                 source_indicator=rolling_window,
                 preload=self.preload,
             )
-            self.max_periods[symbol][time_unit] = period
-        elif period > self.max_periods[symbol][time_unit]:
-            self.max_periods[symbol][time_unit] = period
-        return self.cache[symbol][time_unit]
-
+            self.max_periods[asset][time_unit] = period
+        elif period > self.max_periods[asset][time_unit]:
+            self.max_periods[asset][time_unit] = period
+        return self.cache[asset][time_unit]
 
     def warmup(self):
 
-        for symbol in self.max_periods:
-            for time_unit in self.max_periods[symbol]:
-                max_period = self.max_periods[symbol][time_unit]
-                preload_data_arr = self.cache[symbol][time_unit].source_indicator.window
+        for asset in self.max_periods:
+            for time_unit in self.max_periods[asset]:
+                max_period = self.max_periods[asset][time_unit]
+                preload_data_arr = self.cache[asset][time_unit].source_indicator.window
 
                 if self.preload:
                     candles_len = len(preload_data_arr)
                     max_period = int(max(max_period, candles_len))
-                    self.cache[symbol][time_unit].set_size(max_period)
+                    self.cache[asset][time_unit].set_size(max_period)
 
                     if time_unit == timedelta(minutes=1):
-                        self.cache[symbol][time_unit].prefill(preload_data_arr)
+                        self.cache[asset][time_unit].prefill(preload_data_arr)
                     else:
                         aggregated_df = CandleDataFrame.from_candle_list(
-                            symbol=symbol, candles=preload_data_arr
+                            asset=asset, candles=preload_data_arr
                         ).aggregate(time_unit, self.market_cal)
-                        self.cache[symbol][time_unit].prefill(
-                            aggregated_df.to_candles()
-                        )
+                        self.cache[asset][time_unit].prefill(aggregated_df.to_candles())
                 else:
-                    self.cache[symbol][time_unit].set_size(max_period)
+                    self.cache[asset][time_unit].set_size(max_period)
 
 
 class PriceRollingWindowManager:
@@ -314,43 +312,43 @@ class PriceRollingWindowManager:
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)
     def __call__(
         self,
-        symbol: str,
+        asset: Asset,
         period: int,
         time_unit: pd.offsets.DateOffset,
         price_type: PriceType,
     ) -> TimeFramedCandleRollingWindow:
-        get_or_create_nested_dict(self.cache, symbol, time_unit)
-        get_or_create_nested_dict(self.max_periods, symbol, time_unit)
+        get_or_create_nested_dict(self.cache, asset, time_unit)
+        get_or_create_nested_dict(self.max_periods, asset, time_unit)
         candle_rolling_window = self.time_framed_candle_rolling_window_manager(
-            symbol=symbol,
+            asset=asset,
             time_unit=time_unit,
             period=period,
         )
-        if price_type not in self.cache[symbol][time_unit]:
+        if price_type not in self.cache[asset][time_unit]:
             price_selector_function = get_price_selector_function(price_type)
             price_rolling_window = candle_rolling_window.map(price_selector_function)
-            self.cache[symbol][time_unit][price_type] = price_rolling_window
-            self.max_periods[symbol][time_unit][price_type] = period
-        elif period > self.max_periods[symbol][time_unit][price_type]:
-            self.max_periods[symbol][time_unit][price_type] = period
-        return self.cache[symbol][time_unit][price_type]
+            self.cache[asset][time_unit][price_type] = price_rolling_window
+            self.max_periods[asset][time_unit][price_type] = period
+        elif period > self.max_periods[asset][time_unit][price_type]:
+            self.max_periods[asset][time_unit][price_type] = period
+        return self.cache[asset][time_unit][price_type]
 
     def warmup(self):
-        for symbol in self.max_periods:
-            for time_unit in self.max_periods[symbol]:
-                for price_type in self.max_periods[symbol][time_unit]:
-                    max_period = self.max_periods[symbol][time_unit][price_type]
+        for asset in self.max_periods:
+            for time_unit in self.max_periods[asset]:
+                for price_type in self.max_periods[asset][time_unit]:
+                    max_period = self.max_periods[asset][time_unit][price_type]
                     candle_rolling_window = (
                         self.time_framed_candle_rolling_window_manager(
-                            symbol=symbol,
+                            asset=asset,
                             time_unit=time_unit,
                             period=max_period,
                         )
                     )
-                    self.cache[symbol][time_unit][price_type].set_size(
+                    self.cache[asset][time_unit][price_type].set_size(
                         candle_rolling_window.size
                     )
                     if self.preload:
-                        self.cache[symbol][time_unit][price_type].prefill(
+                        self.cache[asset][time_unit][price_type].prefill(
                             candle_rolling_window.window
                         )

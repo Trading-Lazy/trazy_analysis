@@ -48,7 +48,6 @@ class FeeModel:
         tax = self._calc_tax(symbol, size, consideration, broker)
         return commission + tax
 
-
     @abstractmethod
     def calc_max_size_for_cash(self, cash: float, price: float) -> float:
         """

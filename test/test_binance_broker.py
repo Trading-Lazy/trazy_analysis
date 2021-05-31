@@ -9,6 +9,7 @@ from freezegun import freeze_time
 
 from broker.binance_broker import BinanceBroker
 from common.clock import LiveClock
+from models.asset import Asset
 from models.enums import Action, Direction, OrderType
 from models.order import Order
 from portfolio.portfolio_event import PortfolioEvent
@@ -16,9 +17,13 @@ from position.position import Position
 
 INITIAL_CASH = "51.07118"
 
+EXCHANGE = "BINANCE"
 SYMBOL1 = "ETHEUR"
+ASSET1 = Asset(symbol=SYMBOL1, exchange=EXCHANGE)
 SYMBOL2 = "XRPEUR"
+ASSET2 = Asset(symbol=SYMBOL2, exchange=EXCHANGE)
 SYMBOL3 = "SXPEUR"
+ASSET3 = Asset(symbol=SYMBOL3, exchange=EXCHANGE)
 
 ORDER_ID1 = "c8741cfa-6170-42c9-b952-e915bc614b36"
 ORDER_ID2 = "d52d385d-f346-4f0f-88cb-6e845b5dfa75"
@@ -643,11 +648,11 @@ def test_lot_size_info(
     events = deque()
     binance_broker = BinanceBroker(clock=clock, events=events)
     assert binance_broker.lot_size == {
-        "BTCEUR": 0.000001,
-        "ETHEUR": 0.00001,
-        "LINKEUR": 0.001,
-        "SXPEUR": 0.001,
-        "XRPEUR": 0.1,
+        Asset(symbol="BTCEUR", exchange=EXCHANGE): 0.000001,
+        Asset(symbol="ETHEUR", exchange=EXCHANGE): 0.00001,
+        Asset(symbol="LINKEUR", exchange=EXCHANGE): 0.001,
+        Asset(symbol="SXPEUR", exchange=EXCHANGE): 0.001,
+        Asset(symbol="XRPEUR", exchange=EXCHANGE): 0.1,
     }
 
     assert isinstance(binance_broker.lot_size_last_update, datetime)
@@ -677,11 +682,11 @@ def test_update_price(
     events = deque()
     binance_broker = BinanceBroker(clock=clock, events=events)
     assert binance_broker.last_prices == {
-        "BTCEUR": 40825.94,
-        "ETHEUR": 1353.12,
-        "LINKEUR": 22.55,
-        "SXPEUR": 1.904,
-        "XRPEUR": 0.391,
+        Asset(symbol="BTCEUR", exchange=EXCHANGE): 40825.94,
+        Asset(symbol="ETHEUR", exchange=EXCHANGE): 1353.12,
+        Asset(symbol="LINKEUR", exchange=EXCHANGE): 22.55,
+        Asset(symbol="SXPEUR", exchange=EXCHANGE): 1.904,
+        Asset(symbol="XRPEUR", exchange=EXCHANGE): 0.391,
     }
 
     assert isinstance(binance_broker.price_last_update, datetime)
@@ -722,7 +727,7 @@ def test_update_balances_and_positions(
     buy_size1 = 0.15067000
     sell_size1 = 0
     expected_position1 = Position(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         price=price1,
         buy_size=buy_size1,
         sell_size=sell_size1,
@@ -733,7 +738,7 @@ def test_update_balances_and_positions(
     buy_size2 = 0
     sell_size2 = -29.47050000
     expected_position2 = Position(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         price=price2,
         buy_size=buy_size2,
         sell_size=sell_size2,
@@ -741,8 +746,8 @@ def test_update_balances_and_positions(
     )
 
     expected_positions = {
-        SYMBOL2: {Direction.SHORT: expected_position2},
-        SYMBOL1: {Direction.LONG: expected_position1},
+        ASSET2: {Direction.SHORT: expected_position2},
+        ASSET1: {Direction.LONG: expected_position1},
     }
 
     assert binance_broker.portfolio.pos_handler.positions == expected_positions
@@ -787,12 +792,12 @@ def test_has_opened_position(
     events = deque()
     binance_broker = BinanceBroker(clock=clock, events=events)
 
-    assert binance_broker.has_opened_position(SYMBOL1, Direction.LONG)
-    assert not binance_broker.has_opened_position(SYMBOL1, Direction.SHORT)
-    assert binance_broker.has_opened_position(SYMBOL2, Direction.SHORT)
-    assert not binance_broker.has_opened_position(SYMBOL2, Direction.LONG)
-    assert not binance_broker.has_opened_position(SYMBOL3, Direction.LONG)
-    assert not binance_broker.has_opened_position(SYMBOL3, Direction.SHORT)
+    assert binance_broker.has_opened_position(ASSET1, Direction.LONG)
+    assert not binance_broker.has_opened_position(ASSET1, Direction.SHORT)
+    assert binance_broker.has_opened_position(ASSET2, Direction.SHORT)
+    assert not binance_broker.has_opened_position(ASSET2, Direction.LONG)
+    assert not binance_broker.has_opened_position(ASSET3, Direction.LONG)
+    assert not binance_broker.has_opened_position(ASSET3, Direction.SHORT)
 
 
 @patch("common.clock.LiveClock.current_time")
@@ -857,7 +862,7 @@ def test_update_transactions(
             "2021-02-23 11:45:57.873000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="LONG 29.5 XRPEUR 0.33822 23/02/2021",
+        description="LONG 29.5 BINANCE-XRPEUR 0.33822 23/02/2021",
         debit=10.006990000000002,
         credit=0.0,
         balance=51.07118,
@@ -867,7 +872,7 @@ def test_update_transactions(
             "2021-02-23 21:29:44.610000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="LONG 29.4 XRPEUR 0.38805 23/02/2021",
+        description="LONG 29.4 BINANCE-XRPEUR 0.38805 23/02/2021",
         debit=0.0,
         credit=11.41,
         balance=51.07,
@@ -877,7 +882,7 @@ def test_update_transactions(
             "2021-02-23 11:45:59.873000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="LONG 0.000367 BTCEUR 40825.94 23/02/2021",
+        description="LONG 0.000367 BINANCE-BTCEUR 40825.94 23/02/2021",
         debit=15.01261998,
         credit=0.0,
         balance=51.07118,
@@ -887,7 +892,7 @@ def test_update_transactions(
             "2021-02-23 21:29:49.610000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="LONG 0.000367 BTCEUR 43825.94 23/02/2021",
+        description="LONG 0.000367 BINANCE-BTCEUR 43825.94 23/02/2021",
         debit=0.0,
         credit=16.08,
         balance=51.07,
@@ -901,7 +906,9 @@ def test_update_transactions(
         call(startTime=1612796880000, symbol="XRPEUR"),
         call(startTime=1612797000000, symbol="ETHEUR"),
     ]
-    assert get_my_trades_mocked.assaert_has_calls(get_my_trades_mocked_calls, any_order=True)
+    assert get_my_trades_mocked.assaert_has_calls(
+        get_my_trades_mocked_calls, any_order=True
+    )
 
 
 @patch("binance.client.Client.order_market_sell")
@@ -941,7 +948,7 @@ def test_execute_market_order(
 
     # test buy orders
     buy_order = Order(
-        symbol=SYMBOL3,
+        asset=ASSET3,
         action=Action.BUY,
         direction=Direction.LONG,
         size=26.97654,
@@ -950,10 +957,17 @@ def test_execute_market_order(
         clock=clock,
     )
 
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+    }
     binance_broker.execute_order(buy_order)
     assert buy_order.order_id == "134562464"
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR", "SXPEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="SXPEUR", exchange=EXCHANGE),
+    }
     # Order submitted to the broker but not filled yet
     binance_broker.execute_order(buy_order)
     assert binance_broker.open_orders_ids == {"134562468"}
@@ -963,7 +977,7 @@ def test_execute_market_order(
 
     # test sell orders
     sell_order = Order(
-        symbol=SYMBOL3,
+        asset=ASSET3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=26.77654,
@@ -972,25 +986,33 @@ def test_execute_market_order(
         clock=clock,
     )
 
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR", "SXPEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="SXPEUR", exchange=EXCHANGE),
+    }
     binance_broker.execute_order(sell_order)
     assert sell_order.order_id == "134791954"
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR", "SXPEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="SXPEUR", exchange=EXCHANGE),
+    }
     # Order submitted to the broker but not filled yet
     binance_broker.execute_order(sell_order)
     assert binance_broker.open_orders_ids == {"134562468", "134791962"}
 
     # check mock calls
     order_market_buy_mocked_calls = [
-        call(symbol=SYMBOL3, quantity=Decimal("26.976")),
-        call(symbol=SYMBOL3, quantity=Decimal("26.976")),
-        call(symbol=SYMBOL3, quantity=Decimal("26.976")),
+        call(symbol=ASSET3.symbol, quantity=Decimal("26.976")),
+        call(symbol=ASSET3.symbol, quantity=Decimal("26.976")),
+        call(symbol=ASSET3.symbol, quantity=Decimal("26.976")),
     ]
     order_market_buy_mocked.assert_has_calls(order_market_buy_mocked_calls)
 
     order_market_sell_mocked_calls = [
-        call(symbol=SYMBOL3, quantity=Decimal("26.776")),
-        call(symbol=SYMBOL3, quantity=Decimal("26.776")),
+        call(symbol=ASSET3.symbol, quantity=Decimal("26.776")),
+        call(symbol=ASSET3.symbol, quantity=Decimal("26.776")),
     ]
     order_market_sell_mocked.assert_has_calls(order_market_sell_mocked_calls)
 
@@ -1025,7 +1047,7 @@ def test_execute_limit_order(
 
     # test buy orders
     buy_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=26.97654,
@@ -1035,10 +1057,16 @@ def test_execute_limit_order(
         clock=clock,
     )
 
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+    }
     binance_broker.execute_order(buy_order)
     assert buy_order.order_id == "134879100"
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+    }
     assert binance_broker.open_orders_ids == {"134879100"}
 
     # test binance buyorder Exception
@@ -1046,7 +1074,7 @@ def test_execute_limit_order(
 
     # test sell orders
     sell_order = Order(
-        symbol=SYMBOL1,
+        asset=ASSET1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=26.77654,
@@ -1056,10 +1084,16 @@ def test_execute_limit_order(
         clock=clock,
     )
 
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+    }
     binance_broker.execute_order(sell_order)
     assert sell_order.order_id == "134912358"
-    assert binance_broker.currency_pairs_traded == {"XRPEUR", "ETHEUR"}
+    assert binance_broker.currency_pairs_traded == {
+        Asset(symbol="XRPEUR", exchange=EXCHANGE),
+        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+    }
     assert binance_broker.open_orders_ids == {"134912358", "134879100"}
 
     # check mock calls
@@ -1100,7 +1134,7 @@ def test_execute_stop_order(
 
     # stop order sell
     stop_order_sell = Order(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -1113,13 +1147,13 @@ def test_execute_stop_order(
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == stop_order_sell
 
-    binance_broker.last_prices[SYMBOL2] = 0.18
+    binance_broker.last_prices[ASSET2] = 0.18
     binance_broker.execute_order(stop_order_sell)
     assert len(binance_broker.open_orders) == 0
 
     # stop order buy
     stop_order_buy = Order(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -1132,7 +1166,7 @@ def test_execute_stop_order(
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == stop_order_buy
 
-    binance_broker.last_prices[SYMBOL2] = 0.46
+    binance_broker.last_prices[ASSET2] = 0.46
     binance_broker.execute_order(stop_order_buy)
     assert len(binance_broker.open_orders) == 0
 
@@ -1166,7 +1200,7 @@ def test_execute_target_order(
 
     # target order sell
     target_order_sell = Order(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -1179,13 +1213,13 @@ def test_execute_target_order(
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == target_order_sell
 
-    binance_broker.last_prices[SYMBOL2] = 1.02
+    binance_broker.last_prices[ASSET2] = 1.02
     binance_broker.execute_order(target_order_sell)
     assert len(binance_broker.open_orders) == 0
 
     # target order buy
     target_order_buy = Order(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -1194,12 +1228,12 @@ def test_execute_target_order(
         type=OrderType.TARGET,
         clock=clock,
     )
-    binance_broker.last_prices[SYMBOL2] = 1.13
+    binance_broker.last_prices[ASSET2] = 1.13
     binance_broker.execute_order(target_order_buy)
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == target_order_buy
 
-    binance_broker.last_prices[SYMBOL2] = 0.87
+    binance_broker.last_prices[ASSET2] = 0.87
     binance_broker.execute_order(target_order_buy)
     assert len(binance_broker.open_orders) == 0
 
@@ -1234,7 +1268,7 @@ def test_execute_trailing_stop_order_sell(
     binance_broker = BinanceBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
@@ -1243,20 +1277,20 @@ def test_execute_trailing_stop_order_sell(
         type=OrderType.TRAILING_STOP,
         clock=clock,
     )
-    binance_broker.last_prices[SYMBOL2] = 1.11
+    binance_broker.last_prices[ASSET2] = 1.11
     binance_broker.execute_order(trailing_stop_order)
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == trailing_stop_order
     assert trailing_stop_order.order_id is not None
     assert trailing_stop_order.stop == 1.11 - 1.11 * trailing_stop_order.stop_pct
 
-    binance_broker.last_prices[SYMBOL2] = 1.15
+    binance_broker.last_prices[ASSET2] = 1.15
     binance_broker.execute_order(trailing_stop_order)
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == trailing_stop_order
     assert trailing_stop_order.stop == 1.15 - 1.15 * trailing_stop_order.stop_pct
 
-    binance_broker.last_prices[SYMBOL2] = 1.09
+    binance_broker.last_prices[ASSET2] = 1.09
     binance_broker.execute_order(trailing_stop_order)
     assert len(binance_broker.open_orders) == 0
 
@@ -1288,7 +1322,7 @@ def test_execute_trailing_stop_order_buy(
     binance_broker = BinanceBroker(clock=clock, events=events)
 
     trailing_stop_order = Order(
-        symbol=SYMBOL2,
+        asset=ASSET2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
@@ -1297,20 +1331,20 @@ def test_execute_trailing_stop_order_buy(
         type=OrderType.TRAILING_STOP,
         clock=clock,
     )
-    binance_broker.last_prices[SYMBOL2] = 1.11
+    binance_broker.last_prices[ASSET2] = 1.11
     binance_broker.execute_order(trailing_stop_order)
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == trailing_stop_order
     assert trailing_stop_order.order_id is not None
     assert trailing_stop_order.stop == 1.11 + 1.11 * trailing_stop_order.stop_pct
 
-    binance_broker.last_prices[SYMBOL2] = 1.02
+    binance_broker.last_prices[ASSET2] = 1.02
     binance_broker.execute_order(trailing_stop_order)
     assert len(binance_broker.open_orders) == 1
     assert binance_broker.open_orders.popleft() == trailing_stop_order
     assert trailing_stop_order.stop == 1.02 + 1.02 * trailing_stop_order.stop_pct
 
-    binance_broker.last_prices[SYMBOL2] = 1.072
+    binance_broker.last_prices[ASSET2] = 1.072
     binance_broker.execute_order(trailing_stop_order)
     assert len(binance_broker.open_orders) == 0
 
@@ -1372,6 +1406,6 @@ def test_max_order_entry_size(
     binance_broker = BinanceBroker(clock=clock, events=events)
 
     assert (
-        binance_broker.max_entry_order_size(symbol=SYMBOL2, direction=Direction.LONG)
+        binance_broker.max_entry_order_size(asset=ASSET2, direction=Direction.LONG)
         == 130.4863423021991
     )

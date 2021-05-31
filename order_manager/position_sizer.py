@@ -11,15 +11,15 @@ class PositionSizer:
 
     def size_single_order(self, order: Order):
         if order.is_exit_order:
-            size = self.broker.position_size(order.symbol, order.direction)
+            size = self.broker.position_size(order.asset, order.direction)
         else:
             total_equity = self.broker.portfolio.total_equity
             max_equity_risk = total_equity * PositionSizer.MAXIMUM_RISK_PER_TRADE
             size_relative_to_equity = self.broker.max_entry_order_size(
-                order.symbol, order.direction, max_equity_risk
+                order.asset, order.direction, max_equity_risk
             )
             size_relative_to_cash = self.broker.max_entry_order_size(
-                order.symbol, order.direction
+                order.asset, order.direction
             )
             size = int(min(size_relative_to_equity, size_relative_to_cash))
         order.size = size

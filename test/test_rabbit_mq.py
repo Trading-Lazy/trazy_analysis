@@ -6,6 +6,7 @@ import pika
 
 import settings
 from candles_queue.rabbit_mq import RabbitMq
+from models.asset import Asset
 from models.candle import Candle
 
 QUEUE_NAME1 = "candles1"
@@ -14,7 +15,7 @@ QUEUE_NAME3 = "candles3"
 QUEUE_NAME4 = "candles4"
 MESSAGE = "Rabbits like carrots"
 CANDLE = Candle(
-    symbol="AAPL",
+    asset=Asset(symbol="AAPL", exchange="IEX"),
     open=354.28,
     high=354.96,
     low=353.96,

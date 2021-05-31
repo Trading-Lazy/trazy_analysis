@@ -8,6 +8,7 @@ from common.clock import SimulatedClock
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
 from feed.feed import CsvFeed
 from indicators.indicators_manager import IndicatorsManager
+from models.asset import Asset
 from models.candle import Candle
 from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
@@ -18,10 +19,13 @@ from strategy.strategies.sma_crossover_strategy import (
 )
 
 QUEUE_NAME = "candles"
+EXCHANGE = "IEX"
 AAPL_SYMBOL = "AAPL"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 GOOGL_SYMBOL = "GOOGL"
+GOOGL_ASSET = Asset(symbol=GOOGL_SYMBOL, exchange=EXCHANGE)
 CANDLE = Candle(
-    symbol=AAPL_SYMBOL,
+    asset=AAPL_ASSET,
     open=355.15,
     high=355.15,
     low=353.74,
@@ -35,11 +39,13 @@ START_TIMESTAMP = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:
 MARKET_CAL = EuronextExchangeCalendar()
 CLOCK = SimulatedClock()
 EVENTS = deque()
-FEED = CsvFeed({"AAPL": "test/data/aapl_candles_one_day.csv"}, EVENTS)
+FEED = CsvFeed(
+    {Asset(symbol="AAPL", exchange="IEX"): "test/data/aapl_candles_one_day.csv"}, EVENTS
+)
 
 
 def test_init_live():
-    symbols = [AAPL_SYMBOL, GOOGL_SYMBOL, AAPL_SYMBOL]
+    assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
@@ -48,7 +54,7 @@ def test_init_live():
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
-        symbols=symbols,
+        assets=assets,
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
@@ -56,22 +62,22 @@ def test_init_live():
         live=True,
     )
 
-    assert event_loop.symbols == [AAPL_SYMBOL, GOOGL_SYMBOL]
+    assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
     assert event_loop.strategies_classes == strategies_classes
 
     assert len(event_loop.strategy_instances) == 4
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[0].symbol == AAPL_SYMBOL
+    assert event_loop.strategy_instances[0].asset == AAPL_ASSET
     assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[1].symbol == GOOGL_SYMBOL
+    assert event_loop.strategy_instances[1].asset == GOOGL_ASSET
     assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
-    assert event_loop.strategy_instances[2].symbol == AAPL_SYMBOL
+    assert event_loop.strategy_instances[2].asset == AAPL_ASSET
     assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
-    assert event_loop.strategy_instances[3].symbol == GOOGL_SYMBOL
+    assert event_loop.strategy_instances[3].asset == GOOGL_ASSET
 
 
 def test_init_backtest():
-    symbols = [AAPL_SYMBOL, GOOGL_SYMBOL, AAPL_SYMBOL]
+    assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
@@ -80,30 +86,30 @@ def test_init_backtest():
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
-        symbols=symbols,
+        assets=assets,
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
         strategies_classes=strategies_classes,
     )
 
-    assert event_loop.symbols == [AAPL_SYMBOL, GOOGL_SYMBOL]
+    assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
     assert event_loop.strategies_classes == strategies_classes
 
     assert len(event_loop.strategy_instances) == 4
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[0].symbol == AAPL_SYMBOL
+    assert event_loop.strategy_instances[0].asset == AAPL_ASSET
     assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[1].symbol == GOOGL_SYMBOL
+    assert event_loop.strategy_instances[1].asset == GOOGL_ASSET
     assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
-    assert event_loop.strategy_instances[2].symbol == AAPL_SYMBOL
+    assert event_loop.strategy_instances[2].asset == AAPL_ASSET
     assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
-    assert event_loop.strategy_instances[3].symbol == GOOGL_SYMBOL
+    assert event_loop.strategy_instances[3].asset == GOOGL_ASSET
 
 
 @patch("strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_candle")
 def test_run_strategy(process_candle_mocked):
-    symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
+    assets = [AAPL_ASSET, GOOGL_ASSET]
     strategies_classes = [SmaCrossoverStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
@@ -112,7 +118,7 @@ def test_run_strategy(process_candle_mocked):
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
-        symbols=symbols,
+        assets=assets,
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
@@ -127,7 +133,7 @@ def test_run_strategy(process_candle_mocked):
 
 @patch("bot.event_loop.EventLoop.run_strategy")
 def test_run_strategies(run_strategy_mocked):
-    symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
+    assets = [AAPL_ASSET, GOOGL_ASSET]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
@@ -136,7 +142,7 @@ def test_run_strategies(run_strategy_mocked):
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
-        symbols=symbols,
+        assets=assets,
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
@@ -155,7 +161,7 @@ def test_run_strategies(run_strategy_mocked):
 
 
 def test_run_backtest():
-    symbols = [AAPL_SYMBOL, GOOGL_SYMBOL]
+    assets = [AAPL_ASSET, GOOGL_ASSET]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
 
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
@@ -165,7 +171,7 @@ def test_run_backtest():
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
-        symbols=symbols,
+        assets=assets,
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,

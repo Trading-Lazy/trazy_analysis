@@ -6,65 +6,106 @@ import numpy as np
 from pandas_market_calendars import MarketCalendar
 
 from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
+from common.utils import timestamp_to_utc
 from db_storage.db_storage import DbStorage
 from feed.loader import CsvLoader, ExternalStorageLoader, HistoricalDataLoader
 from file_storage.file_storage import FileStorage
 from market_data.historical.historical_data_handler import HistoricalDataHandler
 from market_data.live.live_data_handler import LiveDataHandler
-from models.event import MarketDataEndEvent, MarketDataEvent
+from models.asset import Asset
+from models.candle import Candle
+from models.event import (
+    MarketDataEndEvent,
+    MarketDataEvent,
+)
+
+MAX_TIMESTAMP = timestamp_to_utc(datetime.max)
 
 
 class Feed:
-    def set_symbols(self, symbols: List[str]):
-        self.symbols = symbols
+    def set_assets(self, assets: List[Asset]):
+        self.assets = assets
 
     def __init__(self, events: deque, candles: Dict[str, np.array] = {}):
-        self.symbols = None
-        self.set_symbols(candles.keys())
+        self.assets = None
+        self.set_assets(candles.keys())
         self.events = events
         self.candles = candles
         self.indexes = {}
         self.completed = False
-        for symbol in self.symbols:
-            self.indexes[symbol] = 0
+        current_timestamp = MAX_TIMESTAMP
+        for asset in self.assets:
+            self.indexes[asset] = 0
+            first_candle = self.candles[asset][0]
+            min_timestamp = first_candle.timestamp
+            current_timestamp = min(current_timestamp, min_timestamp)
+        self.current_timestamp = current_timestamp
 
     def update_latest_data(self):
-        for symbol in self.candles:
-            if self.indexes[symbol] < len(self.candles[symbol]):
-                index = self.indexes[symbol]
-                candle = self.candles[symbol][index]
-                self.indexes[symbol] += 1
-                self.events.append(MarketDataEvent(candle))
+        candles = []
+        min_timestamp = MAX_TIMESTAMP
+        completed = 0
+        for asset in self.candles:
+            if self.indexes[asset] < len(self.candles[asset]):
+                index = self.indexes[asset]
+                candle = self.candles[asset][index]
+                if candle.timestamp < self.current_timestamp:
+                    continue
+                candles.append(candle)
+                min_timestamp = min(min_timestamp, candle.timestamp)
             else:
-                self.events.append(MarketDataEndEvent(symbol))
+                completed += 1
+        if candles:
+            self.current_timestamp = min_timestamp
+            assets = {}
+            for candle in candles:
+                if candle.timestamp == self.current_timestamp:
+                    self.indexes[candle.asset] += 1
+                    assets[candle.asset] = np.array([candle], dtype=Candle)
+            self.events.append(MarketDataEvent(assets, self.current_timestamp))
+        elif completed == len(self.candles):
+            self.events.append(
+                MarketDataEndEvent(list(self.candles.keys()), self.current_timestamp)
+            )
 
 
 class LiveFeed(Feed):
     def __init__(
         self,
-        symbols: List[str],
+        assets: List[Asset],
         events: deque,
         live_data_handler: LiveDataHandler,
         candles: Dict[str, np.array] = {},
     ):
         super().__init__(events=events, candles=candles)
-        self.set_symbols(symbols)
+        self.set_assets(assets)
         self.live_data_handler = live_data_handler
 
     def update_latest_data(self):
-        for symbol in self.symbols:
+        now = datetime.now(timezone.utc)
+        candles_dict = {}
+        min_timestamp = MAX_TIMESTAMP
+        for asset in self.assets:
             candles = self.live_data_handler.request_ticker_lastest_candles(
-                symbol, nb_candles=10
+                asset, nb_candles=10
             )
-            for candle in candles:
-                if candle.timestamp + timedelta(minutes=1) < datetime.now(timezone.utc):
-                    self.events.append(MarketDataEvent(candle))
+            if len(candles) > 0:
+                candles_dict[asset] = [
+                    candle
+                    for candle in candles
+                    if candle.timestamp + timedelta(minutes=1) < now
+                ]
+                min_timestamp = min(min_timestamp, candles[0].timestamp)
+        if candles_dict:
+            self.events.append(
+                MarketDataEvent(candles=candles_dict, timestamp=min_timestamp)
+            )
 
 
 class ExternalStorageFeed(Feed):
     def __init__(
         self,
-        symbols: List[str],
+        assets: List[Asset],
         events: deque,
         time_unit: timedelta,
         start: datetime,
@@ -74,7 +115,7 @@ class ExternalStorageFeed(Feed):
         market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
     ):
         external_storage_loader = ExternalStorageLoader(
-            symbols=symbols,
+            assets=assets,
             time_unit=time_unit,
             start=start,
             end=end,
@@ -91,14 +132,14 @@ class ExternalStorageFeed(Feed):
 class HistoricalFeed(Feed):
     def __init__(
         self,
-        symbols: List[str],
+        assets: List[Asset],
         events: deque,
         historical_data_handler: HistoricalDataHandler,
         start: datetime,
         end: datetime,
     ):
         historical_data_loader = HistoricalDataLoader(
-            symbols=symbols,
+            assets=assets,
             historical_data_handler=historical_data_handler,
             start=start,
             end=end,
@@ -114,7 +155,7 @@ class PandasFeed(Feed):
     def __init__(self, candle_dataframes: np.array, events: deque):
         candles = {}
         for candle_dataframe in candle_dataframes:
-            candles[candle_dataframe.symbol] = candle_dataframe.to_candles()
+            candles[candle_dataframe.asset] = candle_dataframe.to_candles()
         super().__init__(events, candles)
 
 

@@ -3,6 +3,7 @@ from datetime import datetime
 import pytest
 
 from common.clock import SimulatedClock
+from models.asset import Asset
 from models.enums import Action, Direction, OrderStatus, OrderType
 from models.multiple_order import (
     BracketOrder,
@@ -14,12 +15,15 @@ from models.multiple_order import (
 )
 from models.order import Order
 
+EXCHANGE = "IEX"
+
 
 def test_multiple_order():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -27,8 +31,9 @@ def test_multiple_order():
         clock=clock,
     )
     symbol2 = "BBB"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -77,8 +82,9 @@ def test_multiple_order():
 def test_sequential_order():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -86,8 +92,9 @@ def test_sequential_order():
         clock=clock,
     )
     symbol2 = "BBB"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -128,8 +135,9 @@ def test_sequential_order():
 def test_oco_order():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -137,8 +145,9 @@ def test_oco_order():
         clock=clock,
     )
     symbol2 = "BBB"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -177,10 +186,12 @@ def test_homogeneous_sequential_order():
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
-    clock.update(symbol, timestamp)
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
+    clock.update(asset, timestamp)
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -189,8 +200,9 @@ def test_homogeneous_sequential_order():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -200,7 +212,7 @@ def test_homogeneous_sequential_order():
     )
     orders = [order1, order2]
     homogeneous_sequential_order = HomogeneousSequentialOrder(
-        symbol=symbol, orders=orders, clock=clock
+        asset=asset, orders=orders, clock=clock
     )
     assert order1.status == OrderStatus.CREATED
     assert order2.status == OrderStatus.CREATED
@@ -231,10 +243,12 @@ def test_homogeneous_sequential_order_multiple_order():
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
-    clock.update(symbol, timestamp)
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
+    clock.update(asset, timestamp)
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -243,8 +257,9 @@ def test_homogeneous_sequential_order_multiple_order():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -253,8 +268,9 @@ def test_homogeneous_sequential_order_multiple_order():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     order3 = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -265,7 +281,7 @@ def test_homogeneous_sequential_order_multiple_order():
     multiple_order = MultipleOrder(orders=[order2, order3])
     orders = [order1, multiple_order]
     homogeneous_sequential_order = HomogeneousSequentialOrder(
-        symbol=symbol, orders=orders, clock=clock
+        asset=asset, orders=orders, clock=clock
     )
     assert order1.status == OrderStatus.CREATED
     assert order2.status == OrderStatus.CREATED
@@ -296,10 +312,12 @@ def test_homogeneous_sequential_order_different_symbols():
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock.update(symbol, timestamp)
     symbol1 = "BBB"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -308,8 +326,9 @@ def test_homogeneous_sequential_order_different_symbols():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -319,17 +338,19 @@ def test_homogeneous_sequential_order_different_symbols():
     )
     orders = [order1, order2]
     with pytest.raises(Exception):
-        HomogeneousSequentialOrder(symbol=symbol, orders=orders, clock=clock)
+        HomogeneousSequentialOrder(asset=asset, orders=orders, clock=clock)
 
 
 def test_homogeneous_sequential_order_different_symbols_multiple_order():
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock.update(symbol, timestamp)
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -338,8 +359,9 @@ def test_homogeneous_sequential_order_different_symbols_multiple_order():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -348,8 +370,9 @@ def test_homogeneous_sequential_order_different_symbols_multiple_order():
         clock=clock,
     )
     symbol3 = "BBB"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     order3 = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -360,14 +383,15 @@ def test_homogeneous_sequential_order_different_symbols_multiple_order():
     multiple_order = MultipleOrder(orders=[order2, order3])
     orders = [order1, multiple_order]
     with pytest.raises(Exception):
-        HomogeneousSequentialOrder(symbol=symbol, orders=orders, clock=clock)
+        HomogeneousSequentialOrder(asset=asset, orders=orders, clock=clock)
 
 
 def test_cover_order():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -376,8 +400,9 @@ def test_cover_order():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -387,8 +412,9 @@ def test_cover_order():
     )
     orders = [initiation_order, stop_order]
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     cover_order = CoverOrder(
-        symbol=symbol,
+        asset=asset,
         initiation_order=initiation_order,
         stop_order=stop_order,
         clock=clock,
@@ -420,8 +446,9 @@ def test_cover_order():
 def test_cover_order_wrong_initiation_order_type():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -430,8 +457,9 @@ def test_cover_order_wrong_initiation_order_type():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -441,9 +469,10 @@ def test_cover_order_wrong_initiation_order_type():
     )
 
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         CoverOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             stop_order=stop_order,
             clock=clock,
@@ -453,8 +482,9 @@ def test_cover_order_wrong_initiation_order_type():
 def test_cover_order_wrong_initiation_order_action():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -463,8 +493,9 @@ def test_cover_order_wrong_initiation_order_action():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -474,9 +505,10 @@ def test_cover_order_wrong_initiation_order_action():
     )
 
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         CoverOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             stop_order=stop_order,
             clock=clock,
@@ -486,8 +518,9 @@ def test_cover_order_wrong_initiation_order_action():
 def test_cover_order_wrong_stop_order_type():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -496,8 +529,9 @@ def test_cover_order_wrong_stop_order_type():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -507,9 +541,10 @@ def test_cover_order_wrong_stop_order_type():
     )
 
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         CoverOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             stop_order=stop_order,
             clock=clock,
@@ -519,8 +554,9 @@ def test_cover_order_wrong_stop_order_type():
 def test_cover_order_wrong_stop_order_action():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -529,8 +565,9 @@ def test_cover_order_wrong_stop_order_action():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -540,9 +577,10 @@ def test_cover_order_wrong_stop_order_action():
     )
 
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         CoverOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             stop_order=stop_order,
             clock=clock,
@@ -552,8 +590,9 @@ def test_cover_order_wrong_stop_order_action():
 def test_bracket_order():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -562,8 +601,9 @@ def test_bracket_order():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -572,8 +612,9 @@ def test_bracket_order():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -582,8 +623,9 @@ def test_bracket_order():
         clock=clock,
     )
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     bracket_order = BracketOrder(
-        symbol=symbol,
+        asset=asset,
         initiation_order=initiation_order,
         target_order=target_order,
         stop_order=stop_order,
@@ -627,8 +669,9 @@ def test_bracket_order():
 def test_bracket_order_wrong_initiation_order_type():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -637,8 +680,9 @@ def test_bracket_order_wrong_initiation_order_type():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -647,8 +691,9 @@ def test_bracket_order_wrong_initiation_order_type():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -657,9 +702,10 @@ def test_bracket_order_wrong_initiation_order_type():
         clock=clock,
     )
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         BracketOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             target_order=target_order,
             stop_order=stop_order,
@@ -670,8 +716,9 @@ def test_bracket_order_wrong_initiation_order_type():
 def test_bracket_order_wrong_initiation_order_action():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -680,8 +727,9 @@ def test_bracket_order_wrong_initiation_order_action():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -690,8 +738,9 @@ def test_bracket_order_wrong_initiation_order_action():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -700,9 +749,10 @@ def test_bracket_order_wrong_initiation_order_action():
         clock=clock,
     )
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         BracketOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             target_order=target_order,
             stop_order=stop_order,
@@ -713,8 +763,9 @@ def test_bracket_order_wrong_initiation_order_action():
 def test_bracket_order_wrong_target_order_type():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -723,8 +774,9 @@ def test_bracket_order_wrong_target_order_type():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -733,8 +785,9 @@ def test_bracket_order_wrong_target_order_type():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -743,9 +796,10 @@ def test_bracket_order_wrong_target_order_type():
         clock=clock,
     )
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         BracketOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             target_order=target_order,
             stop_order=stop_order,
@@ -756,8 +810,9 @@ def test_bracket_order_wrong_target_order_type():
 def test_bracket_order_wrong_target_order_action():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -766,8 +821,9 @@ def test_bracket_order_wrong_target_order_action():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -776,8 +832,9 @@ def test_bracket_order_wrong_target_order_action():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -786,9 +843,10 @@ def test_bracket_order_wrong_target_order_action():
         clock=clock,
     )
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         BracketOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             target_order=target_order,
             stop_order=stop_order,
@@ -799,8 +857,9 @@ def test_bracket_order_wrong_target_order_action():
 def test_bracket_order_wrong_stop_order_type():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -809,8 +868,9 @@ def test_bracket_order_wrong_stop_order_type():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -819,8 +879,9 @@ def test_bracket_order_wrong_stop_order_type():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -829,9 +890,10 @@ def test_bracket_order_wrong_stop_order_type():
         clock=clock,
     )
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         BracketOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             target_order=target_order,
             stop_order=stop_order,
@@ -842,8 +904,9 @@ def test_bracket_order_wrong_stop_order_type():
 def test_bracket_order_wrong_stop_order_action():
     clock = SimulatedClock()
     symbol1 = "AAA"
+    asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
-        symbol=symbol1,
+        asset=asset1,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -852,8 +915,9 @@ def test_bracket_order_wrong_stop_order_action():
         clock=clock,
     )
     symbol2 = "AAA"
+    asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
-        symbol=symbol2,
+        asset=asset2,
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
@@ -862,8 +926,9 @@ def test_bracket_order_wrong_stop_order_action():
         clock=clock,
     )
     symbol3 = "AAA"
+    asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
-        symbol=symbol3,
+        asset=asset3,
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -872,9 +937,10 @@ def test_bracket_order_wrong_stop_order_action():
         clock=clock,
     )
     symbol = "AAA"
+    asset = Asset(symbol=symbol, exchange=EXCHANGE)
     with pytest.raises(Exception):
         BracketOrder(
-            symbol=symbol,
+            asset=asset,
             initiation_order=initiation_order,
             target_order=target_order,
             stop_order=stop_order,

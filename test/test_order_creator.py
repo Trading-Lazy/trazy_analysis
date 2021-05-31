@@ -3,6 +3,7 @@ from datetime import datetime
 
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
+from models.asset import Asset
 from models.enums import Action, Direction
 from models.order import Order
 from models.signal import Signal
@@ -13,12 +14,14 @@ def test_create_order_from_signal():
     clock = SimulatedClock()
     events = deque()
     symbol = "IVV"
+    exchange = "IEX"
+    asset = Asset(symbol=symbol, exchange=exchange)
     timestamp = datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update(symbol, timestamp)
     broker = SimulatedBroker(clock, events)
     order_creator = OrderCreator(broker=broker)
     signal = Signal(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         confidence_level="0.05",
@@ -30,7 +33,7 @@ def test_create_order_from_signal():
 
     order = order_creator.create_order(signal, clock)
     expected_order = Order(
-        symbol=symbol,
+        asset=asset,
         action=Action.BUY,
         direction=Direction.LONG,
         size=0,

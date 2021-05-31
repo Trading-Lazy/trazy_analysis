@@ -16,8 +16,10 @@ from common.constants import DEGIRO_DATETIME_FORMAT
 from common.helper import get_or_create_nested_dict
 from common.utils import timestamp_to_utc
 from logger import logger
+from models.asset import Asset
 from models.enums import Action, Direction, OrderCondition, OrderType
 from models.order import Order
+from portfolio.portfolio_event import PortfolioEvent
 from position.position import Position
 from position.transaction import Transaction
 
@@ -44,18 +46,20 @@ class DegiroBroker(Broker):
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
     ):
+        exchange = "DEGIRO"
         super().__init__(
             clock=clock,
             events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
+            exchange=exchange,
         )
         self.degiro = degiroapi.DeGiro()
         self.degiro.login(settings.DEGIRO_BROKER_LOGIN, settings.DEGIRO_BROKER_PASSWORD)
-        self.product_id_to_symbol = {}
-        self.symbol_to_product_id = {}
+        self.product_id_to_asset = {}
+        self.asset_to_product_id = {}
         self.product_info_last_update = {}
-        self.symbol_info_last_update = {}
+        self.asset_info_last_update = {}
         self.cash_balances_last_update = None
         self.update_cash_balances()
         self.open_positions_last_update = None
@@ -77,24 +81,25 @@ class DegiroBroker(Broker):
             return
         info = self.degiro.product_info(product_id)
         product_symbol = info["symbol"]
-        self.product_id_to_symbol[product_id] = product_symbol
-        self.symbol_to_product_id[product_symbol] = product_id
+        asset = Asset(symbol=product_symbol, exchange=self.exchange)
+        self.product_id_to_asset[product_id] = asset
+        self.asset_to_product_id[asset] = product_id
         self.product_info_last_update[product_id] = self.clock.current_time()
 
-    def update_symbol_info(self, symbol: str) -> None:
+    def update_asset_info(self, asset: Asset) -> None:
         now = self.clock.current_time()
         if (
-            symbol in self.symbol_info_last_update
-            and now - self.symbol_info_last_update[symbol]
+            asset in self.asset_info_last_update
+            and now - self.asset_info_last_update[asset]
             < DegiroBroker.PRODUCT_INFO_PERIOD
         ):
             return
-        infos = self.degiro.search_products(symbol, limit=5)
+        infos = self.degiro.search_products(asset.symbol, limit=5)
         for info in infos:
-            if info["symbol"] == symbol:
+            if info["symbol"] == asset.symbol:  # TODO check also exchange
                 product_id = info["id"]
-                self.symbol_to_product_id[symbol] = product_id
-                self.product_id_to_symbol[product_id] = symbol
+                self.asset_to_product_id[asset] = product_id
+                self.product_id_to_asset[product_id] = asset
                 return
 
     def update_cash_balances(self) -> float:
@@ -140,7 +145,7 @@ class DegiroBroker(Broker):
         positions = portfolio.pos_handler.positions
         for product_id in product_ids:
             self.update_product_info(product_id)
-            product_symbol = self.product_id_to_symbol[product_id]
+            asset = self.product_id_to_asset[product_id]
             open_position = map_product_id_to_position[product_id]
             initial_price = float(str(open_position["price"]))
             size = open_position["size"]
@@ -152,9 +157,9 @@ class DegiroBroker(Broker):
                 direction = Direction.SHORT
                 buy_size = 0
                 sell_size = size
-            get_or_create_nested_dict(positions, product_symbol, direction)
-            positions[product_symbol][direction] = Position(
-                product_symbol,
+            get_or_create_nested_dict(positions, asset, direction)
+            positions[asset][direction] = Position(
+                asset,
                 initial_price,
                 buy_size,
                 sell_size,
@@ -162,11 +167,11 @@ class DegiroBroker(Broker):
             )
         self.open_positions_last_update = self.clock.current_time()
 
-    def has_opened_position(self, symbol: str, direction: Direction) -> bool:
+    def has_opened_position(self, asset: Asset, direction: Direction) -> bool:
         self.update_open_positions()
         portfolio = self.portfolio
         positions = portfolio.pos_handler.positions
-        return symbol in positions and direction in positions[symbol]
+        return asset in positions and direction in positions[asset]
 
     def subscribe_funds_to_account(self, amount: float) -> None:  # pragma: no cover
         # TODO automate bank transfers to degiro account
@@ -225,7 +230,7 @@ class DegiroBroker(Broker):
                 continue
             product_id = degiro_transaction["productId"]
             self.update_product_info(product_id)
-            symbol = self.product_id_to_symbol[product_id]
+            asset = self.product_id_to_asset[product_id]
             transaction_id = degiro_transaction["id"]
             if transaction_id in self.processed_transactions_ids:
                 continue
@@ -240,7 +245,7 @@ class DegiroBroker(Broker):
                 direction = Direction.LONG if total > 0 else Direction.SHORT
             price = float(str(degiro_transaction["price"]))
             error_message = (
-                f"There is a Transaction that occured for symbol {symbol} without any order potentially "
+                f"There is a Transaction that occured for asset {asset.key()} without any order potentially "
                 f"linked to it. It is either a system bug or a broker dysfunction. The transaction id is"
                 f" {transaction_id} and it occured at {timestamp}."
             )
@@ -275,7 +280,7 @@ class DegiroBroker(Broker):
             )
             commission = abs(total_plus_fee_in_base_currency - total)
             transaction = Transaction(
-                symbol=symbol,
+                asset=asset,
                 size=size,
                 action=action,
                 direction=direction,
@@ -285,8 +290,34 @@ class DegiroBroker(Broker):
                 timestamp=timestamp,
                 transaction_id=transaction_id,
             )
-            self.portfolio.transact_symbol(transaction)
+            description = "%s %s %s %s %s" % (
+                direction.name,
+                transaction.size,
+                transaction.asset.key().upper(),
+                transaction.price,
+                datetime.strftime(transaction.timestamp, "%d/%m/%Y"),
+            )
+            if transaction.action == Action.BUY:
+                pe = PortfolioEvent(
+                    timestamp=transaction.timestamp,
+                    type="asset_transaction",
+                    description=description,
+                    debit=transaction.cost_with_commission,
+                    credit=0.0,
+                    balance=self.portfolio.cash,
+                )
+            else:
+                pe = PortfolioEvent(
+                    timestamp=transaction.timestamp,
+                    type="asset_transaction",
+                    description=description,
+                    debit=0.0,
+                    credit=-1.0 * round(transaction.cost_with_commission, 2),
+                    balance=round(self.portfolio.cash, 2),
+                )
+            self.portfolio.history.append(pe)
             self.processed_transactions_ids.add(transaction_id)
+
         LOG.info("Transactions have been synchronized")
         self.processed_transactions_ids = processed_transactions_ids
         self.transactions_last_update = transactions_last_update
@@ -313,14 +344,15 @@ class DegiroBroker(Broker):
 
     def execute_market_order(self, order: Order) -> None:
         try:
-            self.update_symbol_info(order.symbol)
-            product_id = self.symbol_to_product_id[order.symbol]
+            self.update_asset_info(order.asset)
+            product_id = self.asset_to_product_id[order.asset]
             action_func = self.get_action_func(order.action)
             LOG.info("Submit market order to degiro")
             execution_time = 1 if order.condition == OrderCondition.EOD else 3
             order.order_id = action_func(
                 degiroapi.Order.Type.MARKET, product_id, execution_time, order.size
             )
+            order.complete()
             LOG.info("Order successfuly submited with order id: %s", order.order_id)
             self.open_orders_ids.add(order.order_id)
         except Exception as e:
@@ -339,8 +371,8 @@ class DegiroBroker(Broker):
 
     def execute_limit_order(self, limit_order: Order) -> None:
         try:
-            self.update_symbol_info(limit_order.symbol)
-            product_id = self.symbol_to_product_id[limit_order.symbol]
+            self.update_asset_info(limit_order.asset)
+            product_id = self.asset_to_product_id[limit_order.asset]
             action_func = self.get_action_func(limit_order.action)
             execution_time = 1 if limit_order.condition == OrderCondition.EOD else 3
             rounding = ROUND_DOWN if limit_order.action == Action.BUY else ROUND_UP
@@ -367,8 +399,8 @@ class DegiroBroker(Broker):
 
     def execute_stop_order(self, stop_order: Order) -> None:
         try:
-            self.update_symbol_info(stop_order.symbol)
-            product_id = self.symbol_to_product_id[stop_order.symbol]
+            self.update_asset_info(stop_order.asset)
+            product_id = self.asset_to_product_id[stop_order.asset]
             action_func = self.get_action_func(stop_order.action)
             execution_time = 1 if stop_order.condition == OrderCondition.EOD else 3
             rounding = ROUND_DOWN if stop_order.action == Action.BUY else ROUND_UP
@@ -395,7 +427,7 @@ class DegiroBroker(Broker):
             )
 
     def execute_target_order(self, target_order: Order) -> None:
-        price = self.current_price(target_order.symbol)
+        price = self.current_price(target_order.asset)
         LOG.info("target: %s", target_order.target)
         LOG.info("Checking if target has been reached")
         if (
@@ -409,7 +441,7 @@ class DegiroBroker(Broker):
             self.open_orders.append(target_order)
 
     def get_trailing_stop(self, trailing_stop_order: Order) -> float:
-        price = self.current_price(trailing_stop_order.symbol)
+        price = self.current_price(trailing_stop_order.asset)
         if trailing_stop_order.action == Action.BUY:
             stop = price + price * trailing_stop_order.stop_pct
         else:
@@ -454,7 +486,7 @@ class DegiroBroker(Broker):
         trailing_stop_order: Order,
     ) -> bool:
         LOG.info("Checking if trailing stop loss")
-        price = self.current_price(trailing_stop_order.symbol)
+        price = self.current_price(trailing_stop_order.asset)
         stop = self.get_trailing_stop(trailing_stop_order)
         if trailing_stop_order.action == Action.BUY:
             if trailing_stop_order.stop is None:

@@ -1,15 +1,21 @@
 import abc
+import os
 import traceback
 from typing import List
 
 from requests.models import Response
 
+import logger
+import settings
 from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
 from common.helper import request
 from common.meta import RateLimitedSingletonMeta
-from market_data.common import LOG
 from market_data.data_handler import DataHandler
 from models.candle import Candle
+
+LOG = logger.get_root_logger(
+    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+)
 
 
 class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):

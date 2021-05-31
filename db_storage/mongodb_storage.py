@@ -11,6 +11,7 @@ from pymongo.results import DeleteResult, InsertOneResult
 import settings
 from db_storage.db_storage import DbStorage
 from logger import logger
+from models.asset import Asset
 from models.candle import Candle
 from models.order import Order
 from models.signal import Signal
@@ -123,21 +124,21 @@ class MongoDbStorage(DbStorage):
     def candle_with_id_exists(self, id: str) -> bool:
         return self.get_candle(id) is not None
 
-    def get_candle_by_identifier(self, symbol: str, timestamp: datetime) -> Candle:
-        query = {"symbol": symbol, "timestamp": timestamp}
+    def get_candle_by_identifier(self, asset: Asset, timestamp: datetime) -> Candle:
+        query = {"asset": asset.to_dict(), "timestamp": timestamp}
         candle_dict = self.find_one(query, CANDLES_COLLECTION_NAME)
         if candle_dict is None:
             return None
         return Candle.from_serializable_dict(candle_dict)
 
-    def candle_with_identifier_exists(self, symbol: str, timestamp: datetime) -> bool:
-        return self.get_candle_by_identifier(symbol, timestamp) is not None
+    def candle_with_identifier_exists(self, asset: Asset, timestamp: datetime) -> bool:
+        return self.get_candle_by_identifier(asset, timestamp) is not None
 
     def get_candles_in_range(
-        self, symbol: str, start: datetime, end: datetime
+        self, asset: Asset, start: datetime, end: datetime
     ) -> np.array:  # [Candle]
         query = {
-            "symbol": symbol,
+            "asset": asset.to_dict(),
             "$and": [{"timestamp": {"$gte": start}}, {"timestamp": {"$lte": end}}],
         }
         cursor = list(
@@ -179,10 +180,10 @@ class MongoDbStorage(DbStorage):
         return Signal.from_serializable_dict(signal_dict)
 
     def get_signal_by_identifier(
-        self, symbol: str, strategy: str, root_candle_timestamp: datetime
+        self, asset: Asset, strategy: str, root_candle_timestamp: datetime
     ) -> Signal:
         query = {
-            "symbol": symbol,
+            "asset": asset.to_dict(),
             "strategy": strategy,
             "root_candle_timestamp": root_candle_timestamp,
         }

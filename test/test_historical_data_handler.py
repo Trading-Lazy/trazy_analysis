@@ -13,19 +13,23 @@ from market_data.historical.iex_cloud_historical_data_handler import (
 from market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
+from models.asset import Asset
 from models.candle import Candle
 
-SYMBOL = "IVV"
+IVV_SYMBOL = "IVV"
+EXCHANGE = "IEX"
+IVV_ASSET = Asset(symbol=IVV_SYMBOL, exchange=EXCHANGE)
 URL = "trazy.com"
 STATUS_CODE_OK = 200
 STATUS_CODE_KO = 404
 TOKEN = "my_token"
 
 AAPL_SYMBOL = "AAPL"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 AAPL_CANDLES1 = np.array(
     [
         Candle(
-            symbol=AAPL_SYMBOL,
+            asset=AAPL_ASSET,
             open=355.15,
             high=355.15,
             low=353.74,
@@ -36,7 +40,7 @@ AAPL_CANDLES1 = np.array(
             ),
         ),
         Candle(
-            symbol=AAPL_SYMBOL,
+            asset=AAPL_ASSET,
             open=354.28,
             high=354.96,
             low=353.96,
@@ -50,13 +54,13 @@ AAPL_CANDLES1 = np.array(
     dtype=Candle,
 )
 AAPL_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(
-    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES1
+    asset=AAPL_ASSET, candles=AAPL_CANDLES1
 )
 
 AAPL_CANDLES2 = np.array(
     [
         Candle(
-            symbol=AAPL_SYMBOL,
+            asset=AAPL_ASSET,
             open=354.92,
             high=355.32,
             low=354.09,
@@ -70,12 +74,12 @@ AAPL_CANDLES2 = np.array(
     dtype=Candle,
 )
 AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(
-    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES2
+    asset=AAPL_ASSET, candles=AAPL_CANDLES2
 )
 AAPL_CANDLES3 = np.array(
     [
         Candle(
-            symbol=AAPL_SYMBOL,
+            asset=AAPL_ASSET,
             open=354.25,
             high=354.59,
             low=354.14,
@@ -86,7 +90,7 @@ AAPL_CANDLES3 = np.array(
             ),
         ),
         Candle(
-            symbol=AAPL_SYMBOL,
+            asset=AAPL_ASSET,
             open=354.22,
             high=354.26,
             low=353.95,
@@ -97,7 +101,7 @@ AAPL_CANDLES3 = np.array(
             ),
         ),
         Candle(
-            symbol=AAPL_SYMBOL,
+            asset=AAPL_ASSET,
             open=354.13,
             high=354.26,
             low=353.01,
@@ -111,12 +115,12 @@ AAPL_CANDLES3 = np.array(
     dtype=Candle,
 )
 AAPL_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(
-    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES3
+    asset=AAPL_ASSET, candles=AAPL_CANDLES3
 )
 
 AAPL_CANDLES = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2, AAPL_CANDLES3])
 AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
-    symbol=AAPL_SYMBOL, candles=AAPL_CANDLES
+    asset=AAPL_ASSET, candles=AAPL_CANDLES
 )
 
 
@@ -129,7 +133,7 @@ def test_parse_ticker_data_tiingo():
         "2020-06-18 09:31:00-04:00,354.25,354.59,354.14,354.59,2613.0\n"
         "2020-06-18 09:32:00-04:00,354.22,354.26,353.95,353.98,1186.0\n"
     )
-    groups_df = TiingoHistoricalDataHandler.group_ticker_data_by_date(SYMBOL, data)
+    groups_df = TiingoHistoricalDataHandler.group_ticker_data_by_date(IVV_ASSET, data)
     expected_dates = ["20200617", "20200618", "20200619"]
     expected_dfs = [
         pd.DataFrame(
@@ -176,7 +180,7 @@ def test_parse_ticker_data_iex():
         "2020-06-19,09:33,09:33 AM,192.46,192.22,192.22,192.29,192.372,756,145432.96,11,AAPL\n"
         "2020-06-19,09:34,09:34 AM,192.89,192.32,192.67,192.89,192.596,1660,319709.6,19,AAPL"
     )
-    groups_df = IexCloudHistoricalDataHandler.group_ticker_data_by_date(SYMBOL, data)
+    groups_df = IexCloudHistoricalDataHandler.group_ticker_data_by_date(IVV_ASSET, data)
     expected_dates = ["20200617", "20200618", "20200619"]
     expected_dfs = [
         pd.DataFrame(
@@ -424,7 +428,7 @@ def test_request_ticker_data_for_period_tiingo(
     expected_candles = np.array(
         [
             Candle(
-                symbol=SYMBOL,
+                asset=IVV_ASSET,
                 open=354.28,
                 high=354.96,
                 low=353.96,
@@ -435,7 +439,7 @@ def test_request_ticker_data_for_period_tiingo(
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=IVV_ASSET,
                 open=354.92,
                 high=355.32,
                 low=354.09,
@@ -446,7 +450,7 @@ def test_request_ticker_data_for_period_tiingo(
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=IVV_ASSET,
                 open=354.25,
                 high=354.59,
                 low=354.14,
@@ -462,7 +466,7 @@ def test_request_ticker_data_for_period_tiingo(
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
-        SYMBOL,
+        IVV_ASSET,
         (date(2020, 6, 18), date(2020, 6, 19)),
         none_response_periods,
         error_response_periods,
@@ -488,7 +492,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_tiingo(
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
-        SYMBOL,
+        IVV_ASSET,
         (date(2020, 6, 18), date(2020, 6, 19)),
         none_response_periods,
         error_response_periods,
@@ -514,7 +518,7 @@ def test_request_ticker_data_for_period_error_tiingo(
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
-        SYMBOL,
+        IVV_ASSET,
         (date(2020, 6, 18), date(2020, 6, 19)),
         none_response_periods,
         error_response_periods,
@@ -544,7 +548,7 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
     expected_candles = np.array(
         [
             Candle(
-                symbol=SYMBOL,
+                asset=IVV_ASSET,
                 open=192.94,
                 high=193.27,
                 low=192.89,
@@ -555,7 +559,7 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=IVV_ASSET,
                 open=192.6,
                 high=192.6,
                 low=192.3,
@@ -566,7 +570,7 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
                 ),
             ),
             Candle(
-                symbol=SYMBOL,
+                asset=IVV_ASSET,
                 open=192.22,
                 high=192.46,
                 low=192.22,
@@ -582,7 +586,7 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = IexCloudHistoricalDataHandler.request_ticker_data_for_period(
-        SYMBOL,
+        IVV_ASSET,
         (date(2020, 6, 18), date(2020, 6, 19)),
         none_response_periods,
         error_response_periods,
@@ -608,7 +612,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_iex(
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = IexCloudHistoricalDataHandler.request_ticker_data_for_period(
-        SYMBOL,
+        IVV_ASSET,
         (date(2020, 6, 18), date(2020, 6, 19)),
         none_response_periods,
         error_response_periods,
@@ -634,7 +638,7 @@ def test_request_ticker_data_for_period_error_iex(
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = IexCloudHistoricalDataHandler.request_ticker_data_for_period(
-        SYMBOL,
+        IVV_ASSET,
         (date(2020, 6, 18), date(2020, 6, 19)),
         none_response_periods,
         error_response_periods,
@@ -652,7 +656,7 @@ def test_request_ticker_data_for_period_error_iex(
 def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked):
     expected_candles = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2, AAPL_CANDLES3])
     expected_candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=AAPL_SYMBOL, candles=expected_candles
+        asset=AAPL_ASSET, candles=expected_candles
     )
     request_ticker_data_for_period_mocked.side_effect = [
         AAPL_CANDLE_DATAFRAME1,
@@ -671,23 +675,23 @@ def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked)
         candle_dataframe,
         none_response_periods,
         error_response_periods,
-    ) = HistoricalDataHandler.request_ticker_data_from_periods(SYMBOL, periods)
+    ) = HistoricalDataHandler.request_ticker_data_from_periods(IVV_ASSET, periods)
 
     assert (expected_candle_dataframe == candle_dataframe).all(axis=None)
     assert none_response_periods == set()
     assert error_response_periods == {}
 
     request_ticker_data_for_period_mocked_calls = [
-        call(SYMBOL, periods[0], set(), {}),
-        call(SYMBOL, periods[1], set(), {}),
-        call(SYMBOL, periods[2], set(), {}),
+        call(IVV_ASSET, periods[0], set(), {}),
+        call(IVV_ASSET, periods[1], set(), {}),
+        call(IVV_ASSET, periods[2], set(), {}),
     ]
     for i, call_arg_tuple in enumerate(
         request_ticker_data_for_period_mocked.call_args_list
     ):
         call_arg = call_arg_tuple[0]
-        symbol = call_arg[0]
-        assert symbol == SYMBOL
+        asset = call_arg[0]
+        assert asset == IVV_ASSET
         period = call_arg[1]
         assert (periods[i] == period).all()
         none_response_periods = call_arg[2]
@@ -708,18 +712,19 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
     start = datetime.strptime("2020-06-11 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z")
     end = datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z")
     expected_candle_dataframe = CandleDataFrame.from_candle_list(
-        symbol=AAPL_SYMBOL, candles=AAPL_CANDLES[1:-1]
+        asset=AAPL_ASSET, candles=AAPL_CANDLES[1:-1]
     )
     TiingoHistoricalDataHandler.MAX_DOWNLOAD_FRAME = timedelta(days=3)
     (
         candle_dataframe,
         none_response_periods,
         error_response_periods,
-    ) = TiingoHistoricalDataHandler.request_ticker_data_in_range(
-        AAPL_SYMBOL, start, end
-    )
+    ) = TiingoHistoricalDataHandler.request_ticker_data_in_range(AAPL_ASSET, start, end)
 
-    assert (expected_candle_dataframe == candle_dataframe).all(axis=None)
+    timestamps = [candle.timestamp for candle in expected_candle_dataframe.to_candles()]
+    assert (expected_candle_dataframe == candle_dataframe.loc[timestamps]).all(
+        axis=None
+    )
     assert none_response_periods == {(date(2020, 6, 14), date(2020, 6, 16))}
     assert error_response_periods == {
         (date(2020, 6, 11), date(2020, 6, 13)): "400: Bad Request"
@@ -734,8 +739,8 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
     )
     assert len(request_ticker_data_from_periods_mocked.call_args_list) == 1
     call_args = request_ticker_data_from_periods_mocked.call_args_list[0]
-    symbol = call_args[0][0]
-    assert symbol == AAPL_SYMBOL
+    asset = call_args[0][0]
+    assert asset == AAPL_ASSET
     periods = call_args[0][1]
     assert (periods == expected_periods).all()
 
@@ -755,10 +760,10 @@ def test_save_ticker_data_in_range(request_ticker_data_in_range_mocked, to_csv_m
     end = datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z")
     TiingoHistoricalDataHandler.MAX_DOWNLOAD_FRAME = timedelta(days=3)
     TiingoHistoricalDataHandler.save_ticker_data_in_range(
-        AAPL_SYMBOL, csv_filename, start, end
+        AAPL_ASSET, csv_filename, start, end
     )
 
-    request_ticker_data_in_range_mocked_calls = [call(AAPL_SYMBOL, start, end)]
+    request_ticker_data_in_range_mocked_calls = [call(AAPL_ASSET, start, end)]
     request_ticker_data_in_range_mocked.assert_has_calls(
         request_ticker_data_in_range_mocked_calls
     )

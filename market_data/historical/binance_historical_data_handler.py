@@ -18,7 +18,9 @@ class BinanceHistoricalDataHandler(BinanceDataHandler, HistoricalDataHandler):
     MAX_DOWNLOAD_FRAME = timedelta(hours=16, minutes=40)
 
     @classmethod
-    def generate_ticker_data_url(cls, ticker: str, period: Tuple[datetime, datetime]) -> str:
+    def generate_ticker_data_url(
+        cls, ticker: str, period: Tuple[datetime, datetime]
+    ) -> str:
         start_epoch = int(period[0].timestamp()) * 1000
         end_epoch = int(period[1].timestamp()) * 1000
         ticker_url = cls.BASE_URL_HISTORICAL_TICKER_DATA.format(

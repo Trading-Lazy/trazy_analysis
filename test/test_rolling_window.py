@@ -16,12 +16,13 @@ from indicators.rolling_window import (
     TimeFramedCandleRollingWindowManager,
     get_price_selector_function,
 )
+from models.asset import Asset
 from models.candle import Candle
 
 SYMBOL1 = "IVV"
 SYMBOL2 = "AAPL"
 CANDLE1 = Candle(
-    symbol=SYMBOL1,
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
     open=323.69,
     high=323.81,
     low=323.67,
@@ -30,7 +31,7 @@ CANDLE1 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:24:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE2 = Candle(
-    symbol=SYMBOL1,
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
     open=323.81,
     high=324.21,
     low=323.81,
@@ -39,7 +40,7 @@ CANDLE2 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE3 = Candle(
-    symbol=SYMBOL1,
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
     open=324.10,
     high=324.10,
     low=323.97,
@@ -48,7 +49,7 @@ CANDLE3 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:26:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE4 = Candle(
-    symbol=SYMBOL1,
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
     open=323.93,
     high=323.95,
     low=323.83,
@@ -57,7 +58,7 @@ CANDLE4 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:31:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE5 = Candle(
-    symbol=SYMBOL1,
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
     open=323.88,
     high=323.90,
     low=323.75,
@@ -66,7 +67,7 @@ CANDLE5 = Candle(
     timestamp=datetime.strptime("2020-05-07 14:36:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 CANDLE6 = Candle(
-    symbol=SYMBOL1,
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
     open=324.88,
     high=324.90,
     low=324.75,
@@ -283,7 +284,7 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_5_minute_data(
     assert rolling_window.data is None
     rolling_window.push(CANDLE3)
     assert rolling_window.data == Candle(
-        symbol=SYMBOL1,
+        asset=Asset(symbol=SYMBOL1, exchange="IEX"),
         open=323.69,
         high=324.21,
         low=323.67,
@@ -293,7 +294,7 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_5_minute_data(
     )
     rolling_window.push(CANDLE4)
     assert rolling_window.data == Candle(
-        symbol=SYMBOL1,
+        asset=Asset(symbol=SYMBOL1, exchange="IEX"),
         open=324.10,
         high=324.10,
         low=323.97,
@@ -303,7 +304,7 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_5_minute_data(
     )
     rolling_window.push(CANDLE5)
     assert rolling_window.data == Candle(
-        symbol=SYMBOL1,
+        asset=Asset(symbol=SYMBOL1, exchange="IEX"),
         open=323.93,
         high=323.95,
         low=323.83,
@@ -329,7 +330,7 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_1_day_data():
     assert rolling_window.data is None
     rolling_window.push(CANDLE6)
     assert rolling_window.data == Candle(
-        symbol="IVV",
+        asset=Asset(symbol="IVV", exchange="IEX"),
         open="323.69",
         high="324.21",
         low="323.67",

@@ -6,6 +6,7 @@ from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
 from feed.feed import CsvFeed, Feed
 from indicators.indicators_manager import IndicatorsManager
+from models.asset import Asset
 from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
@@ -14,11 +15,16 @@ from strategy.strategies.sma_crossover_strategy import (
 )
 
 
+AAPL_SYMBOL = "AAPL"
+EXCHANGE = "IEX"
+AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
+
+
 def test_reactive_sma_crossover_strategy():
-    symbols = ["AAPL"]
+    assets = [AAPL_ASSET]
     events = deque()
 
-    feed: Feed = CsvFeed({"AAPL": "test/data/aapl_candles_one_day.csv"}, events)
+    feed: Feed = CsvFeed({AAPL_ASSET: "test/data/aapl_candles_one_day.csv"}, events)
 
     strategies = [SmaCrossoverStrategy]
     clock = SimulatedClock()
@@ -35,7 +41,7 @@ def test_reactive_sma_crossover_strategy():
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,
-        symbols=symbols,
+        assets=assets,
         feed=feed,
         order_manager=order_manager,
         strategies_classes=strategies,
@@ -43,6 +49,5 @@ def test_reactive_sma_crossover_strategy():
     )
     start = time()
     event_loop.loop()
-    print(time() - start)
 
     assert broker.get_portfolio_cash_balance() == 10010.955

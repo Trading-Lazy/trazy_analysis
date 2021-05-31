@@ -8,7 +8,9 @@ from typing import List, Set
 
 from bot.event_loop import EventLoop
 from broker.binance_broker import BinanceBroker
+
 # from broker.degiro_broker import DegiroBroker
+from broker.degiro_broker import DegiroBroker
 from common.clock import LiveClock
 from feed.feed import Feed, LiveFeed
 from indicators.indicators_manager import IndicatorsManager
@@ -51,6 +53,39 @@ def get_strategies_classes(
     return list(strategies_classes)
 
 
+# if __name__ == "__main__":
+#     symbols = ["XRPUSDT"]
+#     events = deque()
+#     live_data_handler = BinanceLiveDataHandler()
+#
+#     feed: Feed = LiveFeed(symbols, events, live_data_handler)
+#
+#     strategies = [SmaCrossoverStrategy]
+#     clock = LiveClock()
+#     broker = BinanceBroker(clock, events)
+#     position_sizer = PositionSizer(broker)
+#     order_creator = OrderCreator(
+#         broker=broker, with_cover=True, trailing_stop_order_pct=0.002
+#     )
+#     order_manager = OrderManager(
+#         events=events,
+#         broker=broker,
+#         position_sizer=position_sizer,
+#         order_creator=order_creator,
+#     )
+#     indicators_manager = IndicatorsManager(preload=False)
+#     event_loop = EventLoop(
+#         events=events,
+#         symbols=symbols,
+#         feed=feed,
+#         order_manager=order_manager,
+#         strategies_classes=strategies,
+#         indicators_manager=indicators_manager,
+#         live=True,
+#         close_at_end_of_day=False
+#     )
+#     event_loop.loop()
+
 if __name__ == "__main__":
     symbols = ["XRPUSDT"]
     events = deque()
@@ -63,13 +98,14 @@ if __name__ == "__main__":
     broker = BinanceBroker(clock, events)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(
-        broker=broker, with_cover=True, trailing_stop_order_pct=0.05
+        broker=broker, with_cover=True, trailing_stop_order_pct=0.002
     )
     order_manager = OrderManager(
         events=events,
         broker=broker,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        filter_at_end_of_day=False,
     )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
@@ -80,5 +116,6 @@ if __name__ == "__main__":
         strategies_classes=strategies,
         indicators_manager=indicators_manager,
         live=True,
+        close_at_end_of_day=False,
     )
     event_loop.loop()
