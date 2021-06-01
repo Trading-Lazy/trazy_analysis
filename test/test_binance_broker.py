@@ -4,8 +4,8 @@ from decimal import Decimal
 from unittest.mock import call, patch
 
 import pytest
-from pytz import timezone
 from freezegun import freeze_time
+from pytz import timezone
 
 from broker.binance_broker import BinanceBroker
 from common.clock import LiveClock

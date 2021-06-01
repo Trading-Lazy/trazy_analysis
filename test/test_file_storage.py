@@ -1,5 +1,6 @@
-from pathlib import Path
 from unittest.mock import call, patch
+
+from pathlib import Path
 
 from file_storage.common import DONE_DIR, ERROR_DIR, NONE_DIR
 from file_storage.meganz_file_storage import MegaNzFileStorage

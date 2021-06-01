@@ -13,7 +13,7 @@ from indicators.indicators_manager import IndicatorsManager
 from models.asset import Asset
 from models.candle import Candle
 from models.enums import EventType
-from models.event import MarketEodDataEvent, AssetSpecificEvent, DataEvent
+from models.event import AssetSpecificEvent, DataEvent, MarketEodDataEvent
 from order_manager.order_manager import OrderManager
 from strategy.strategy import Strategy
 
@@ -91,16 +91,21 @@ class EventLoop:
             self.run_strategy(strategy, candle)
             LOG.info(
                 "Strategy results: %s",
-                strategy.order_manager.broker.get_portfolio_cash_balance(),
+                strategy.order_manager.broker_manager.get_broker(
+                    candle.asset.exchange
+                ).get_portfolio_cash_balance(),
             )
 
     def run_synchronized_strategy(self, candles: np.array):
         for strategy in self.strategy_instances:
             strategy.process_candle(candles, self.clock)
-            LOG.info(
-                "Strategy results: %s",
-                strategy.order_manager.broker.get_portfolio_cash_balance(),
-            )
+            for exchange in self.broker_manager.brokers:
+                LOG.info(
+                    "Strategy results: %s",
+                    strategy.order_manager.broker_manager.get_broker(
+                        exchange
+                    ).get_portfolio_cash_balance(),
+                )
 
     def handle_asset_delayed_events(self, candle: Candle):
         asset_delayed_events = []
@@ -140,7 +145,7 @@ class EventLoop:
         self.assets = sorted(set(assets))
         self.feed = feed
         self.order_manager = order_manager
-        self.broker = self.order_manager.broker
+        self.broker_manager = self.order_manager.broker_manager
         self.clock = self.order_manager.clock
         self.indicators_manager = indicators_manager
         self.strategies_classes = strategies_classes
@@ -159,7 +164,8 @@ class EventLoop:
         while data_to_process:
             if self.live:
                 # tasks to be done regularly
-                self.broker.synchronize()
+                for exchange in self.broker_manager.brokers:
+                    self.broker_manager.get_broker(exchange).synchronize()
                 now = self.clock.current_time()
                 if (
                     self.signals_and_orders_last_update is None
@@ -167,7 +173,8 @@ class EventLoop:
                     >= timedelta(seconds=10)
                 ):
                     self.order_manager.process_pending_signals()
-                    self.broker.execute_open_orders()
+                    for exchange in self.broker_manager.brokers:
+                        self.broker_manager.get_broker(exchange).execute_open_orders()
                     self.signals_and_orders_last_update = self.clock.current_time()
 
                 now = self.clock.current_time()
@@ -220,9 +227,13 @@ class EventLoop:
                             self.clock.update(
                                 candle.asset, candle.timestamp + timedelta(minutes=1)
                             )
-                            self.broker.update_price(candle)
+                            self.broker_manager.get_broker(
+                                candle.asset.exchange
+                            ).update_price(candle)
                             self.run_strategies(candle)
-                            self.broker.execute_open_orders()
+                            self.broker_manager.get_broker(
+                                candle.asset.exchange
+                            ).execute_open_orders()
                             self.handle_asset_delayed_events(candle)
                             self.handle_delayed_events()
                             if self.close_at_end_of_day and self.clock.end_of_day(
@@ -248,21 +259,24 @@ class EventLoop:
                         )
 
                 elif event.type == EventType.OPEN_ORDERS:
-                    self.broker.execute_open_orders()
+                    for exchange in self.broker_manager.brokers:
+                        self.broker_manager.get_broker(exchange).execute_open_orders()
                 elif event.type == EventType.PENDING_SIGNAL:
                     self.order_manager.process_pending_signals()
                 elif event.type == EventType.MARKET_EOD_DATA:
                     assets = event.assets
                     for asset in assets:
-                        self.broker.close_all_open_positions(asset)
+                        self.broker_manager.get_broker(
+                            asset.exchange
+                        ).close_all_open_positions(asset)
                 elif event.type == EventType.SIGNAL:
                     signal = event.signal
                     self.order_manager.check_signal(signal)
                 elif event.type == EventType.MARKET_DATA_END:
                     assets = event.assets
                     for asset in assets:
-                        self.broker.close_all_open_positions(
-                            asset=asset, end_of_day=False
-                        )
+                        self.broker_manager.get_broker(
+                            asset.exchange
+                        ).close_all_open_positions(asset=asset, end_of_day=False)
                     data_to_process = False
                     break

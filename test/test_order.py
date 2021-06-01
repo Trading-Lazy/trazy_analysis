@@ -5,7 +5,6 @@ from models.asset import Asset
 from models.enums import Action, Direction, OrderStatus, OrderType
 from models.order import Order, OrderBase
 
-
 EXCHANGE = "IEX"
 
 

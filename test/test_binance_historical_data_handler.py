@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 from market_data.historical.binance_historical_data_handler import (
     BinanceHistoricalDataHandler,

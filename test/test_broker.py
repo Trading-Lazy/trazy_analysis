@@ -3,6 +3,7 @@ from unittest.mock import PropertyMock, call, patch
 
 from bot.event_loop import EventLoop
 from broker.broker import Broker
+from broker.broker_manager import BrokerManager
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
 from feed.feed import CsvFeed, Feed
@@ -18,6 +19,8 @@ from portfolio.portfolio import Portfolio
 from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
+
+EXCHANGE = "IEX"
 
 
 def test_init():
@@ -216,7 +219,7 @@ def test_submit_order_sequential_order():
 
 
 def test_close_all_open_positions_at_end_of_day():
-    aapl_asset = Asset(symbol="AAPL", exchange="IEX")
+    aapl_asset = Asset(symbol="AAPL", exchange=EXCHANGE)
     assets = [aapl_asset]
     events = deque()
 
@@ -229,14 +232,11 @@ def test_close_all_open_positions_at_end_of_day():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,
@@ -252,7 +252,7 @@ def test_close_all_open_positions_at_end_of_day():
 
 
 def test_close_all_open_positions_at_end_of_feed_data():
-    aapl_asset = Asset(symbol="AAPL", exchange="IEX")
+    aapl_asset = Asset(symbol="AAPL", exchange=EXCHANGE)
     assets = [aapl_asset]
     events = deque()
 
@@ -267,14 +267,11 @@ def test_close_all_open_positions_at_end_of_feed_data():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,

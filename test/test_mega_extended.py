@@ -1,7 +1,7 @@
-from pathlib import Path
 from unittest.mock import call, patch
 
 import pytest
+from pathlib import Path
 
 from file_storage.meganz_file_storage import MegaExtended
 

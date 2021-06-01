@@ -1,8 +1,8 @@
-from datetime import date, timedelta, datetime
+from datetime import date, datetime, timedelta
 from typing import Tuple
 
-from market_data.historical.historical_data_handler import HistoricalDataHandler
 from market_data.binance_data_handler import BinanceDataHandler
+from market_data.historical.historical_data_handler import HistoricalDataHandler
 
 
 class BinanceHistoricalDataHandler(BinanceDataHandler, HistoricalDataHandler):

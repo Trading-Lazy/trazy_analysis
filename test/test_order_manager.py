@@ -2,6 +2,7 @@ from collections import deque
 from datetime import datetime
 from unittest.mock import patch
 
+from broker.broker_manager import BrokerManager
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
 from models.asset import Asset
@@ -27,9 +28,10 @@ def test_process_check_signals(
     clock.update(asset, timestamp)
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(events, broker, position_sizer, order_creator)
+    broker_manager = BrokerManager(brokers={exchange: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(events, broker_manager, position_sizer, order_creator)
     signal = Signal(
         asset=asset,
         action=Action.BUY,

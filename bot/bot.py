@@ -3,19 +3,18 @@ import importlib
 import inspect
 import os
 from collections import deque
-from pathlib import Path
 from typing import List, Set
+
+from pathlib import Path
 
 from bot.event_loop import EventLoop
 from broker.binance_broker import BinanceBroker
-
 # from broker.degiro_broker import DegiroBroker
-from broker.degiro_broker import DegiroBroker
+from broker.broker_manager import BrokerManager
 from common.clock import LiveClock
 from feed.feed import Feed, LiveFeed
 from indicators.indicators_manager import IndicatorsManager
 from market_data.live.binance_live_data_handler import BinanceLiveDataHandler
-from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
 from order_manager.order_creator import OrderCreator
 from order_manager.order_manager import OrderManager
 from order_manager.position_sizer import PositionSizer
@@ -23,6 +22,9 @@ from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
 from strategy.strategy import Strategy
+
+
+EXCHANGE = "IEX"
 
 
 def get_strategies_classes(
@@ -96,17 +98,13 @@ if __name__ == "__main__":
     strategies = [SmaCrossoverStrategy]
     clock = LiveClock()
     broker = BinanceBroker(clock, events)
-    position_sizer = PositionSizer(broker)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
-        broker=broker, with_cover=True, trailing_stop_order_pct=0.002
+        broker_manager=broker_manager, with_cover=True, trailing_stop_order_pct=0.002
     )
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-        filter_at_end_of_day=False,
-    )
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator, filter_at_end_of_day=False)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,

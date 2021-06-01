@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import call, patch
 
 from bot.event_loop import EventLoop
+from broker.broker_manager import BrokerManager
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
 from common.exchange_calendar_euronext import EuronextExchangeCalendar
@@ -48,9 +49,10 @@ def test_init_live():
     assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
@@ -80,9 +82,10 @@ def test_init_backtest():
     assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
@@ -113,7 +116,7 @@ def test_run_strategy(process_candle_mocked):
     strategies_classes = [SmaCrossoverStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
+    order_creator = OrderCreator(broker_manager=broker)
     order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
@@ -136,9 +139,10 @@ def test_run_strategies(run_strategy_mocked):
     assets = [AAPL_ASSET, GOOGL_ASSET]
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
@@ -165,9 +169,10 @@ def test_run_backtest():
     strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
 
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
