@@ -6,10 +6,10 @@ from typing import List
 import numpy as np
 
 import settings
-from logger import logger
-from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
+from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
+from logger import logger
 
 LOG = logger.get_root_logger(
     __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")

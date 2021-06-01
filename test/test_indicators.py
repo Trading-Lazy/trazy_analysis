@@ -1,6 +1,7 @@
 from collections import deque
 
 from bot.event_loop import EventLoop
+from broker.broker_manager import BrokerManager
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
 from feed.feed import CsvFeed, Feed
@@ -14,6 +15,9 @@ from strategy.strategies.sma_crossover_strategy import (
 )
 
 
+EXCHANGE = "IEX"
+
+
 def test_sma_crossover_strategy_preload_data():
     aapl_asset = Asset(symbol="AAPL", exchange="IEX")
     assets = [aapl_asset]
@@ -25,14 +29,11 @@ def test_sma_crossover_strategy_preload_data():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker)
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager)
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,

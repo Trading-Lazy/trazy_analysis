@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 import settings
-from broker.broker import Broker
+from broker.broker_manager import BrokerManager
 from common.clock import Clock
 from logger import logger
 from models.enums import Action, OrderType
@@ -19,7 +19,7 @@ LOG = logger.get_root_logger(
 class OrderCreator:
     def __init__(
         self,
-        broker: Broker,
+        broker_manager: BrokerManager,
         fixed_order_type: OrderType = OrderType.MARKET,
         limit_order_pct=0.005,
         stop_order_pct=0.05,
@@ -28,7 +28,7 @@ class OrderCreator:
         with_cover=False,
         with_bracket=False,
     ):
-        self.broker = broker
+        self.broker_manager = broker_manager
         self.fixed_order_type = fixed_order_type
         self.limit_order_pct = limit_order_pct
         self.stop_order_pct = stop_order_pct
@@ -38,7 +38,9 @@ class OrderCreator:
         self.with_bracket = with_bracket
 
     def find_best_limit(self, signal: Signal, action: Action) -> float:
-        current_price = self.broker.current_price(signal.asset)
+        current_price = self.broker_manager.get_broker(
+            exchange=signal.asset.exchange
+        ).current_price(signal.asset)
         if action == Action.BUY:
             best_limit = current_price - self.limit_order_pct * current_price
         else:
@@ -48,7 +50,9 @@ class OrderCreator:
         return best_limit
 
     def find_best_stop(self, signal: Signal, action: Action) -> float:
-        current_price = self.broker.current_price(signal.asset)
+        current_price = self.broker_manager.get_broker(
+            exchange=signal.asset.exchange
+        ).current_price(signal.asset)
         if action == Action.BUY:
             best_stop_or_target = current_price + self.stop_order_pct * current_price
         else:
@@ -62,7 +66,9 @@ class OrderCreator:
         signal: Signal,
         action: Action,
     ) -> float:
-        current_price = self.broker.current_price(signal.asset)
+        current_price = self.broker_manager.get_broker(
+            exchange=signal.asset.exchange
+        ).current_price(signal.asset)
         if action == Action.BUY:
             best_stop_or_target = current_price - self.target_order_pct * current_price
         else:

@@ -2,7 +2,7 @@ import os
 from collections import deque
 
 import settings
-from broker.broker import Broker
+from broker.broker_manager import BrokerManager
 from logger import logger
 from models.event import PendingSignalEvent
 from models.signal import Signal
@@ -18,26 +18,26 @@ class OrderManager:
     def __init__(
         self,
         events: deque,
-        broker: Broker,
+        broker_manager: BrokerManager,
         position_sizer: PositionSizer,
         order_creator: OrderCreator,
         filter_at_end_of_day=True,
     ):
         self.events = events
-        self.broker: Broker = broker
+        self.broker_manager = broker_manager
         self.position_sizer: PositionSizer = position_sizer
         self.order_creator = order_creator
         self.pending_signals = deque()
-        self.clock = self.broker.clock
+        self.clock = self.broker_manager.clock
         self.filter_at_end_of_day = filter_at_end_of_day
 
-    def process_pending_signal(self, signal: Signal, pending_signals):
+    def process_pending_signal(self, signal: Signal):
         LOG.info("Processing %s", str(signal))
         order = self.order_creator.create_order(signal, self.clock)
         if order is not None:
             LOG.info("Order has been created and can be dispatched to the broker")
             self.position_sizer.size_order(order)
-            self.broker.submit_order(order)
+            self.broker_manager.get_broker(signal.asset.exchange).submit_order(order)
 
     def process_pending_signals(self):
         # Create an order from the signal
@@ -45,7 +45,7 @@ class OrderManager:
         pending_signals = []
         while len(self.pending_signals) != 0:
             signal = self.pending_signals.popleft()
-            self.process_pending_signal(signal, pending_signals)
+            self.process_pending_signal(signal)
 
         for pending_signal in pending_signals:
             self.pending_signals.append(pending_signal)
@@ -57,9 +57,9 @@ class OrderManager:
         # check if signal is still valid
         LOG.info("Received new signal %s", str(signal))
         now = self.clock.current_time(asset=signal.asset)
-        opened_position = self.broker.has_opened_position(
-            signal.asset, signal.direction
-        )
+        opened_position = self.broker_manager.get_broker(
+            signal.asset.exchange
+        ).has_opened_position(signal.asset, signal.direction)
         if (
             signal.in_force(now)
             and (

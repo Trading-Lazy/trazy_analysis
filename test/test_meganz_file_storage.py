@@ -1,8 +1,8 @@
-from pathlib import Path
 from unittest.mock import call, patch
 
 import numpy as np
 import pytest
+from pathlib import Path
 
 from file_storage.common import PATH_SEPARATOR
 from file_storage.meganz_file_storage import MegaExtended, MegaNzFileStorage

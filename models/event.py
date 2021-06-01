@@ -1,10 +1,9 @@
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
 
 import numpy as np
 
 from models.asset import Asset
-from models.candle import Candle
 from models.enums import EventType
 from models.signal import Signal
 

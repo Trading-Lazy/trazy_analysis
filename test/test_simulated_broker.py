@@ -4,6 +4,7 @@ from datetime import datetime
 import pytest
 
 from bot.event_loop import EventLoop
+from broker.broker_manager import BrokerManager
 from broker.fixed_fee_model import FixedFeeModel
 from broker.simulated_broker import SimulatedBroker
 from common.clock import SimulatedClock
@@ -474,18 +475,15 @@ def test_execute_limit_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    position_sizer = PositionSizer(broker)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
-        broker=broker,
+        broker_manager=broker_manager,
         fixed_order_type=OrderType.LIMIT,
         limit_order_pct=0.0004,
     )
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -513,16 +511,13 @@ def test_execute_stop_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    position_sizer = PositionSizer(broker)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
-        broker=broker, fixed_order_type=OrderType.STOP, stop_order_pct=0.0004
+        broker_manager=broker_manager, fixed_order_type=OrderType.STOP, stop_order_pct=0.0004
     )
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -550,18 +545,15 @@ def test_execute_target_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    position_sizer = PositionSizer(broker)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
-        broker=broker,
+        broker_manager=broker_manager,
         fixed_order_type=OrderType.TARGET,
         target_order_pct=0.0004,
     )
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -590,18 +582,15 @@ def test_execute_trailing_stop_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    position_sizer = PositionSizer(broker)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
-        broker=broker,
+        broker_manager=broker_manager,
         fixed_order_type=OrderType.TRAILING_STOP,
         trailing_stop_order_pct=0.0004,
     )
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -629,14 +618,11 @@ def test_execute_cover_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker, with_cover=True)
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager, with_cover=True)
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -664,14 +650,11 @@ def test_execute_bracket_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    position_sizer = PositionSizer(broker)
-    order_creator = OrderCreator(broker=broker, with_bracket=True)
-    order_manager = OrderManager(
-        events=events,
-        broker=broker,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    position_sizer = PositionSizer(broker_manager=broker_manager)
+    order_creator = OrderCreator(broker_manager=broker_manager, with_bracket=True)
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator)
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,

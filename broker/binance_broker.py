@@ -3,7 +3,7 @@ import traceback
 from collections import deque
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_DOWN
-from typing import List, Dict
+from typing import Dict, List
 
 import pandas as pd
 from binance.client import Client

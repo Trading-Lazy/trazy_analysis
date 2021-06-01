@@ -9,8 +9,8 @@ from pandas.core.groupby.generic import DataFrameGroupBy
 from requests.models import Response
 
 import settings
-from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
-from common.helper import request, resample_candle_data, fill_missing_datetimes
+from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
+from common.helper import fill_missing_datetimes, request
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc

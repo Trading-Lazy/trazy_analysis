@@ -7,7 +7,7 @@ from requests.models import Response
 
 import logger
 import settings
-from common.constants import ENCODING, CONNECTION_ERROR_MESSAGE
+from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
 from common.helper import request
 from common.meta import RateLimitedSingletonMeta
 from market_data.data_handler import DataHandler

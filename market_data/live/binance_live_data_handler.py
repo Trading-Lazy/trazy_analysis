@@ -1,8 +1,8 @@
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from typing import List
 
-from market_data.live.live_data_handler import LiveDataHandler
 from market_data.binance_data_handler import BinanceDataHandler
+from market_data.live.live_data_handler import LiveDataHandler
 from models.candle import Candle
 
 
