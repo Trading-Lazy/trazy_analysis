@@ -106,7 +106,7 @@ class DataConsumer:
         self._init_strategy_instance(strategy_class)
 
     def run_strategy(self, strategy: Strategy, candle: Candle):
-        strategy.process_candle(candle, self.clock)
+        strategy.process_context(candle, self.clock)
 
     def run_strategies(self, candle: Candle):
         for strategy in self.strategy_instances:

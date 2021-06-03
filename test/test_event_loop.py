@@ -67,15 +67,14 @@ def test_init_live():
     assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
     assert event_loop.strategies_classes == strategies_classes
 
-    assert len(event_loop.strategy_instances) == 4
+    assert len(event_loop.strategy_instances) == 2
+    assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
+    assert isinstance(event_loop.context.candles[AAPL_ASSET], deque)
+    assert len(event_loop.context.candles[AAPL_ASSET]) == 0
+    assert isinstance(event_loop.context.candles[GOOGL_ASSET], deque)
+    assert len(event_loop.context.candles[GOOGL_ASSET]) == 0
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[0].asset == AAPL_ASSET
-    assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[1].asset == GOOGL_ASSET
-    assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
-    assert event_loop.strategy_instances[2].asset == AAPL_ASSET
-    assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
-    assert event_loop.strategy_instances[3].asset == GOOGL_ASSET
+    assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
 
 
 def test_init_backtest():
@@ -99,19 +98,18 @@ def test_init_backtest():
     assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
     assert event_loop.strategies_classes == strategies_classes
 
-    assert len(event_loop.strategy_instances) == 4
+    assert len(event_loop.strategy_instances) == 2
+    assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
+    assert isinstance(event_loop.context.candles[AAPL_ASSET], deque)
+    assert len(event_loop.context.candles[AAPL_ASSET]) == 0
+    assert isinstance(event_loop.context.candles[GOOGL_ASSET], deque)
+    assert len(event_loop.context.candles[GOOGL_ASSET]) == 0
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[0].asset == AAPL_ASSET
-    assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
-    assert event_loop.strategy_instances[1].asset == GOOGL_ASSET
-    assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
-    assert event_loop.strategy_instances[2].asset == AAPL_ASSET
-    assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
-    assert event_loop.strategy_instances[3].asset == GOOGL_ASSET
+    assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
 
 
-@patch("strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_candle")
-def test_run_strategy(process_candle_mocked):
+@patch("strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context")
+def test_run_strategy(process_context):
     assets = [AAPL_ASSET, GOOGL_ASSET]
     strategies_classes = [SmaCrossoverStrategy]
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
@@ -128,10 +126,10 @@ def test_run_strategy(process_candle_mocked):
         strategies_classes=strategies_classes,
     )
     strategy_object = event_loop.strategy_instances[0]
-    event_loop.run_strategy(strategy_object, CANDLE)
+    event_loop.run_strategy(strategy_object)
 
-    process_candle_calls = [call(CANDLE, CLOCK)]
-    process_candle_mocked.assert_has_calls(process_candle_calls)
+    process_context_calls = [call(event_loop.context, CLOCK)]
+    process_context.assert_has_calls(process_context_calls)
 
 
 @patch("bot.event_loop.EventLoop.run_strategy")
@@ -153,13 +151,11 @@ def test_run_strategies(run_strategy_mocked):
         strategies_classes=strategies_classes,
     )
 
-    event_loop.run_strategies(CANDLE)
+    event_loop.run_strategies()
 
     run_strategy_calls = [
-        call(event_loop.strategy_instances[0], CANDLE),
-        call(event_loop.strategy_instances[1], CANDLE),
-        call(event_loop.strategy_instances[2], CANDLE),
-        call(event_loop.strategy_instances[3], CANDLE),
+        call(event_loop.strategy_instances[0]),
+        call(event_loop.strategy_instances[1]),
     ]
     run_strategy_mocked.assert_has_calls(run_strategy_calls)
 

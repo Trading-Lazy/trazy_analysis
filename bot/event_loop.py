@@ -8,6 +8,7 @@ import numpy as np
 
 import logger
 import settings
+from common.constants import MAX_TIMESTAMP
 from feed.feed import Feed
 from indicators.indicators_manager import IndicatorsManager
 from models.asset import Asset
@@ -15,6 +16,7 @@ from models.candle import Candle
 from models.enums import EventType
 from models.event import AssetSpecificEvent, DataEvent, MarketEodDataEvent
 from order_manager.order_manager import OrderManager
+from strategy.context import Context
 from strategy.strategy import Strategy
 
 LOG = logger.get_root_logger(
@@ -64,16 +66,15 @@ class ExpiringSet:
 
 class EventLoop:
     def _init_strategy_instance(self, strategy_class: type):
-        for asset in self.assets:
-            if issubclass(strategy_class, Strategy):
-                self.strategy_instances.append(
-                    strategy_class(
-                        asset,
-                        self.order_manager,
-                        self.events,
-                        self.indicators_manager,
-                    )
+        if issubclass(strategy_class, Strategy):
+            self.strategy_instances.append(
+                strategy_class(
+                    self.context,
+                    self.order_manager,
+                    self.events,
+                    self.indicators_manager,
                 )
+            )
 
     def _init_strategy_instances(self):
         for strategy_class in self.strategies_classes:
@@ -83,27 +84,17 @@ class EventLoop:
         for asset in self.assets:
             self.seen_candles[asset] = ExpiringSet()
 
-    def run_strategy(self, strategy: Strategy, candle: Candle):
-        strategy.process_candle(candle, self.clock)
+    def run_strategy(self, strategy: Strategy):
+        strategy.process_context(self.context, self.clock)
 
-    def run_strategies(self, candle: Candle):
+    def run_strategies(self):
         for strategy in self.strategy_instances:
-            self.run_strategy(strategy, candle)
-            LOG.info(
-                "Strategy results: %s",
-                strategy.order_manager.broker_manager.get_broker(
-                    candle.asset.exchange
-                ).get_portfolio_cash_balance(),
-            )
-
-    def run_synchronized_strategy(self, candles: np.array):
-        for strategy in self.strategy_instances:
-            strategy.process_candle(candles, self.clock)
-            for exchange in self.broker_manager.brokers:
+            self.run_strategy(strategy)
+            for asset in self.context.candles:
                 LOG.info(
                     "Strategy results: %s",
                     strategy.order_manager.broker_manager.get_broker(
-                        exchange
+                        asset.exchange
                     ).get_portfolio_cash_balance(),
                 )
 
@@ -150,6 +141,7 @@ class EventLoop:
         self.indicators_manager = indicators_manager
         self.strategies_classes = strategies_classes
         self.strategy_instances: List[Strategy] = []
+        self.context = Context(assets=self.assets)
         self._init_strategy_instances()
         self.indicators_manager.warmup()
         self.seen_candles = {}
@@ -158,6 +150,7 @@ class EventLoop:
         self.close_at_end_of_day = close_at_end_of_day
         self.last_update = None
         self.signals_and_orders_last_update = None
+        self.current_timestamp = MAX_TIMESTAMP
 
     def loop(self):
         data_to_process = True
@@ -206,10 +199,10 @@ class EventLoop:
                     continue
 
                 if event.type == EventType.MARKET_DATA:
-                    candles = event.candles
+                    candles_dict = event.candles
                     eod_assets = []
-                    for asset in candles:
-                        candles = candles[asset]
+                    for asset in candles_dict:
+                        candles = candles_dict[asset]
                         for candle in candles:
                             timestamp_str = str(candle.timestamp)
                             if timestamp_str in self.seen_candles[candle.asset]:
@@ -220,7 +213,22 @@ class EventLoop:
                                 )
                                 continue
                             self.seen_candles[candle.asset].add(timestamp_str)
-                            LOG.info("Dequeue new candle: %s", candle.to_json())
+                            self.context.add_candle(candle)
+                            self.handle_asset_delayed_events(candle)
+                            self.handle_delayed_events()
+                            if self.close_at_end_of_day and self.clock.end_of_day(
+                                candle.asset
+                            ):
+                                eod_assets.append(candle.asset)
+                    candles_are_processed = False
+                    while not candles_are_processed:
+                        self.context.update()
+                        last_candles = self.context.get_last_candles()
+                        if len(last_candles) == 0:
+                            candles_are_processed = True
+                            break
+                        for candle in last_candles:
+                            LOG.info("Process new candle: %s", candle.to_json())
                             self.indicators_manager.RollingWindow(candle.asset).push(
                                 candle
                             )
@@ -230,16 +238,11 @@ class EventLoop:
                             self.broker_manager.get_broker(
                                 candle.asset.exchange
                             ).update_price(candle)
-                            self.run_strategies(candle)
+                        self.run_strategies()
+                        for candle in last_candles:
                             self.broker_manager.get_broker(
                                 candle.asset.exchange
                             ).execute_open_orders()
-                            self.handle_asset_delayed_events(candle)
-                            self.handle_delayed_events()
-                            if self.close_at_end_of_day and self.clock.end_of_day(
-                                candle.asset
-                            ):
-                                eod_assets.append(candle.asset)
                     if len(eod_assets) != 0:
                         bars_delay = 0
                         if not self.live:
