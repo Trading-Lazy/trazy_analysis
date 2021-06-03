@@ -6,7 +6,7 @@ import numpy as np
 from pandas_market_calendars import MarketCalendar
 
 from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
-from common.utils import timestamp_to_utc
+from common.constants import MAX_TIMESTAMP
 from db_storage.db_storage import DbStorage
 from feed.loader import CsvLoader, ExternalStorageLoader, HistoricalDataLoader
 from file_storage.file_storage import FileStorage
@@ -18,8 +18,6 @@ from models.event import (
     MarketDataEndEvent,
     MarketDataEvent,
 )
-
-MAX_TIMESTAMP = timestamp_to_utc(datetime.max)
 
 
 class Feed:

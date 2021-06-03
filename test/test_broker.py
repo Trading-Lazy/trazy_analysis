@@ -248,7 +248,7 @@ def test_close_all_open_positions_at_end_of_day():
     )
     event_loop.loop()
 
-    assert broker.get_portfolio_cash_balance() == 10014.665
+    assert broker.get_portfolio_cash_balance() == 10016.415
 
 
 def test_close_all_open_positions_at_end_of_feed_data():
