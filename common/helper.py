@@ -211,6 +211,8 @@ def fill_missing_datetimes(
     resample_label = "right"
     if time_unit >= timedelta(days=1):
         resample_label = "left"
+    if df.empty:
+        return df
     df = df.resample(time_unit, label=resample_label, closed="right").agg(
         {
             "open": "first",
@@ -232,13 +234,16 @@ def fill_missing_datetimes(
 
 
 def resample_candle_data(
-    df: CandleDataFrame,
+    candle_dataframe: CandleDataFrame,
     time_unit: timedelta,
-    market_cal_df: DataFrame,
+    market_cal_df: DataFrame = None,
 ) -> CandleDataFrame:
-    asset = df.asset
-    df = fill_missing_datetimes(df=df, time_unit=time_unit)
-    candle_dataframe = CandleDataFrame.from_dataframe(df, asset)
+    asset = candle_dataframe.asset
+    candle_dataframe = fill_missing_datetimes(df=candle_dataframe, time_unit=time_unit)
+    candle_dataframe = CandleDataFrame.from_dataframe(candle_dataframe, asset)
+
+    if market_cal_df is None:
+        return candle_dataframe
 
     if time_unit >= timedelta(days=1):
         market_cal_df.index = timestamp_to_utc(market_cal_df.index)

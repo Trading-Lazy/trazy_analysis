@@ -44,6 +44,7 @@ class SimulatedBroker(Broker):
         supported_currencies: List[str] = ["EUR", "USD"],
         initial_funds: float = 0.0,
         fee_model: FeeModel = FixedFeeModel(),
+        exchange: str = "universal",
     ) -> None:
         self._check_initial_funds(initial_funds)
         super().__init__(
@@ -52,6 +53,7 @@ class SimulatedBroker(Broker):
             base_currency=base_currency,
             supported_currencies=supported_currencies,
             fee_model=fee_model,
+            exchange=exchange,
         )
         self._set_cash_balances(initial_funds)
         self.fee_model = self._set_fee_model(fee_model)
@@ -218,11 +220,12 @@ class SimulatedBroker(Broker):
         est_total_cost = consideration + total_commission
         total_cash = self.portfolio.cash
 
-        if est_total_cost > total_cash:
+        if order.is_entry_order and est_total_cost > total_cash:
             LOG.error(
-                "WARNING: Estimated transaction size of %s exceeds "
+                "%s WARNING: Estimated transaction size of %s exceeds "
                 "available cash of %s. Order id %s"
                 "with a negative cash balance.",
+                self.exchange,
                 est_total_cost,
                 total_cash,
                 order.order_id,
@@ -230,7 +233,7 @@ class SimulatedBroker(Broker):
             return
 
         # Create a transaction entity and update the portfolio
-        current_timestamp = self.clock.current_time(asset=order.asset)
+        current_timestamp = self.clock.current_time()
         txn = Transaction(
             asset=order.asset,
             size=order.size,

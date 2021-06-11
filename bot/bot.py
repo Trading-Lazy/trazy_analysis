@@ -9,6 +9,7 @@ from pathlib import Path
 
 from bot.event_loop import EventLoop
 from broker.binance_broker import BinanceBroker
+
 # from broker.degiro_broker import DegiroBroker
 from broker.broker_manager import BrokerManager
 from common.clock import LiveClock
@@ -22,7 +23,6 @@ from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
 from strategy.strategy import Strategy
-
 
 EXCHANGE = "IEX"
 
@@ -103,8 +103,13 @@ if __name__ == "__main__":
     order_creator = OrderCreator(
         broker_manager=broker_manager, with_cover=True, trailing_stop_order_pct=0.002
     )
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator, filter_at_end_of_day=False)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+        filter_at_end_of_day=False,
+    )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,

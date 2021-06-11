@@ -5,7 +5,6 @@ from typing import List
 from common.clock import Clock
 from indicators.crossover import Crossover
 from indicators.indicators_manager import IndicatorsManager
-from models.asset import Asset
 from models.enums import Action, Direction
 from models.signal import Signal
 from order_manager.order_manager import OrderManager
@@ -42,7 +41,8 @@ class SmaCrossoverStrategy(Strategy):
             for asset in context.candles
         }
         self.crossover = {
-            asset: Crossover(self.short_sma[asset], self.long_sma[asset]) for asset in context.candles
+            asset: Crossover(self.short_sma[asset], self.long_sma[asset])
+            for asset in context.candles
         }
 
     def generate_signals(self, context: Context, clock: Clock) -> List[Signal]:

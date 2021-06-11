@@ -1,7 +1,7 @@
 from broker.percent_fee_model import PercentFeeModel
 
 
-class BinanceFeeModel(PercentFeeModel):
+class KucoinFeeModel(PercentFeeModel):
     """
     A FeeModel subclass that produces a percentage cost
     for tax and commission.
@@ -18,8 +18,8 @@ class BinanceFeeModel(PercentFeeModel):
     ) -> None:
         super().__init__(commission_pct=0.001, tax_pct=tax_pct)
 
-    def calc_max_size_for_cash(self, cash: float, price: float) -> int:
+    def calc_max_size_for_cash(self, cash: float, price: float) -> float:
         print(
-            f"binance calc_max_size_for_cash = {cash / (price * (1 + self.commission_pct))}"
+            f"kucoin calc_max_size_for_cash = {cash / (price * (1 + self.commission_pct))}"
         )
         return cash / (price * (1 + self.commission_pct))

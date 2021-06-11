@@ -290,7 +290,8 @@ class DegiroBroker(Broker):
                 timestamp=timestamp,
                 transaction_id=transaction_id,
             )
-            description = "%s %s %s %s %s" % (
+            description = "%s %s %s %s %s %s" % (
+                action.name,
                 direction.name,
                 transaction.size,
                 transaction.asset.key().upper(),

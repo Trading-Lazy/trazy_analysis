@@ -73,9 +73,9 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         return df.groupby(lambda ind: ind.strftime("%Y%m%d"))
 
     @classmethod
-    def request_ticker_data(cls, ticker: str, period: Tuple[date, date]) -> Response:
+    def request_ticker_data(cls, ticker: Asset, period: Tuple[date, date]) -> Response:
         ticker_url = cls.generate_ticker_data_url(ticker, period)
-        LOG.info("Url for %s: %s", ticker, ticker_url)
+        LOG.info("Url for %s: %s", ticker.key(), ticker_url)
         return request(ticker_url)
 
     @classmethod
@@ -94,7 +94,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
                 str(e),
                 traceback.format_exc(),
             )
-            return CandleDataFrame(symbol=ticker)
+            return CandleDataFrame(asset=ticker)
         data: str = response.content.decode(ENCODING)
         period_tuple = (period[0], period[1])
         if response:
@@ -105,7 +105,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
             else:
                 LOG.info(
                     "No available data for ticker %s for period %s",
-                    ticker,
+                    ticker.key(),
                     period_tuple,
                 )
                 none_response_periods.add(period_tuple)

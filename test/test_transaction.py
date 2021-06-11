@@ -38,4 +38,4 @@ def test_cost_without_commission():
 
 
 def test_cost_with_commission():
-    assert TRANSACTION.cost_with_commission == pytest.approx(9443.54, 0.001)
+    assert TRANSACTION.cost_with_commission == pytest.approx(9443.54, abs=0.001)

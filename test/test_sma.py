@@ -53,7 +53,7 @@ def test_sma_stream_handle_new_data_source_is_filled_rolling_window_stream():
     )
     rolling_window_stream.prefill(filling_array=[7.2, 6.7, 6.3])
     sma = Sma(period=3, source_indicator=rolling_window_stream, preload=False)
-    assert sma.data == pytest.approx(6.733, 0.01)
+    assert sma.data == pytest.approx(6.733, abs=0.01)
     rolling_window_stream.push(7)
     assert sma.data == 6.666666666666666666666666667
 

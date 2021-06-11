@@ -37,7 +37,7 @@ def test_transact_position_new_position():
     assert pos.sell_size == 0
     assert pos.net_size == 100
     assert pos.direction == Direction.LONG
-    assert pos.avg_price == pytest.approx(960.26, 0.01)
+    assert pos.avg_price == pytest.approx(960.26, abs=0.01)
 
 
 def test_transact_position_current_position():
@@ -84,7 +84,7 @@ def test_transact_position_current_position():
     assert pos.sell_size == 0
     assert pos.net_size == 300
     assert pos.direction == Direction.LONG
-    assert pos.avg_price == pytest.approx(980.15, 0.01)
+    assert pos.avg_price == pytest.approx(980.15, abs=0.01)
 
 
 def test_transact_position_size_zero():

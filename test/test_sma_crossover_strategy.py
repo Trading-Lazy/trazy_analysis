@@ -20,7 +20,7 @@ EXCHANGE = "IEX"
 AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 
 
-def test_reactive_sma_crossover_strategy():
+def test_sma_crossover_strategy():
     assets = [AAPL_ASSET]
     events = deque()
 
@@ -33,8 +33,12 @@ def test_reactive_sma_crossover_strategy():
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,

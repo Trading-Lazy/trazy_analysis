@@ -9,6 +9,7 @@ import pandas as pd
 
 from common.types import CandleDataFrame
 from market_data.historical.historical_data_handler import HistoricalDataHandler
+from models.asset import Asset
 from settings import IEX_CLOUD_API_TOKEN
 
 
@@ -42,10 +43,10 @@ class IexCloudHistoricalDataHandler(HistoricalDataHandler):
     TICKER_DATA_TIMEZONE = "US/Eastern"
 
     @classmethod
-    def generate_ticker_data_url(cls, ticker: str, period: Tuple[date, date]) -> str:
+    def generate_ticker_data_url(cls, ticker: Asset, period: Tuple[date, date]) -> str:
         date_str = period[0].strftime("%Y%m%d")
         ticker_url = cls.BASE_URL_HISTORICAL_TICKER_DATA.format(
-            ticker, date_str, cls.API_TOKEN
+            ticker.symbol, date_str, cls.API_TOKEN
         )
         return ticker_url
 

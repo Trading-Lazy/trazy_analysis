@@ -1,5 +1,5 @@
 from broker.broker_manager import BrokerManager
-from models.multiple_order import BracketOrder, CoverOrder
+from models.multiple_order import ArbitragePairOrder, BracketOrder, CoverOrder
 from models.order import Order
 
 
@@ -28,6 +28,15 @@ class PositionSizer:
             size = int(min(size_relative_to_equity, size_relative_to_cash))
         order.size = size
 
+    def size_arbitrage_pair_order(self, arbitrage_pair_order: ArbitragePairOrder):
+        buy_order = arbitrage_pair_order.buy_order
+        sell_order = arbitrage_pair_order.sell_order
+        self.size_single_order(buy_order)
+        self.size_single_order(sell_order)
+        min_size = min(buy_order.size, sell_order.size)
+        buy_order.size = min_size
+        sell_order.size = min_size
+
     def size_order(self, order: Order):
         if isinstance(order, Order):
             self.size_single_order(order)
@@ -43,3 +52,5 @@ class PositionSizer:
             self.size_order(initiation_order)
             target_order.size = initiation_order.size
             stop_order.size = initiation_order.size
+        elif isinstance(order, ArbitragePairOrder):
+            self.size_arbitrage_pair_order(order)

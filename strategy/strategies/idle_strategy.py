@@ -19,5 +19,7 @@ class IdleStrategy(Strategy):
     ):
         super().__init__(context, order_manager, events, indicators_manager)
 
-    def generate_signals(self, context: Context, clock: Clock) -> List[Signal]:  # pragma: no cover
+    def generate_signals(
+        self, context: Context, clock: Clock
+    ) -> List[Signal]:  # pragma: no cover
         return []

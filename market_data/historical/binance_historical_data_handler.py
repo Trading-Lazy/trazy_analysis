@@ -3,6 +3,7 @@ from typing import Tuple
 
 from market_data.binance_data_handler import BinanceDataHandler
 from market_data.historical.historical_data_handler import HistoricalDataHandler
+from models.asset import Asset
 
 
 class BinanceHistoricalDataHandler(BinanceDataHandler, HistoricalDataHandler):
@@ -19,11 +20,11 @@ class BinanceHistoricalDataHandler(BinanceDataHandler, HistoricalDataHandler):
 
     @classmethod
     def generate_ticker_data_url(
-        cls, ticker: str, period: Tuple[datetime, datetime]
+        cls, ticker: Asset, period: Tuple[datetime, datetime]
     ) -> str:
         start_epoch = int(period[0].timestamp()) * 1000
         end_epoch = int(period[1].timestamp()) * 1000
         ticker_url = cls.BASE_URL_HISTORICAL_TICKER_DATA.format(
-            ticker, start_epoch, end_epoch, cls.API_TOKEN
+            ticker.symbol, start_epoch, end_epoch, cls.API_TOKEN
         )
         return ticker_url

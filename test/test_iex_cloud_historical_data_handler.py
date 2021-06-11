@@ -7,12 +7,13 @@ from pandas._libs.tslibs.timestamps import Timestamp
 from market_data.historical.iex_cloud_historical_data_handler import (
     IexCloudHistoricalDataHandler,
 )
+from models.asset import Asset
 
 SYMBOL = "IVV"
 
 
 def test_generate_ticker_url():
-    ticker = "aapl"
+    ticker = Asset(symbol="aapl", exchange="IEX")
     period = (date(1996, 4, 13), date(1996, 5, 13))
     IexCloudHistoricalDataHandler.API_TOKEN = "abcde"
     expected_url = (

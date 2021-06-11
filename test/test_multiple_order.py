@@ -187,7 +187,7 @@ def test_homogeneous_sequential_order():
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
-    clock.update(asset, timestamp)
+    clock.update(timestamp)
     symbol1 = "AAA"
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
@@ -244,7 +244,7 @@ def test_homogeneous_sequential_order_multiple_order():
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
-    clock.update(asset, timestamp)
+    clock.update(timestamp)
     symbol1 = "AAA"
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
@@ -313,7 +313,7 @@ def test_homogeneous_sequential_order_different_symbols():
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
-    clock.update(symbol, timestamp)
+    clock.update(timestamp)
     symbol1 = "BBB"
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
@@ -346,7 +346,7 @@ def test_homogeneous_sequential_order_different_symbols_multiple_order():
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     symbol = "AAA"
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
-    clock.update(symbol, timestamp)
+    clock.update(timestamp)
     symbol1 = "AAA"
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(

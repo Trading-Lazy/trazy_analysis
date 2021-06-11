@@ -14,7 +14,6 @@ from strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
 
-
 EXCHANGE = "IEX"
 
 
@@ -32,8 +31,12 @@ def test_sma_crossover_strategy_preload_data():
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,

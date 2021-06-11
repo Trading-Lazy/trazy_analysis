@@ -213,8 +213,10 @@ class Portfolio:
         self.cash -= txn_total_cost
 
         # Form Portfolio history details
+        action = txn.action.name
         direction = txn.direction.name
-        description = "%s %s %s %s %s" % (
+        description = "%s %s %s %s %s %s" % (
+            action,
             direction,
             txn.size,
             txn.asset.key().upper(),
@@ -279,9 +281,9 @@ class Portfolio:
         """
         holdings = {}
         for asset, values in self.pos_handler.positions.items():
-            get_or_create_nested_dict(holdings, asset)
+            get_or_create_nested_dict(holdings, asset.key())
             for direction, pos in values.items():
-                holdings[asset][direction] = {
+                holdings[asset.key()][direction] = {
                     "size": pos.net_size,
                     "market_value": pos.market_value,
                     "unrealised_pnl": pos.unrealised_pnl,

@@ -211,7 +211,7 @@ def test_get_account_total_market_value():
     symbol1 = "AAA"
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update_time(asset1, timestamp)
+    clock.update_time(timestamp)
     order1 = Order(
         asset=asset1,
         action=Action.BUY,
@@ -236,7 +236,7 @@ def test_get_account_total_market_value():
 
     symbol2 = "BBB"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
-    clock.update_time(asset2, timestamp)
+    clock.update_time(timestamp)
     order2 = Order(
         asset=asset2,
         action=Action.BUY,
@@ -293,7 +293,7 @@ def test_subscribe_funds_to_portfolio():
 
     # If everything else worked, check balances are correct
     sb.subscribe_funds_to_portfolio(100000.00)
-    assert sb.cash_balances[sb.base_currency] == pytest.approx(65303.23, 0.001)
+    assert sb.cash_balances[sb.base_currency] == pytest.approx(65303.23, abs=0.001)
     assert sb.portfolio.cash == 100000.00
 
 
@@ -316,7 +316,7 @@ def test_withdraw_funds_from_portfolio():
 
     # If everything else worked, check balances are correct
     sb.withdraw_funds_from_portfolio(50000.00)
-    assert sb.cash_balances[sb.base_currency] == pytest.approx(115303.23, 0.001)
+    assert sb.cash_balances[sb.base_currency] == pytest.approx(115303.23, abs=0.001)
     assert sb.portfolio.cash == 50000.00
 
 
@@ -368,7 +368,7 @@ def test_submit_order():
     )
 
     clock = SimulatedClock()
-    clock.update_time(asset, timestamp)
+    clock.update_time(timestamp)
     events = deque()
     sbwp = SimulatedBroker(clock=clock, events=events)
     sbwp.subscribe_funds_to_account(175000.0)
@@ -432,7 +432,7 @@ def test_execute_market_order():
     symbol = "AAA"
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update_time(asset, timestamp)
+    clock.update_time(timestamp)
     order = Order(
         asset=asset,
         action=Action.BUY,
@@ -482,8 +482,12 @@ def test_execute_limit_order():
         fixed_order_type=OrderType.LIMIT,
         limit_order_pct=0.0004,
     )
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -496,7 +500,7 @@ def test_execute_limit_order():
 
     event_loop.loop()
 
-    assert broker.get_portfolio_cash_balance() == pytest.approx(10012.845, 0.0001)
+    assert broker.get_portfolio_cash_balance() == pytest.approx(10012.845, abs=0.0001)
 
 
 def test_execute_stop_order():
@@ -514,10 +518,16 @@ def test_execute_stop_order():
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
-        broker_manager=broker_manager, fixed_order_type=OrderType.STOP, stop_order_pct=0.0004
+        broker_manager=broker_manager,
+        fixed_order_type=OrderType.STOP,
+        stop_order_pct=0.0004,
     )
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -552,8 +562,12 @@ def test_execute_target_order():
         fixed_order_type=OrderType.TARGET,
         target_order_pct=0.0004,
     )
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -566,7 +580,7 @@ def test_execute_target_order():
 
     event_loop.loop()
 
-    assert broker.get_portfolio_cash_balance() == pytest.approx(9998.74, 0.001)
+    assert broker.get_portfolio_cash_balance() == pytest.approx(9998.74, abs=0.001)
 
 
 def test_execute_trailing_stop_order():
@@ -589,8 +603,12 @@ def test_execute_trailing_stop_order():
         fixed_order_type=OrderType.TRAILING_STOP,
         trailing_stop_order_pct=0.0004,
     )
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -603,7 +621,7 @@ def test_execute_trailing_stop_order():
 
     event_loop.loop()
 
-    assert broker.get_portfolio_cash_balance() == pytest.approx(10009.345, 0.0001)
+    assert broker.get_portfolio_cash_balance() == pytest.approx(10009.345, abs=0.0001)
 
 
 def test_execute_cover_order():
@@ -620,9 +638,15 @@ def test_execute_cover_order():
     broker.subscribe_funds_to_portfolio(10000)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
-    order_creator = OrderCreator(broker_manager=broker_manager, with_cover=True)
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_creator = OrderCreator(
+        broker_manager=broker_manager, with_cover=True, trailing_stop_order_pct=0.005
+    )
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,
@@ -635,7 +659,7 @@ def test_execute_cover_order():
 
     event_loop.loop()
 
-    assert broker.get_portfolio_cash_balance() == pytest.approx(10009.59, 0.001)
+    assert broker.get_portfolio_cash_balance() == pytest.approx(9991.005, abs=0.001)
 
 
 def test_execute_bracket_order():
@@ -653,8 +677,12 @@ def test_execute_bracket_order():
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager, with_bracket=True)
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         assets=assets,

@@ -366,7 +366,7 @@ def test_get_tickers_failure_iex(request_mocked):
 
 @patch("market_data.historical.historical_data_handler.request")
 def test_request_ticker_data_tiingo(request_mocked):
-    ticker = "aapl"
+    ticker = Asset(symbol="aapl", exchange="IEX")
     period = (date(1996, 4, 13), date(1996, 5, 13))
     TiingoHistoricalDataHandler.API_TOKEN = TOKEN
     request_mocked.return_value = Response()
@@ -389,7 +389,7 @@ def test_request_ticker_data_tiingo(request_mocked):
 
 @patch("market_data.historical.historical_data_handler.request")
 def test_request_ticker_data_iex(request_mocked):
-    ticker = "aapl"
+    ticker = Asset(symbol="aapl", exchange="IEX")
     period = (date(1996, 4, 13), date(1996, 4, 13))
     IexCloudHistoricalDataHandler.API_TOKEN = TOKEN
     request_mocked.return_value = Response()

@@ -108,7 +108,9 @@ def test_init_backtest():
     assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
 
 
-@patch("strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context")
+@patch(
+    "strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context"
+)
 def test_run_strategy(process_context):
     assets = [AAPL_ASSET, GOOGL_ASSET]
     strategies_classes = [SmaCrossoverStrategy]
