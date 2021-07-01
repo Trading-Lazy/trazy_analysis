@@ -540,7 +540,6 @@ def test_portfolio_to_dict_for_two_holdings():
     # This is needed because we're not using Decimal
     # datatypes and have to compare slightly differing
     # floating point representations
-    print(port_holdings)
     for asset in (asset1, asset2):
         for key, val in test_holdings[asset].items():
             assert port_holdings[asset.key()][key] == pytest.approx(

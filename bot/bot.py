@@ -116,7 +116,7 @@ if __name__ == "__main__":
         symbols=symbols,
         feed=feed,
         order_manager=order_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
         indicators_manager=indicators_manager,
         live=True,
         close_at_end_of_day=False,

@@ -1,6 +1,6 @@
 from collections import deque
 from datetime import timedelta
-from typing import List
+from typing import Dict, List, Union
 
 from common.clock import Clock
 from indicators.crossover import Crossover
@@ -13,8 +13,7 @@ from strategy.strategy import LOG, Strategy
 
 
 class SmaCrossoverStrategy(Strategy):
-    SHORT_SMA = 9
-    LONG_SMA = 65
+    DEFAULT_PARAMETERS = {"short_sma": 9, "long_sma": 65}
 
     def __init__(
         self,
@@ -22,12 +21,13 @@ class SmaCrossoverStrategy(Strategy):
         order_manager: OrderManager,
         events: deque,
         indicators_manager: IndicatorsManager = IndicatorsManager(),
+        parameters: Union[Dict[str, float], None] = None
     ):
-        super().__init__(context, order_manager, events, indicators_manager)
+        super().__init__(context, order_manager, events, indicators_manager, parameters)
         self.short_sma = {
             asset: self.indicators_manager.Sma(
                 asset,
-                period=SmaCrossoverStrategy.SHORT_SMA,
+                period=self.parameters["short_sma"],
                 time_unit=timedelta(minutes=1),
             )
             for asset in context.candles
@@ -35,7 +35,7 @@ class SmaCrossoverStrategy(Strategy):
         self.long_sma = {
             asset: self.indicators_manager.Sma(
                 asset,
-                period=SmaCrossoverStrategy.LONG_SMA,
+                period=self.parameters["long_sma"],
                 time_unit=timedelta(minutes=1),
             )
             for asset in context.candles

@@ -471,7 +471,7 @@ def test_execute_limit_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_limit_order.csv"}, events
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -495,7 +495,7 @@ def test_execute_limit_order():
         feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
     )
 
     event_loop.loop()
@@ -511,7 +511,7 @@ def test_execute_stop_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_stop_order.csv"}, events
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -535,7 +535,7 @@ def test_execute_stop_order():
         feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
     )
 
     event_loop.loop()
@@ -551,7 +551,7 @@ def test_execute_target_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_target_order.csv"}, events
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -575,7 +575,7 @@ def test_execute_target_order():
         feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
     )
 
     event_loop.loop()
@@ -592,7 +592,7 @@ def test_execute_trailing_stop_order():
         events,
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -616,7 +616,7 @@ def test_execute_trailing_stop_order():
         feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
     )
 
     event_loop.loop()
@@ -632,7 +632,7 @@ def test_execute_cover_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -654,7 +654,7 @@ def test_execute_cover_order():
         feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
     )
 
     event_loop.loop()
@@ -670,7 +670,7 @@ def test_execute_bracket_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -690,7 +690,7 @@ def test_execute_bracket_order():
         feed=feed,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
     )
 
     event_loop.loop()

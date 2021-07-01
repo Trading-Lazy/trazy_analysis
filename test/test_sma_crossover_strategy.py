@@ -26,7 +26,7 @@ def test_sma_crossover_strategy():
 
     feed: Feed = CsvFeed({AAPL_ASSET: "test/data/aapl_candles_one_day.csv"}, events)
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
@@ -45,10 +45,9 @@ def test_sma_crossover_strategy():
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
         indicators_manager=indicators_manager,
     )
-    start = time()
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10010.955

@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List
+from typing import Dict, List, Union
 
 from common.clock import Clock
 from indicators.indicators_manager import IndicatorsManager
@@ -16,8 +16,9 @@ class IdleStrategy(Strategy):
         order_manager: OrderManager,
         events: deque,
         indicators_manager: IndicatorsManager = IndicatorsManager(),
+        parameters: Union[Dict[str, float], None] = None
     ):
-        super().__init__(context, order_manager, events, indicators_manager)
+        super().__init__(context, order_manager, events, indicators_manager, parameters)
 
     def generate_signals(
         self, context: Context, clock: Clock

@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List
+from typing import Dict, List, Union
 
 from common.clock import Clock
 from indicators.indicators_manager import IndicatorsManager
@@ -11,14 +11,17 @@ from strategy.strategy import LOG, Strategy
 
 
 class ArbitrageStrategy(Strategy):
+    DEFAULT_PARAMETERS = {"margin_factor": 2}
+
     def __init__(
         self,
         context: Context,
         order_manager: OrderManager,
         events: deque,
         indicators_manager: IndicatorsManager = IndicatorsManager(),
+        parameters: Union[Dict[str, float], None] = None
     ):
-        super().__init__(context, order_manager, events, indicators_manager)
+        super().__init__(context, order_manager, events, indicators_manager, parameters)
         self.commission = 0.001
 
     def generate_signals(
@@ -26,6 +29,7 @@ class ArbitrageStrategy(Strategy):
     ) -> List[Signal]:  # pragma: no cover
         signals = []
         candles = context.get_last_candles()
+        margin_factor = self.parameters["margin_factor"]
         for candle1 in candles:
             for candle2 in candles:
                 if (
@@ -41,7 +45,7 @@ class ArbitrageStrategy(Strategy):
                 total_fee = fee1 + fee2
                 LOG.info(f"diff = {diff}")
                 LOG.info(f"total fee = {total_fee}")
-                if diff > total_fee:
+                if diff > margin_factor * total_fee:
                     LOG.info("There is 1 opportunity")
                     candle1_is_greater = (candle1.close > candle2.close)
                     action1 = Action.SELL if candle1_is_greater else Action.BUY

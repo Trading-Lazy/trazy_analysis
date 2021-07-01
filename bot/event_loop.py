@@ -2,7 +2,7 @@ import os
 from collections import deque
 from datetime import timedelta
 from threading import Thread
-from typing import Any, List
+from typing import Any, Dict, List
 
 import logger
 import settings
@@ -68,20 +68,23 @@ class ExpiringSet:
 
 
 class EventLoop:
-    def _init_strategy_instance(self, strategy_class: type):
+    def _init_strategy_instance(self, strategy_class: type, parameters_list: List[Dict[str, float]]):
         if issubclass(strategy_class, Strategy):
-            self.strategy_instances.append(
-                strategy_class(
-                    self.context,
-                    self.order_manager,
-                    self.events,
-                    self.indicators_manager,
+            for parameters in parameters_list:
+                self.strategy_instances.append(
+                    strategy_class(
+                        self.context,
+                        self.order_manager,
+                        self.events,
+                        self.indicators_manager,
+                        parameters
+                    )
                 )
-            )
 
     def _init_strategy_instances(self):
-        for strategy_class in self.strategies_classes:
-            self._init_strategy_instance(strategy_class)
+        for strategy_class in self.strategies_parameters:
+            parameters_list = self.strategies_parameters[strategy_class]
+            self._init_strategy_instance(strategy_class, parameters_list)
 
     def _init_seen_candles(self):
         for asset in self.assets:
@@ -137,7 +140,7 @@ class EventLoop:
         feed: Feed,
         order_manager: OrderManager,
         indicators_manager: IndicatorsManager,
-        strategies_classes: List[type] = [],
+        strategies_parameters: Dict[type, List[Dict[str, float]]] = {},
         live=False,
         close_at_end_of_day=True,
         close_at_end_of_data=True
@@ -151,7 +154,7 @@ class EventLoop:
         self.broker_manager = self.order_manager.broker_manager
         self.clock = self.order_manager.clock
         self.indicators_manager = indicators_manager
-        self.strategies_classes = strategies_classes
+        self.strategies_parameters = strategies_parameters
         self.strategy_instances: List[Strategy] = []
         self.context = Context(assets=self.assets)
         self._init_strategy_instances()

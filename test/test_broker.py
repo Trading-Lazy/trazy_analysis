@@ -228,7 +228,7 @@ def test_close_all_open_positions_at_end_of_day():
         events,
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
@@ -247,7 +247,7 @@ def test_close_all_open_positions_at_end_of_day():
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
         indicators_manager=indicators_manager,
     )
     event_loop.loop()
@@ -267,7 +267,7 @@ def test_close_all_open_positions_at_end_of_feed_data():
         events,
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
@@ -286,7 +286,7 @@ def test_close_all_open_positions_at_end_of_feed_data():
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
         indicators_manager=indicators_manager,
     )
     event_loop.loop()

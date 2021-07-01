@@ -61,7 +61,4 @@ class FixedFeeModel(FeeModel):
         return self.fixed_tax
 
     def calc_max_size_for_cash(self, cash: float, price: float) -> int:
-        print(
-            f"fixed calc_max_size_for_cash = {cash // (price + self.fixed_commission)}"
-        )
         return cash // (price + self.fixed_commission)

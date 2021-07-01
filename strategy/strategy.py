@@ -1,7 +1,7 @@
 import abc
 import os
 from collections import deque
-from typing import List
+from typing import Dict, List, Union
 
 import logger
 import settings
@@ -19,18 +19,27 @@ LOG = logger.get_root_logger(
 
 
 class Strategy(Indicator):
+    __metaclass__ = abc.ABCMeta
+
+    @classmethod
+    @abc.abstractmethod
+    def DEFAULT_PARAMETERS(cls) -> Dict[str, float]:  # pragma: no cover
+        pass
+
     def __init__(
         self,
         context: Context,
         order_manager: OrderManager,
         events: deque,
         indicators_manager: IndicatorsManager = IndicatorsManager(),
+        parameters: Union[Dict[str, float], None] = None
     ):
         super().__init__()
         self.context = context
         self.order_manager = order_manager
         self.events = events
         self.indicators_manager = indicators_manager
+        self.parameters = parameters if parameters is not None else self.DEFAULT_PARAMETERS
         self.name = self.__class__.__name__
 
     @abc.abstractmethod

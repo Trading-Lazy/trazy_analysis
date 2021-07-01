@@ -126,14 +126,14 @@ def test_arbitrage_strategy():
     )
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
 
-    strategies = [ArbitrageStrategy]
+    strategies_parameters = {ArbitrageStrategy: [{"margin_factor": 1}]}
     assets = [BINANCE_ASSET, KUCOIN_ASSET]
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies_parameters,
         indicators_manager=indicators_manager,
         close_at_end_of_day=False,
         close_at_end_of_data=False,
