@@ -3,6 +3,7 @@ from typing import Tuple
 
 from market_data.historical.historical_data_handler import HistoricalDataHandler
 from market_data.tiingo_data_handler import TiingoDataHandler
+from models.asset import Asset
 
 
 class TiingoHistoricalDataHandler(TiingoDataHandler, HistoricalDataHandler):
@@ -18,8 +19,8 @@ class TiingoHistoricalDataHandler(TiingoDataHandler, HistoricalDataHandler):
     MAX_DOWNLOAD_FRAME = timedelta(days=30)
 
     @classmethod
-    def generate_ticker_data_url(cls, ticker: str, period: Tuple[date, date]) -> str:
+    def generate_ticker_data_url(cls, ticker: Asset, period: Tuple[date, date]) -> str:
         ticker_url = cls.BASE_URL_HISTORICAL_TICKER_DATA.format(
-            ticker, period[0], period[1], cls.API_TOKEN
+            ticker.symbol, period[0], period[1], cls.API_TOKEN
         )
         return ticker_url

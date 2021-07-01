@@ -4,7 +4,7 @@ import numpy as np
 
 from common.clock import Clock
 from models.asset import Asset
-from models.enums import OrderStatus, OrderType
+from models.enums import Action, OrderStatus, OrderType
 from models.order import Order, OrderBase
 from models.utils import is_closed_position, is_open_position
 
@@ -139,7 +139,7 @@ class HomogeneousSequentialOrder(SequentialOrder):
 
     def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         if self.clock is not None:
-            submission_time = self.clock.current_time(asset=self.asset)
+            submission_time = self.clock.current_time()
         first_order = self.get_first_order()
         first_order.submit(submission_time)
         self.submission_time = submission_time
@@ -247,3 +247,26 @@ class BracketOrder(HomogeneousSequentialOrder):
             generation_time=generation_time,
             time_in_force=time_in_force,
         )
+
+
+class ArbitragePairOrder(MultipleOrder):
+    def __init__(
+        self,
+        buy_order: Order,
+        sell_order: Order,
+        status: OrderStatus = OrderStatus.CREATED,
+        generation_time: datetime = datetime.now(timezone.utc),
+        time_in_force: str = timedelta(minutes=5),
+    ):
+        if buy_order.action != Action.BUY:
+            raise Exception(
+                f"buy signal action should be BUY not {buy_order.action.name}"
+            )
+        if sell_order.action != Action.SELL:
+            raise Exception(
+                f"sell signal action should be SELL not {sell_order.action.name}"
+            )
+        self.buy_order = buy_order
+        self.sell_order = sell_order
+        orders = np.array([buy_order, sell_order], dtype=Order)
+        super().__init__(orders, status, generation_time, time_in_force)

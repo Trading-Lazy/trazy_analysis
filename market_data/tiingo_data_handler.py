@@ -70,7 +70,7 @@ class TiingoDataHandler(DataHandler):
                 end_date=end_timestamp.strftime("%Y-%m-%d"),
             )
             candle_df = resample_candle_data(
-                df=candle_df,
+                candle_dataframe=candle_df,
                 time_unit=timedelta(minutes=1),
                 market_cal_df=market_cal_df,
             )

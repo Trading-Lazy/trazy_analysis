@@ -17,7 +17,7 @@ def test_create_order_from_signal():
     exchange = "IEX"
     asset = Asset(symbol=symbol, exchange=exchange)
     timestamp = datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(symbol, timestamp)
+    clock.update(timestamp)
     broker = SimulatedBroker(clock, events)
     order_creator = OrderCreator(broker_manager=broker)
     signal = Signal(

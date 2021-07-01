@@ -228,22 +228,26 @@ def test_close_all_open_positions_at_end_of_day():
         events,
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
         indicators_manager=indicators_manager,
     )
     event_loop.loop()
@@ -263,22 +267,26 @@ def test_close_all_open_positions_at_end_of_feed_data():
         events,
     )
 
-    strategies = [SmaCrossoverStrategy]
+    strategies = {SmaCrossoverStrategy: [None]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+    )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        strategies_classes=strategies,
+        strategies_parameters=strategies,
         indicators_manager=indicators_manager,
     )
     event_loop.loop()

@@ -12,6 +12,7 @@ from broker.fixed_fee_model import FixedFeeModel
 from common.clock import Clock
 from common.helper import get_or_create_nested_dict
 from logger import logger
+from models.asset import Asset
 from models.candle import Candle
 from models.enums import Action, Direction, OrderStatus, OrderType
 from models.multiple_order import MultipleOrder, OcoOrder, SequentialOrder
@@ -140,18 +141,6 @@ class Broker:
         self, currency: str = None
     ) -> Union[dict, float]:  # pragma: no cover
         raise NotImplementedError("Should implement get_account_cash_balance()")
-
-    @abstractmethod
-    def max_entry_order_size(
-        self, asset: str, direction: Direction, cash: float = None
-    ) -> int:  # pragma: no cover
-        raise NotImplementedError("Should implement max_entry_order_size()")
-
-    @abstractmethod
-    def position_size(
-        self, asset: str, direction: Direction
-    ) -> int:  # pragma: no cover
-        raise NotImplementedError("Should implement position_size()")
 
     def _create_initial_portfolio(self) -> str:
         """
@@ -332,7 +321,9 @@ class Broker:
     ) -> int:
         if cash is None:
             cash = self.portfolio.cash
-        return cash // self.current_price(asset)
+        return self.fee_model.calc_max_size_for_cash(
+            cash=cash, price=self.current_price(asset)
+        )
 
     def position_size(self, asset: str, direction: Direction) -> int:
         return self.portfolio.pos_handler.position_size(asset, direction)
@@ -350,14 +341,11 @@ class Broker:
             index += 1
 
         for order in orders:
-            now = self.clock.current_time(asset=order.asset)
+            now = self.clock.current_time()
             if (
                 order.status == OrderStatus.SUBMITTED
                 and order.in_force(now)
-                and (
-                    not self.execute_at_end_of_day
-                    or not self.clock.end_of_day(order.asset)
-                )
+                and (not self.execute_at_end_of_day or not self.clock.end_of_day())
             ):
                 self.execute_order(order)
             else:
@@ -378,9 +366,9 @@ class Broker:
     def synchronize(self):  # pragma: no cover
         pass
 
-    def close_all_open_positions(self, asset: str, end_of_day: bool = True):
+    def close_all_open_positions(self, asset: Asset, end_of_day: bool = True):
         # if we are close to the end of the day, we can start making market order to close all positions
-        if end_of_day and not self.clock.end_of_day(asset):
+        if end_of_day and not self.clock.end_of_day():
             return
 
         pos_handler = self.portfolio.pos_handler

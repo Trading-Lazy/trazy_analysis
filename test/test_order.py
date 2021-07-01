@@ -62,7 +62,7 @@ def test_submit_order():
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(asset, timestamp)
+    clock.update(timestamp)
     order = Order(
         asset=asset,
         action=Action.BUY,
@@ -126,7 +126,7 @@ def test_time_in_force_order():
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(asset, timestamp)
+    clock.update(timestamp)
     order = Order(
         asset=asset,
         action=Action.BUY,
@@ -190,7 +190,7 @@ def test_from_serializable_dict():
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(asset, timestamp)
+    clock.update(timestamp)
     expected_order = Order(
         asset=asset,
         action=Action.BUY,
@@ -208,7 +208,7 @@ def test_to_serializable_dict():
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(symbol, timestamp)
+    clock.update(timestamp)
     order = Order(
         asset=asset,
         action=Action.BUY,
@@ -239,7 +239,7 @@ def test_eq_ne():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     clock = SimulatedClock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(symbol1, timestamp)
+    clock.update(timestamp)
     order1 = Order(
         asset=asset1,
         action=Action.BUY,

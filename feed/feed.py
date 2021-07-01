@@ -24,7 +24,7 @@ class Feed:
     def set_assets(self, assets: List[Asset]):
         self.assets = assets
 
-    def __init__(self, events: deque, candles: Dict[str, np.array] = {}):
+    def __init__(self, events: deque, candles: Dict[Asset, np.array] = {}):
         self.assets = None
         self.set_assets(candles.keys())
         self.events = events

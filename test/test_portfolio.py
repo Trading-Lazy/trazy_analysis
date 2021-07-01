@@ -290,7 +290,7 @@ def test_transact_symbol_behaviour():
     assert port.total_realised_pnl == 0
     assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
-    description = "LONG 100 IEX-AAA 567.0 07/10/2017"
+    description = "BUY LONG 100 IEX-AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",
@@ -326,18 +326,6 @@ def test_transact_symbol_behaviour_short():
     symbol = "AAA"
     exchange = "IEX"
     asset = Asset(symbol=symbol, exchange=exchange)
-
-    # Test transact_symbol raises for incorrect time
-    tn_early = Transaction(
-        asset=asset,
-        size=100,
-        action=Action.SELL,
-        direction=Direction.SHORT,
-        price=567.0,
-        order_id=1,
-        commission=0.0,
-        timestamp=earlier_timestamp,
-    )
 
     # Test transact_symbol raises for transaction total
     # cost exceeding total cash
@@ -398,7 +386,7 @@ def test_transact_symbol_behaviour_short():
     assert port.total_realised_pnl == 0
     assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
-    description = "SHORT 100 IEX-AAA 567.0 07/10/2017"
+    description = "SELL SHORT 100 IEX-AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",
@@ -554,7 +542,7 @@ def test_portfolio_to_dict_for_two_holdings():
     # floating point representations
     for asset in (asset1, asset2):
         for key, val in test_holdings[asset].items():
-            assert port_holdings[asset][key] == pytest.approx(
+            assert port_holdings[asset.key()][key] == pytest.approx(
                 test_holdings[asset][key], 0.01
             )
 

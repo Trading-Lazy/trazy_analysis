@@ -89,7 +89,7 @@ class Order(OrderBase):
             order_id = generate_object_id()
         self.order_id = order_id
         if self.clock is not None:
-            generation_time = self.clock.current_time(asset=asset)
+            generation_time = self.clock.current_time()
         self.type: OrderType = type
         self.condition: OrderCondition = condition
         super().__init__(
@@ -98,13 +98,13 @@ class Order(OrderBase):
 
     def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         if self.clock is not None:
-            submission_time = self.clock.current_time(asset=self.asset)
+            submission_time = self.clock.current_time()
         super().submit(submission_time)
         LOG.info("Submitted order: %s, qty: %s", self.asset, self.size)
 
     def in_force(self, timestamp: datetime = None) -> bool:
         if timestamp is None:
-            timestamp = self.clock.current_time(asset=self.asset)
+            timestamp = self.clock.current_time()
         return super().in_force(timestamp)
 
     @property
@@ -173,7 +173,8 @@ class Order(OrderBase):
             "time_in_force={},"
             "status={},"
             "generation_time={},"
-            "order_id={})".format(
+            "order_id={},"
+            "submission_time={})".format(
                 self.asset,
                 self.action.name,
                 self.direction.name,
@@ -189,5 +190,6 @@ class Order(OrderBase):
                 self.status.name,
                 self.generation_time,
                 self.order_id,
+                self.submission_time,
             )
         )

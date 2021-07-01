@@ -11,6 +11,7 @@ from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
 from common.helper import request
 from common.meta import RateLimitedSingletonMeta
 from market_data.data_handler import DataHandler
+from models.asset import Asset
 from models.candle import Candle
 
 LOG = logger.get_root_logger(
@@ -29,23 +30,23 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
     @classmethod
     @abc.abstractmethod
     def parse_ticker_latest_data(
-        cls, symbol: str, data: str
+        cls, symbol: Asset, data: str
     ) -> List[Candle]:  # pragma: no cover
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def generate_ticker_latest_data_url(cls, ticker: str) -> str:  # pragma: no cover
+    def generate_ticker_latest_data_url(cls, ticker: Asset) -> str:  # pragma: no cover
         raise NotImplementedError
 
     @classmethod
-    def request_ticker_latest_data(cls, ticker: str) -> Response:
+    def request_ticker_latest_data(cls, ticker: Asset) -> Response:
         latest_data_points_url = cls.generate_ticker_latest_data_url(ticker)
-        LOG.info("Url for %s: %s", ticker, latest_data_points_url)
+        LOG.info("Url for %s: %s", ticker.key(), latest_data_points_url)
         return request(latest_data_points_url)
 
     @classmethod
-    def request_ticker_lastest_candle(cls, ticker: str) -> Candle:
+    def request_ticker_lastest_candle(cls, ticker: Asset) -> Candle:
         latest_candles = cls.request_ticker_lastest_candles(ticker)
         if len(latest_candles) == 0:
             return None
@@ -53,7 +54,7 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
 
     @classmethod
     def request_ticker_lastest_candles(
-        cls, ticker: str, nb_candles: int = 1
+        cls, ticker: Asset, nb_candles: int = 1
     ) -> List[Candle]:
         try:
             response = cls.request_ticker_latest_data(ticker)
@@ -71,12 +72,12 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
                 start = max(-nb_candles, -len(latest_candles))
                 return latest_candles[start:]
             else:
-                LOG.info("No available data for ticker %s latest candles", ticker)
+                LOG.info("No available data for ticker %s latest candles", ticker.key())
                 return []
         else:
             LOG.info(
                 "Ticker %s latest candles request error status_code = %s, message = %s",
-                ticker,
+                ticker.key(),
                 response.status_code,
                 data,
             )

@@ -25,7 +25,7 @@ def test_process_check_signals(
     exchange = "IEX"
     asset = Asset(symbol=symbol, exchange=exchange)
     timestamp = datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    clock.update(asset, timestamp)
+    clock.update(timestamp)
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
     broker_manager = BrokerManager(brokers={exchange: broker}, clock=clock)

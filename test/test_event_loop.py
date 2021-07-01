@@ -47,7 +47,7 @@ FEED = CsvFeed(
 
 def test_init_live():
     assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
-    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = {SmaCrossoverStrategy: [None], IdleStrategy: [None]}
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
     position_sizer = PositionSizer(broker_manager=broker_manager)
@@ -60,12 +60,12 @@ def test_init_live():
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies_classes,
+        strategies_parameters=strategies_classes,
         live=True,
     )
 
     assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
-    assert event_loop.strategies_classes == strategies_classes
+    assert event_loop.strategies_parameters == strategies_classes
 
     assert len(event_loop.strategy_instances) == 2
     assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
@@ -79,7 +79,7 @@ def test_init_live():
 
 def test_init_backtest():
     assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
-    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = {SmaCrossoverStrategy: [None], IdleStrategy: [None]}
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
     position_sizer = PositionSizer(broker_manager=broker_manager)
@@ -92,11 +92,11 @@ def test_init_backtest():
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies_classes,
+        strategies_parameters=strategies_classes,
     )
 
     assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
-    assert event_loop.strategies_classes == strategies_classes
+    assert event_loop.strategies_parameters == strategies_classes
 
     assert len(event_loop.strategy_instances) == 2
     assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
@@ -108,10 +108,12 @@ def test_init_backtest():
     assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
 
 
-@patch("strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context")
+@patch(
+    "strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context"
+)
 def test_run_strategy(process_context):
     assets = [AAPL_ASSET, GOOGL_ASSET]
-    strategies_classes = [SmaCrossoverStrategy]
+    strategies_classes = {SmaCrossoverStrategy: [None]}
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker_manager=broker)
@@ -123,7 +125,7 @@ def test_run_strategy(process_context):
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies_classes,
+        strategies_parameters=strategies_classes,
     )
     strategy_object = event_loop.strategy_instances[0]
     event_loop.run_strategy(strategy_object)
@@ -135,7 +137,7 @@ def test_run_strategy(process_context):
 @patch("bot.event_loop.EventLoop.run_strategy")
 def test_run_strategies(run_strategy_mocked):
     assets = [AAPL_ASSET, GOOGL_ASSET]
-    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = {SmaCrossoverStrategy: [None], IdleStrategy: [None]}
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
     position_sizer = PositionSizer(broker_manager=broker_manager)
@@ -148,7 +150,7 @@ def test_run_strategies(run_strategy_mocked):
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies_classes,
+        strategies_parameters=strategies_classes,
     )
 
     event_loop.run_strategies()
@@ -162,7 +164,7 @@ def test_run_strategies(run_strategy_mocked):
 
 def test_run_backtest():
     assets = [AAPL_ASSET, GOOGL_ASSET]
-    strategies_classes = [SmaCrossoverStrategy, IdleStrategy]
+    strategies_classes = {SmaCrossoverStrategy: [None], IdleStrategy: [None]}
 
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
@@ -176,6 +178,6 @@ def test_run_backtest():
         feed=FEED,
         order_manager=order_manager,
         indicators_manager=indicators_manager,
-        strategies_classes=strategies_classes,
+        strategies_parameters=strategies_classes,
     )
     event_loop.loop()

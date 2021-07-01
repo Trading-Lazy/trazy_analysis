@@ -200,21 +200,21 @@ def test_position_long_twice():
 
     assert position.buy_size == 160
     assert position.sell_size == 0
-    assert position.avg_bought == pytest.approx(193.75, 0.01)
+    assert position.avg_bought == pytest.approx(193.75, abs=0.01)
     assert position.avg_sold == 0.0
     assert position.commission == 2.0
 
     assert position.direction == Direction.LONG
-    assert position.market_value == pytest.approx(31006.40, 0.01)
-    assert position.avg_price == pytest.approx(193.77125, 0.01)
+    assert position.market_value == pytest.approx(31006.40, abs=0.01)
+    assert position.avg_price == pytest.approx(193.77125, abs=0.01)
     assert position.net_size == 160
-    assert position.total_bought == pytest.approx(31001.40, 0.01)
+    assert position.total_bought == pytest.approx(31001.40, abs=0.01)
     assert position.total_sold == 0.0
     assert position.net_total == pytest.approx(-31001.40, 0.01)
     assert position.net_incl_commission == pytest.approx(-31003.40, 0.01)
-    assert position.unrealised_pnl == pytest.approx(3.0, 0.01)
+    assert position.unrealised_pnl == pytest.approx(3.0, abs=0.01)
     assert position.realised_pnl == 0.0
-    assert position.total_pnl == pytest.approx(3.0, 0.01)
+    assert position.total_pnl == pytest.approx(3.0, abs=0.01)
 
 
 def test_position_long_close():
@@ -286,8 +286,8 @@ def test_position_long_close():
     assert position.net_total == 673.0
     assert position.net_incl_commission == 665.19
     assert position.unrealised_pnl == 0.0
-    assert position.realised_pnl == pytest.approx(665.19, 0.01)
-    assert position.total_pnl == pytest.approx(665.19, 0.01)
+    assert position.realised_pnl == pytest.approx(665.19, abs=0.01)
+    assert position.total_pnl == pytest.approx(665.19, abs=0.01)
 
 
 def test_position_long_and_short():
@@ -353,16 +353,16 @@ def test_position_long_and_short():
     assert position.commission == 2.42
 
     assert position.direction == Direction.LONG
-    assert position.market_value == pytest.approx(12596.40, 0.01)
-    assert position.avg_price == pytest.approx(307.06, 0.01)
+    assert position.market_value == pytest.approx(12596.40, abs=0.01)
+    assert position.avg_price == pytest.approx(307.06, abs=0.01)
     assert position.net_size == 40
-    assert position.total_bought == pytest.approx(30705.0, 0.01)
-    assert position.total_sold == pytest.approx(18894.60, 0.01)
+    assert position.total_bought == pytest.approx(30705.0, abs=0.01)
+    assert position.total_sold == pytest.approx(18894.60, abs=0.01)
     assert position.net_total == pytest.approx(-11810.40, 0.01)
     assert position.net_incl_commission == pytest.approx(-11812.82, 0.01)
-    assert position.unrealised_pnl == pytest.approx(314.0, 0.01)
-    assert position.realised_pnl == pytest.approx(469.58, 0.01)
-    assert position.total_pnl == pytest.approx(783.58, 0.01)
+    assert position.unrealised_pnl == pytest.approx(314.0, abs=0.01)
+    assert position.realised_pnl == pytest.approx(469.58, abs=0.01)
+    assert position.total_pnl == pytest.approx(783.58, abs=0.01)
 
 
 def test_position_long_short_long_short_ending_long():
@@ -456,20 +456,20 @@ def test_position_long_short_long_short_ending_long():
     assert position.buy_size == 1077
     assert position.sell_size == 916
     assert position.avg_bought == 312.96
-    assert position.avg_sold == pytest.approx(315.7019, 0.0001)
-    assert position.commission == pytest.approx(15.71, 0.01)
+    assert position.avg_sold == pytest.approx(315.7019, abs=0.0001)
+    assert position.commission == pytest.approx(15.71, abs=0.01)
 
     assert position.direction == Direction.LONG
-    assert position.market_value == pytest.approx(50840.58, 0.01)
-    assert position.avg_price == pytest.approx(312.96, 0.01)
+    assert position.market_value == pytest.approx(50840.58, abs=0.01)
+    assert position.avg_price == pytest.approx(312.96, abs=0.01)
     assert position.net_size == 161
-    assert position.total_bought == pytest.approx(337057.92, 0.01)
-    assert position.total_sold == pytest.approx(289182.98, 0.01)
+    assert position.total_bought == pytest.approx(337057.92, abs=0.01)
+    assert position.total_sold == pytest.approx(289182.98, abs=0.01)
     assert position.net_total == pytest.approx(-47874.93, 0.01)
     assert position.net_incl_commission == pytest.approx(-47890.64, 0.01)
-    assert position.unrealised_pnl == pytest.approx(453.32, 0.01)
-    assert position.realised_pnl == pytest.approx(2496.61, 0.01)
-    assert position.total_pnl == pytest.approx(2949.93, 0.01)
+    assert position.unrealised_pnl == pytest.approx(453.32, abs=0.01)
+    assert position.realised_pnl == pytest.approx(2496.61, abs=0.01)
+    assert position.total_pnl == pytest.approx(2949.93, abs=0.01)
 
 
 def test_basic_short_equities_position():
@@ -524,12 +524,12 @@ def test_basic_short_equities_position():
     assert position.total_bought == 0.0
 
     # np.isclose used for floating point precision
-    assert position.total_sold == pytest.approx(16239.0, 0.01)
-    assert position.net_total == pytest.approx(16239.0, 0.01)
-    assert position.net_incl_commission == pytest.approx(16237.63, 0.01)
-    assert position.unrealised_pnl == pytest.approx(294.63, 0.01)
+    assert position.total_sold == pytest.approx(16239.0, abs=0.01)
+    assert position.net_total == pytest.approx(16239.0, abs=0.01)
+    assert position.net_incl_commission == pytest.approx(16237.63, abs=0.01)
+    assert position.unrealised_pnl == pytest.approx(294.63, abs=0.01)
     assert position.realised_pnl == 0.0
-    assert position.total_pnl == pytest.approx(294.63, 0.01)
+    assert position.total_pnl == pytest.approx(294.63, abs=0.01)
 
 
 def test_position_short_twice():
@@ -595,12 +595,12 @@ def test_position_short_twice():
 
     assert position.direction == Direction.SHORT
     assert position.market_value == -31161.6
-    assert position.avg_price == pytest.approx(194.611, 0.001)
+    assert position.avg_price == pytest.approx(194.611, abs=0.001)
     assert position.net_size == -160
     assert position.total_bought == 0.0
-    assert position.total_sold == pytest.approx(31140.60, 0.01)
+    assert position.total_sold == pytest.approx(31140.60, abs=0.01)
     assert position.net_total == 31140.6
-    assert position.net_incl_commission == pytest.approx(31137.89, 0.01)
+    assert position.net_incl_commission == pytest.approx(31137.89, abs=0.01)
     assert position.unrealised_pnl == pytest.approx(-23.71, 0.01)
     assert position.realised_pnl == 0.0
     assert position.total_pnl == pytest.approx(-23.71, 0.01)
@@ -737,7 +737,7 @@ def test_position_short_and_long():
 
     assert position.buy_size == 60
     assert position.sell_size == 100
-    assert position.avg_bought == pytest.approx(159.99, 0.01)
+    assert position.avg_bought == pytest.approx(159.99, abs=0.01)
     assert position.avg_sold == 162.39
     assert position.commission == 2.37
 
@@ -745,13 +745,13 @@ def test_position_short_and_long():
     assert position.market_value == -6399.6
     assert position.avg_price == 162.3763
     assert position.net_size == -40
-    assert position.total_bought == pytest.approx(9599.40, 0.01)
-    assert position.total_sold == pytest.approx(16239.0, 0.01)
-    assert position.net_total == pytest.approx(6639.60, 0.01)
-    assert position.net_incl_commission == pytest.approx(6637.23, 0.01)
-    assert position.unrealised_pnl == pytest.approx(95.452, 0.001)
-    assert position.realised_pnl == pytest.approx(142.178, 0.001)
-    assert position.total_pnl == pytest.approx(237.630, 0.001)
+    assert position.total_bought == pytest.approx(9599.40, abs=0.01)
+    assert position.total_sold == pytest.approx(16239.0, abs=0.01)
+    assert position.net_total == pytest.approx(6639.60, abs=0.01)
+    assert position.net_incl_commission == pytest.approx(6637.23, abs=0.01)
+    assert position.unrealised_pnl == pytest.approx(95.452, abs=0.001)
+    assert position.realised_pnl == pytest.approx(142.178, abs=0.001)
+    assert position.total_pnl == pytest.approx(237.630, abs=0.001)
 
 
 def test_position_short_long_short_long_ending_short():
@@ -842,18 +842,18 @@ def test_position_short_long_short_long_ending_short():
 
     assert position.buy_size == 904
     assert position.sell_size == 1357
-    assert position.avg_bought == pytest.approx(117.8366, 0.00001)
+    assert position.avg_bought == pytest.approx(117.8366, abs=0.0001)
     assert position.avg_sold == 117.74
-    assert position.commission == pytest.approx(13.90, 0.01)
+    assert position.commission == pytest.approx(13.90, abs=0.01)
 
     assert position.direction == Direction.SHORT
     assert position.market_value == -53360.281095
     assert position.avg_price == 117.7329771554900515843773029
     assert position.net_size == -453
-    assert position.total_bought == pytest.approx(106524.319874, 0.0000001)
+    assert position.total_bought == pytest.approx(106524.319874, abs=0.0000001)
     assert position.total_sold == 159773.18
-    assert position.net_total == pytest.approx(53248.860126, 0.0000001)
-    assert position.net_incl_commission == pytest.approx(53234.960126, 0.0000001)
+    assert position.net_total == pytest.approx(53248.860126, abs=0.0000001)
+    assert position.net_incl_commission == pytest.approx(53234.960126, abs=0.0000001)
     assert position.unrealised_pnl == pytest.approx(-27.2424, 0.00001)
     assert position.realised_pnl == pytest.approx(-98.0785, 0.00001)
     assert position.total_pnl == pytest.approx(-125.320969, 0.0000001)
@@ -919,13 +919,13 @@ def test_position_limit_reached_long():
     assert position.market_value == 0.000000
     assert position.avg_price == 0.0
     assert position.net_size == 0
-    assert position.total_bought == pytest.approx(89717.88, 0.01)
+    assert position.total_bought == pytest.approx(89717.88, abs=0.01)
     assert position.total_sold == 89821.204914
-    assert position.net_total == pytest.approx(103.324914, 0.0000001)
-    assert position.net_incl_commission == pytest.approx(95.664914, 0.0000001)
+    assert position.net_total == pytest.approx(103.324914, abs=0.0000001)
+    assert position.net_incl_commission == pytest.approx(95.664914, abs=0.0000001)
     assert position.unrealised_pnl == 0.000000
-    assert position.realised_pnl == pytest.approx(95.664914, 0.0000001)
-    assert position.total_pnl == pytest.approx(95.664914, 0.0000001)
+    assert position.realised_pnl == pytest.approx(95.664914, abs=0.0000001)
+    assert position.total_pnl == pytest.approx(95.664914, abs=0.0000001)
 
 
 def test_position_limit_reached_short():
@@ -989,7 +989,7 @@ def test_position_limit_reached_short():
     assert position.avg_price == 0.0
     assert position.net_size == 0
     assert position.total_bought == 89821.204914
-    assert position.total_sold == pytest.approx(89717.88, 0.01)
+    assert position.total_sold == pytest.approx(89717.88, abs=0.01)
     assert position.net_total == pytest.approx(-103.324914, 0.0000001)
     assert position.net_incl_commission == pytest.approx(-110.984914, 0.000001)
     assert position.unrealised_pnl == 0.000000
@@ -1055,10 +1055,10 @@ def test_position_direction_different_from_transaction():
     assert position.commission == 5.35
 
     assert position.direction == Direction.LONG
-    assert position.market_value == pytest.approx(89717.88, 0.01)
-    assert position.avg_price == pytest.approx(117.7470209973753280839895013, 0.01)
+    assert position.market_value == pytest.approx(89717.88, abs=0.01)
+    assert position.avg_price == pytest.approx(117.7470209973753280839895013, abs=0.01)
     assert position.net_size == 762
-    assert position.total_bought == pytest.approx(89717.88, 0.01)
+    assert position.total_bought == pytest.approx(89717.88, abs=0.01)
     assert position.total_sold == 0.0
     assert position.net_total == pytest.approx(-89717.88, 0.01)
     assert position.net_incl_commission == -89723.23

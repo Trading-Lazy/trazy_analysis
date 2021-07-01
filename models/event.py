@@ -54,10 +54,11 @@ class MarketDataEndEvent(DataEvent):
         super().__init__(EventType.MARKET_DATA_END, assets, timestamp, bars_delay)
 
 
-class SignalEvent(AssetSpecificEvent):
-    def __init__(self, signal: Signal, bars_delay: int = 0):
-        super().__init__(EventType.SIGNAL, signal.asset, bars_delay)
-        self.signal = signal
+class SignalEvent(Event):
+    def __init__(self, signals: List[Signal], bars_delay: int = 0):
+        super().__init__(EventType.SIGNAL)
+        self.signals = signals
+        self.bars_delay = bars_delay
 
 
 class OpenOrdersEvent(AssetSpecificEvent):
@@ -65,6 +66,7 @@ class OpenOrdersEvent(AssetSpecificEvent):
         super().__init__(EventType.OPEN_ORDERS, asset, bars_delay)
 
 
-class PendingSignalEvent(AssetSpecificEvent):
-    def __init__(self, asset: str, bars_delay: int = 0):
-        super().__init__(EventType.PENDING_SIGNAL, asset, bars_delay)
+class PendingSignalEvent(Event):
+    def __init__(self, bars_delay: int = 0):
+        super().__init__(EventType.PENDING_SIGNAL)
+        self.bars_delay = bars_delay

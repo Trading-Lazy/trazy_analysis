@@ -51,7 +51,7 @@ class DataConsumer:
     def _subscribe_order_manager_to_data_stream(self):
         for symbol in self.symbols:
             self.indicators_manager.RollingWindow(symbol).subscribe(
-                lambda candle: self.clock.update(symbol, candle.timestamp)
+                lambda candle: self.clock.update(candle.timestamp)
             )
             self.indicators_manager.RollingWindow(symbol).subscribe(
                 lambda candle: self.order_manager.process_pending_signals()

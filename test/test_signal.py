@@ -10,9 +10,7 @@ from models.signal import Signal
 clock = SimulatedClock()
 IVV_ASSET = Asset(symbol="IVV", exchange="IEX")
 GOOGL_ASSET = Asset(symbol="GOOGL", exchange="IEX")
-clock.update_time(
-    IVV_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
-)
+clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 SIGNAL1 = Signal(
     asset=IVV_ASSET,
     action=Action.BUY,
@@ -108,11 +106,11 @@ def test_in_force():
 
     # None timestamp
     clock.update_time(
-        IVV_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
+        datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
     )
     assert SIGNAL1.in_force()
     clock.update_time(
-        IVV_ASSET, datetime.strptime("2020-05-08 14:22:00+0000", "%Y-%m-%d %H:%M:%S%z")
+        datetime.strptime("2020-05-08 14:22:00+0000", "%Y-%m-%d %H:%M:%S%z")
     )
     assert not SIGNAL1.in_force()
 

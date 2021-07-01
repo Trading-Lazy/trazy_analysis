@@ -568,7 +568,7 @@ def test_update_transactions(
 
     TIMESTAMP = datetime.strptime("2021-02-08 16:01:14+0000", "%Y-%m-%d %H:%M:%S%z")
     event_type = "asset_transaction"
-    description = "LONG 1 DEGIRO-IFMK 3.739 08/02/2021"
+    description = "BUY LONG 1 DEGIRO-IFMK 3.739 08/02/2021"
     expected_pe = PortfolioEvent(
         timestamp=TIMESTAMP,
         type=event_type,

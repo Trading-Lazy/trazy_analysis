@@ -187,7 +187,7 @@ def test_request_ticker_lastest_candles_ticker_data_is_none_tiingo(
     request_ticker_latest_data_mocked.return_value.content = str.encode(ticker_data)
 
     expected_candles = np.empty(shape=0, dtype=Candle)
-    candles = TiingoLiveDataHandler.request_ticker_lastest_candles(SYMBOL, nb_candles=7)
+    candles = TiingoLiveDataHandler.request_ticker_lastest_candles(ASSET, nb_candles=7)
     assert (expected_candles == candles).all()
 
 
@@ -202,7 +202,7 @@ def test_request_ticker_lastest_candles_error_tiingo(
     request_ticker_latest_data_mocked.return_value.content = str.encode(error_response)
 
     expected_candles = np.empty(shape=0, dtype=Candle)
-    candles = TiingoLiveDataHandler.request_ticker_lastest_candles(SYMBOL, nb_candles=7)
+    candles = TiingoLiveDataHandler.request_ticker_lastest_candles(ASSET, nb_candles=7)
     assert (expected_candles == candles).all()
 
 

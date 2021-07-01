@@ -76,9 +76,7 @@ CANDLE3: Candle = Candle(
 
 clock = SimulatedClock()
 
-clock.update_time(
-    AAPL_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
-)
+clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 SIGNAL1: Signal = Signal(
     asset=AAPL_ASSET,
     action=Action.BUY,
@@ -93,9 +91,7 @@ SIGNAL1: Signal = Signal(
 )
 
 clock = SimulatedClock()
-clock.update_time(
-    AAPL_ASSET, datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
-)
+clock.update_time(datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 SIGNAL2: Signal = Signal(
     asset=AAPL_ASSET,
     action=Action.SELL,
@@ -109,9 +105,7 @@ SIGNAL2: Signal = Signal(
     clock=clock,
 )
 
-clock.update_time(
-    AAPL_ASSET, datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z")
-)
+clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 ORDER1: Order = Order(
     asset=AAPL_ASSET,
     action=Action.BUY,
@@ -122,9 +116,7 @@ ORDER1: Order = Order(
 )
 
 clock = SimulatedClock()
-clock.update_time(
-    AAPL_ASSET, datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z")
-)
+clock.update_time(datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 ORDER2: Order = Order(
     asset=AAPL_ASSET,
     action=Action.SELL,
