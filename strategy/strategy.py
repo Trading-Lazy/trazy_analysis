@@ -31,15 +31,15 @@ class Strategy(Indicator):
         context: Context,
         order_manager: OrderManager,
         events: deque,
+        parameters: Dict[str, float],
         indicators_manager: IndicatorsManager = IndicatorsManager(),
-        parameters: Union[Dict[str, float], None] = None
     ):
         super().__init__()
         self.context = context
         self.order_manager = order_manager
         self.events = events
+        self.parameters = parameters
         self.indicators_manager = indicators_manager
-        self.parameters = parameters if parameters is not None else self.DEFAULT_PARAMETERS
         self.name = self.__class__.__name__
 
     @abc.abstractmethod

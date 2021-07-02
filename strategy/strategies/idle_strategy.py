@@ -15,10 +15,10 @@ class IdleStrategy(Strategy):
         context: Context,
         order_manager: OrderManager,
         events: deque,
+        parameters: Dict[str, float],
         indicators_manager: IndicatorsManager = IndicatorsManager(),
-        parameters: Union[Dict[str, float], None] = None
     ):
-        super().__init__(context, order_manager, events, indicators_manager, parameters)
+        super().__init__(context, order_manager, events, parameters, indicators_manager)
 
     def generate_signals(
         self, context: Context, clock: Clock

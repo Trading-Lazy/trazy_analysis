@@ -24,7 +24,7 @@ def test_sma_crossover_strategy_preload_data():
 
     feed: Feed = CsvFeed({aapl_asset: "test/data/aapl_candles_one_day.csv"}, events)
 
-    strategies = {SmaCrossoverStrategy: [None]}
+    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
