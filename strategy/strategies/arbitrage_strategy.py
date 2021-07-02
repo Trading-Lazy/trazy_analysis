@@ -18,10 +18,10 @@ class ArbitrageStrategy(Strategy):
         context: Context,
         order_manager: OrderManager,
         events: deque,
+        parameters: Dict[str, float],
         indicators_manager: IndicatorsManager = IndicatorsManager(),
-        parameters: Union[Dict[str, float], None] = None
     ):
-        super().__init__(context, order_manager, events, indicators_manager, parameters)
+        super().__init__(context, order_manager, events, parameters, indicators_manager)
         self.commission = 0.001
 
     def generate_signals(
@@ -47,7 +47,7 @@ class ArbitrageStrategy(Strategy):
                 LOG.info(f"total fee = {total_fee}")
                 if diff > margin_factor * total_fee:
                     LOG.info("There is 1 opportunity")
-                    candle1_is_greater = (candle1.close > candle2.close)
+                    candle1_is_greater = candle1.close > candle2.close
                     action1 = Action.SELL if candle1_is_greater else Action.BUY
                     action2 = Action.BUY if candle1_is_greater else Action.SELL
                     signal1 = Signal(

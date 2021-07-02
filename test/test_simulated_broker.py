@@ -471,7 +471,7 @@ def test_execute_limit_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_limit_order.csv"}, events
     )
 
-    strategies = {SmaCrossoverStrategy: [None]}
+    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -511,7 +511,7 @@ def test_execute_stop_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_stop_order.csv"}, events
     )
 
-    strategies = {SmaCrossoverStrategy: [None]}
+    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -551,7 +551,7 @@ def test_execute_target_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_target_order.csv"}, events
     )
 
-    strategies = {SmaCrossoverStrategy: [None]}
+    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -592,7 +592,7 @@ def test_execute_trailing_stop_order():
         events,
     )
 
-    strategies = {SmaCrossoverStrategy: [None]}
+    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -632,7 +632,7 @@ def test_execute_cover_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
 
-    strategies = {SmaCrossoverStrategy: [None]}
+    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
@@ -670,7 +670,7 @@ def test_execute_bracket_order():
         {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
     )
 
-    strategies = {SmaCrossoverStrategy: [None]}
+    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)

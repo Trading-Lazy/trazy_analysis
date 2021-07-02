@@ -76,8 +76,8 @@ class EventLoop:
                         self.context,
                         self.order_manager,
                         self.events,
-                        self.indicators_manager,
-                        parameters
+                        parameters,
+                        self.indicators_manager
                     )
                 )
 
