@@ -40,6 +40,8 @@ class KucoinDataHandler(DataHandler):
     @classmethod
     def ticker_data_is_none(cls, data: str) -> bool:
         raw_candles_dict = json.loads(data)
+        if "data" not in raw_candles_dict:
+            return True
         raw_candles = raw_candles_dict["data"]
         return len(raw_candles) == 0
 

@@ -24,6 +24,8 @@ class MultipleOrder(OrderBase):
     def add_orders_callbacks(self) -> None:
         for order in self.orders:
             order.add_on_complete_callback(self.check_order_completed)
+        for order in self.orders:
+            order.add_on_cancel_callback(self.check_order_cancelled)
 
     def check_order_completed(self) -> None:
         all_orders_completed = all(
@@ -31,6 +33,13 @@ class MultipleOrder(OrderBase):
         )
         if all_orders_completed:
             self.complete()
+
+    def check_order_cancelled(self) -> None:
+        any_orders_cancelled = any(
+            order.status == OrderStatus.CANCELLED for order in self.orders
+        )
+        if any_orders_cancelled:
+            self.cancel()
 
     def pending_orders(self) -> None:
         return [

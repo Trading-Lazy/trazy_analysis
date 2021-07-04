@@ -68,7 +68,9 @@ class ExpiringSet:
 
 
 class EventLoop:
-    def _init_strategy_instance(self, strategy_class: type, parameters_list: List[Dict[str, float]]):
+    def _init_strategy_instance(
+        self, strategy_class: type, parameters_list: List[Dict[str, float]]
+    ):
         if issubclass(strategy_class, Strategy):
             for parameters in parameters_list:
                 self.strategy_instances.append(
@@ -77,7 +79,7 @@ class EventLoop:
                         self.order_manager,
                         self.events,
                         parameters,
-                        self.indicators_manager
+                        self.indicators_manager,
                     )
                 )
 
@@ -143,7 +145,7 @@ class EventLoop:
         strategies_parameters: Dict[type, List[Dict[str, float]]] = {},
         live=False,
         close_at_end_of_day=True,
-        close_at_end_of_data=True
+        close_at_end_of_data=True,
     ):
         self.events: deque = events
         self.asset_delayed_events = {}

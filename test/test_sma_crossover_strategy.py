@@ -1,5 +1,4 @@
 from collections import deque
-from time import time
 
 from bot.event_loop import EventLoop
 from broker.broker_manager import BrokerManager

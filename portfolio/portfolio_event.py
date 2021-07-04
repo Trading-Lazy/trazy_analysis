@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from models.enums import Action, Direction
+
 
 class PortfolioEvent:
     """
@@ -63,29 +65,21 @@ class PortfolioEvent:
 
     @classmethod
     def create_subscription(
-        cls, credit: float, balance, timestamp: datetime = datetime.now(timezone.utc)
+        cls,
+        credit: float,
+        balance: float,
+        timestamp: datetime = datetime.now(timezone.utc),
     ):
-        return cls(
-            timestamp,
-            type="subscription",
-            description="SUBSCRIPTION",
-            debit=0.0,
-            credit=round(credit, 2),
-            balance=round(balance, 2),
-        )
+        return SubscriptionEvent(timestamp=timestamp, credit=credit, balance=balance)
 
     @classmethod
     def create_withdrawal(
-        cls, debit, balance, timestamp: datetime = datetime.now(timezone.utc)
+        cls,
+        debit: float,
+        balance: float,
+        timestamp: datetime = datetime.now(timezone.utc),
     ):
-        return cls(
-            timestamp,
-            type="withdrawal",
-            description="WITHDRAWAL",
-            debit=round(debit, 2),
-            credit=0.0,
-            balance=round(balance, 2),
-        )
+        return WithdrawalEvent(timestamp=timestamp, debit=debit, balance=balance)
 
     def to_dict(self):
         return {
@@ -96,3 +90,59 @@ class PortfolioEvent:
             "credit": self.credit,
             "balance": self.balance,
         }
+
+
+class SubscriptionEvent(PortfolioEvent):
+    def __init__(
+        self,
+        timestamp: datetime,
+        credit: float,
+        balance: float,
+    ):
+        super().__init__(
+            timestamp=timestamp,
+            type="subscription",
+            description="SUBSCRIPTION",
+            debit=0.0,
+            credit=round(credit, 2),
+            balance=round(balance, 2),
+        )
+
+
+class WithdrawalEvent(PortfolioEvent):
+    def __init__(
+        self,
+        timestamp: datetime,
+        debit: float,
+        balance: float,
+    ):
+        super().__init__(
+            timestamp=timestamp,
+            type="withdrawal",
+            description="WITHDRAWAL",
+            debit=round(debit, 2),
+            credit=0.0,
+            balance=round(balance, 2),
+        )
+
+
+class TransactionEvent(PortfolioEvent):
+    def __init__(
+        self,
+        timestamp: datetime,
+        description: str,
+        debit: float,
+        credit: float,
+        balance: float,
+        direction: Direction,
+    ):
+        super().__init__(
+            timestamp=timestamp,
+            type="symbol_transaction",
+            description=description,
+            debit=debit,
+            credit=credit,
+            balance=balance,
+        )
+        self.action = Action.BUY if credit == 0 else Action.SELL
+        self.direction = direction

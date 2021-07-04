@@ -47,7 +47,10 @@ FEED = CsvFeed(
 
 def test_init_live():
     assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
-    strategies_classes = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS], IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS]}
+    strategies_classes = {
+        SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS],
+        IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS],
+    }
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
     position_sizer = PositionSizer(broker_manager=broker_manager)
@@ -79,7 +82,10 @@ def test_init_live():
 
 def test_init_backtest():
     assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
-    strategies_classes = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS], IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS]}
+    strategies_classes = {
+        SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS],
+        IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS],
+    }
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
     position_sizer = PositionSizer(broker_manager=broker_manager)
@@ -113,7 +119,9 @@ def test_init_backtest():
 )
 def test_run_strategy(process_context):
     assets = [AAPL_ASSET, GOOGL_ASSET]
-    strategies_classes = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
+    strategies_classes = {
+        SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]
+    }
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker_manager=broker)
@@ -137,7 +145,10 @@ def test_run_strategy(process_context):
 @patch("bot.event_loop.EventLoop.run_strategy")
 def test_run_strategies(run_strategy_mocked):
     assets = [AAPL_ASSET, GOOGL_ASSET]
-    strategies_classes = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS], IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS]}
+    strategies_classes = {
+        SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS],
+        IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS],
+    }
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
     position_sizer = PositionSizer(broker_manager=broker_manager)
@@ -164,7 +175,10 @@ def test_run_strategies(run_strategy_mocked):
 
 def test_run_backtest():
     assets = [AAPL_ASSET, GOOGL_ASSET]
-    strategies_classes = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS], IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS]}
+    strategies_classes = {
+        SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS],
+        IdleStrategy: [IdleStrategy.DEFAULT_PARAMETERS],
+    }
 
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)

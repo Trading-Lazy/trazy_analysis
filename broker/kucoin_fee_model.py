@@ -19,7 +19,4 @@ class KucoinFeeModel(PercentFeeModel):
         super().__init__(commission_pct=0.001, tax_pct=tax_pct)
 
     def calc_max_size_for_cash(self, cash: float, price: float) -> float:
-        print(
-            f"kucoin calc_max_size_for_cash = {cash / (price * (1 + self.commission_pct))}"
-        )
         return cash / (price * (1 + self.commission_pct))

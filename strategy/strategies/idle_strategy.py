@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from common.clock import Clock
 from indicators.indicators_manager import IndicatorsManager

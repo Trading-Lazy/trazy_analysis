@@ -6,8 +6,9 @@ from models.order import Order
 class PositionSizer:
     MAXIMUM_RISK_PER_TRADE = 0.10
 
-    def __init__(self, broker_manager: BrokerManager):
+    def __init__(self, broker_manager: BrokerManager, integer_size: bool = True):
         self.broker_manager = broker_manager
+        self.integer_size = integer_size
 
     def size_single_order(self, order: Order):
         if order.is_exit_order:
@@ -25,7 +26,9 @@ class PositionSizer:
             size_relative_to_cash = self.broker_manager.get_broker(
                 exchange=order.asset.exchange
             ).max_entry_order_size(order.asset, order.direction)
-            size = int(min(size_relative_to_equity, size_relative_to_cash))
+            size = min(size_relative_to_equity, size_relative_to_cash)
+            if self.integer_size:
+                size = int(size)
         order.size = size
 
     def size_arbitrage_pair_order(self, arbitrage_pair_order: ArbitragePairOrder):

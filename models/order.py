@@ -29,9 +29,13 @@ class OrderBase(ABC):
         self.time_in_force = time_in_force
         self.submission_time = None
         self.on_complete_callbacks: Tuple[List[Callable], List[Any]] = []
+        self.on_cancel_callbacks: Tuple[List[Callable], List[Any]] = []
 
     def add_on_complete_callback(self, callback: Callable, *args):
         self.on_complete_callbacks.append((callback, args))
+
+    def add_on_cancel_callback(self, callback: Callable, *args):
+        self.on_cancel_callbacks.append((callback, args))
 
     def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
         self.submission_time = submission_time
@@ -44,6 +48,8 @@ class OrderBase(ABC):
 
     def cancel(self) -> None:
         self.status = OrderStatus.CANCELLED
+        for callback, args in self.on_cancel_callbacks:
+            callback(*args)
 
     def disable(self):
         self.status = OrderStatus.EXPIRED

@@ -2,6 +2,7 @@ from abc import abstractmethod
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 from pandas_market_calendars import MarketCalendar
 
@@ -11,6 +12,7 @@ from db_storage.db_storage import DbStorage
 from file_storage.file_storage import FileStorage
 from market_data.historical.historical_data_handler import HistoricalDataHandler
 from models.asset import Asset
+from models.candle import Candle
 from strategy.candlefetcher import CandleFetcher
 
 
@@ -71,9 +73,13 @@ class CsvLoader:
         }
         for asset, csv_filename in self.csv_filenames.items():
             dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=self.sep)
-            self.candle_dataframes[asset] = CandleDataFrame.from_dataframe(
-                dataframe, asset
-            )
+            if dataframe.empty:
+                candle_dataframe = CandleDataFrame.from_candle_list(
+                    asset=asset, candles=np.array([], dtype=Candle)
+                )
+            else:
+                candle_dataframe = CandleDataFrame.from_dataframe(dataframe, asset)
+            self.candle_dataframes[asset] = candle_dataframe
             self.candles[asset] = self.candle_dataframes[asset].to_candles()
 
 

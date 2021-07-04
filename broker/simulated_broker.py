@@ -230,6 +230,7 @@ class SimulatedBroker(Broker):
                 total_cash,
                 order.order_id,
             )
+            order.cancel()
             return
 
         # Create a transaction entity and update the portfolio
