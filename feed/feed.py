@@ -34,6 +34,8 @@ class Feed:
         current_timestamp = MAX_TIMESTAMP
         for asset in self.assets:
             self.indexes[asset] = 0
+            if len(self.candles[asset]) == 0:
+                continue
             first_candle = self.candles[asset][0]
             min_timestamp = first_candle.timestamp
             current_timestamp = min(current_timestamp, min_timestamp)

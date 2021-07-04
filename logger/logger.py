@@ -7,7 +7,7 @@ def get_root_logger(logger_name, filename=None, stdout=True):
     """ get the logger object """
     logger = logging.getLogger(logger_name)
     debug = os.environ.get("ENV", "development") == "development"
-    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    logger.setLevel(logging.DEBUG if debug else logging.DEBUG)
 
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

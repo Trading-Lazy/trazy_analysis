@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Tuple
 
 from common.helper import map_ticker_to_kucoin_symbol
@@ -30,6 +30,7 @@ class KucoinHistoricalDataHandler(KucoinDataHandler, HistoricalDataHandler):
             hour=0,
             minute=0,
             second=0,
+            tzinfo=timezone.utc,
         )
         end_date = period[1]
         end_datetime = datetime(
@@ -39,6 +40,7 @@ class KucoinHistoricalDataHandler(KucoinDataHandler, HistoricalDataHandler):
             hour=23,
             minute=59,
             second=59,
+            tzinfo=timezone.utc,
         )
         start_epoch = int(start_datetime.timestamp())
         end_epoch = int(end_datetime.timestamp())

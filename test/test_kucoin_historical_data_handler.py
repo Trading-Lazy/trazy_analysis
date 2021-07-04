@@ -16,8 +16,8 @@ def test_generate_ticker_data_url():
         "https://api.kucoin.com/api/v1/market/candles?"
         "symbol=XRP-USDT&"
         "type=1min&"
-        "startAt=1523570400&"
-        "endAt=1523656799"
+        "startAt=1523577600&"
+        "endAt=1523663999"
     )
     assert expected_url == KucoinHistoricalDataHandler.generate_ticker_data_url(
         ticker, period

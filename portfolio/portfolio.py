@@ -10,7 +10,7 @@ from common.helper import get_or_create_nested_dict
 from logger import logger
 from models.asset import Asset
 from models.enums import Action
-from portfolio.portfolio_event import PortfolioEvent
+from portfolio.portfolio_event import PortfolioEvent, TransactionEvent
 from position.position_handler import PositionHandler
 from position.transaction import Transaction
 
@@ -224,13 +224,13 @@ class Portfolio:
             datetime.strftime(txn.timestamp, "%d/%m/%Y"),
         )
         if txn.action == Action.BUY:
-            pe = PortfolioEvent(
+            pe = TransactionEvent(
                 timestamp=txn.timestamp,
-                type="symbol_transaction",
                 description=description,
                 debit=txn_total_cost,
                 credit=0.0,
                 balance=self.cash,
+                direction=direction,
             )
             self.logger.info(
                 '(%s) Symbol "%s" %s %s in portfolio "%s" '
@@ -246,13 +246,13 @@ class Portfolio:
                 )
             )
         else:
-            pe = PortfolioEvent(
+            pe = TransactionEvent(
                 timestamp=txn.timestamp,
-                type="symbol_transaction",
                 description=description,
                 debit=0.0,
                 credit=-1.0 * round(txn_total_cost, 2),
                 balance=round(self.cash, 2),
+                direction=direction,
             )
             self.logger.info(
                 '(%s) Symbol "%s" %s %s in portfolio "%s" '

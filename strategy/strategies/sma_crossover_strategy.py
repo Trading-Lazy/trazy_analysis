@@ -1,6 +1,6 @@
 from collections import deque
 from datetime import timedelta
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from common.clock import Clock
 from indicators.crossover import Crossover

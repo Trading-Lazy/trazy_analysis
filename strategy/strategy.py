@@ -1,7 +1,7 @@
 import abc
 import os
 from collections import deque
-from typing import Dict, List, Union
+from typing import Dict, List
 
 import logger
 import settings
