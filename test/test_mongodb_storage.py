@@ -9,6 +9,8 @@ from bson import ObjectId
 from pymongo.results import InsertOneResult
 
 from common.clock import SimulatedClock
+from common.constants import DATE_FORMAT
+from common.types import CandleDataFrame
 from db_storage.mongodb_storage import MongoDbStorage
 from models.asset import Asset
 from models.candle import Candle
@@ -18,7 +20,7 @@ from models.signal import Signal
 from settings import (
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
-    DATABASE_URL,
+    MONGODB_URL,
     DOCUMENTS_COLLECTION_NAME,
     ORDERS_COLLECTION_NAME,
     SIGNALS_COLLECTION_NAME,
@@ -126,7 +128,7 @@ ORDER2: Order = Order(
     clock=clock,
 )
 
-MONGODB_STORAGE = MongoDbStorage(DATABASE_NAME, DATABASE_URL)
+MONGODB_STORAGE = MongoDbStorage(DATABASE_NAME, MONGODB_URL)
 
 
 @patch("pymongo.MongoClient")
@@ -138,11 +140,13 @@ def test_check_collection_name_success(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
     ]
 
     mongodb_storage = MongoDbStorage()
-    mongodb_storage.check_collection_name(CANDLES_COLLECTION_NAME)
+    mongodb_storage.check_table(CANDLES_COLLECTION_NAME)
 
 
 @patch("pymongo.MongoClient")
@@ -154,6 +158,8 @@ def test_check_collection_name_ko(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
     ]
 
@@ -173,12 +179,14 @@ def test_init_default_args(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
     ]
 
     mongodb_storage = MongoDbStorage()
     assert mongodb_storage.database_name == DATABASE_NAME
-    assert mongodb_storage.database_url == DATABASE_URL
+    assert mongodb_storage.database_url == MONGODB_URL
 
 
 @patch("pymongo.MongoClient")
@@ -192,6 +200,8 @@ def test_init(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
     ]
 
@@ -223,6 +233,8 @@ def test_init_non_existing_database_name(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
     ]
 
@@ -246,6 +258,8 @@ def test_get_collection_in_cache(mongo_client_mocked):
     db = client_return_value.__getitem__.return_value
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
     ]
 
@@ -266,6 +280,8 @@ def test_get_collection_not_in_cache_and_in_db(mongo_client_mocked):
     collection_name = "collection"
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
         collection_name,
     ]
@@ -290,6 +306,8 @@ def test_get_collection_not_in_cache_and_not_in_db(mongo_client_mocked):
     collection2_name = "collection2"
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
         collection2_name,
     ]
@@ -310,6 +328,8 @@ def test_add_document(mongo_client_mocked):
     collection_name = "collection"
     db.list_collection_names.return_value = [
         CANDLES_COLLECTION_NAME,
+        SIGNALS_COLLECTION_NAME,
+        DOCUMENTS_COLLECTION_NAME,
         ORDERS_COLLECTION_NAME,
         collection_name,
     ]
@@ -328,12 +348,10 @@ def test_add_document(mongo_client_mocked):
 
 
 def test_clean_all_documents():
-
     MONGODB_STORAGE.add_document(DOC1, DOCUMENTS_COLLECTION_NAME)
-    collection = MONGODB_STORAGE.get_collection(DOCUMENTS_COLLECTION_NAME)
-    assert collection.count_documents({}) > 0
+    assert MONGODB_STORAGE.count(DOCUMENTS_COLLECTION_NAME) > 0
     MONGODB_STORAGE.clean_all_documents(DOCUMENTS_COLLECTION_NAME)
-    assert collection.count_documents({}) == 0
+    assert MONGODB_STORAGE.count(DOCUMENTS_COLLECTION_NAME)== 0
 
 
 def test_find_one():
@@ -354,7 +372,6 @@ def test_find_one():
 
 
 def test_find():
-
     MONGODB_STORAGE.clean_all_documents(DOCUMENTS_COLLECTION_NAME)
 
     id1 = MONGODB_STORAGE.add_document(DOC1, DOCUMENTS_COLLECTION_NAME)
@@ -376,7 +393,6 @@ def test_find():
 
 
 def test_delete_one():
-
     MONGODB_STORAGE.clean_all_documents(DOCUMENTS_COLLECTION_NAME)
 
     MONGODB_STORAGE.add_document(DOC1, DOCUMENTS_COLLECTION_NAME)
@@ -391,7 +407,6 @@ def test_delete_one():
 
 
 def test_delete():
-
     MONGODB_STORAGE.clean_all_documents(DOCUMENTS_COLLECTION_NAME)
 
     MONGODB_STORAGE.add_document(DOC1, DOCUMENTS_COLLECTION_NAME)
@@ -407,20 +422,18 @@ def test_delete():
 
 
 def test_get_all_documents():
-
     MONGODB_STORAGE.clean_all_documents(DOCUMENTS_COLLECTION_NAME)
 
     MONGODB_STORAGE.add_document(DOC1, DOCUMENTS_COLLECTION_NAME)
     MONGODB_STORAGE.add_document(DOC2, DOCUMENTS_COLLECTION_NAME)
 
     docs = MONGODB_STORAGE.get_all_documents(DOCUMENTS_COLLECTION_NAME)
-    assert len(docs) == 2
+    assert len(list(docs)) == 2
 
     MONGODB_STORAGE.clean_all_documents(DOCUMENTS_COLLECTION_NAME)
 
 
 def test_get_document_by_id():
-
     MONGODB_STORAGE.clean_all_documents(CANDLES_COLLECTION_NAME)
 
     id = MONGODB_STORAGE.add_document(DOC1, CANDLES_COLLECTION_NAME)
@@ -432,7 +445,6 @@ def test_get_document_by_id():
 
 
 def test_get_document_by_id_non_existing_id():
-
     MONGODB_STORAGE.clean_all_documents(CANDLES_COLLECTION_NAME)
 
     id = "5f262523794d9a0a2816645b"
@@ -453,16 +465,14 @@ def test_add_candle(add_document_mocked):
 
 
 def test_clean_all_candles():
-
     MONGODB_STORAGE.add_candle(CANDLE1)
-    collection = MONGODB_STORAGE.get_collection(CANDLES_COLLECTION_NAME)
-    assert collection.count_documents({}) > 0
+    MONGODB_STORAGE.add_candle(CANDLE2)
+    assert MONGODB_STORAGE.count(CANDLES_COLLECTION_NAME) > 0
     MONGODB_STORAGE.clean_all_candles()
-    assert collection.count_documents({}) == 0
+    assert MONGODB_STORAGE.count(CANDLES_COLLECTION_NAME) == 0
 
 
 def test_get_candle():
-
     MONGODB_STORAGE.clean_all_candles()
 
     id = MONGODB_STORAGE.add_candle(CANDLE1)
@@ -473,7 +483,6 @@ def test_get_candle():
 
 
 def test_get_candle_non_existing_id():
-
     MONGODB_STORAGE.clean_all_candles()
 
     id = "5f262523794d9a0a2816645b"
@@ -482,7 +491,6 @@ def test_get_candle_non_existing_id():
 
 
 def test_candle_with_id_exists_true():
-
     MONGODB_STORAGE.clean_all_candles()
 
     id = MONGODB_STORAGE.add_candle(CANDLE1)
@@ -492,7 +500,6 @@ def test_candle_with_id_exists_true():
 
 
 def test_candle_with_id_exists_false():
-
     MONGODB_STORAGE.clean_all_candles()
 
     id = "5f262523794d9a0a2816645b"
@@ -500,7 +507,6 @@ def test_candle_with_id_exists_false():
 
 
 def test_get_candle_by_identifier():
-
     MONGODB_STORAGE.clean_all_candles()
 
     MONGODB_STORAGE.add_candle(CANDLE1)
@@ -513,7 +519,6 @@ def test_get_candle_by_identifier():
 
 
 def test_get_candle_by_identifier_non_existing_identifier_non_existing_candle():
-
     MONGODB_STORAGE.clean_all_candles()
 
     candle: Candle = MONGODB_STORAGE.get_candle_by_identifier(
@@ -523,7 +528,6 @@ def test_get_candle_by_identifier_non_existing_identifier_non_existing_candle():
 
 
 def test_candle_with_identifier_exists_true():
-
     MONGODB_STORAGE.clean_all_candles()
 
     MONGODB_STORAGE.add_candle(CANDLE1)
@@ -535,7 +539,6 @@ def test_candle_with_identifier_exists_true():
 
 
 def test_candle_with_identifier_exists_false():
-
     MONGODB_STORAGE.clean_all_candles()
 
     assert not MONGODB_STORAGE.candle_with_identifier_exists(
@@ -544,33 +547,29 @@ def test_candle_with_identifier_exists_false():
 
 
 def test_get_candles_in_range():
-
     MONGODB_STORAGE.clean_all_candles()
 
     MONGODB_STORAGE.add_candle(CANDLE1)
     MONGODB_STORAGE.add_candle(CANDLE2)
     MONGODB_STORAGE.add_candle(CANDLE3)
-    start = time.time()
     candles: List[Candle] = MONGODB_STORAGE.get_candles_in_range(
         CANDLE1.asset,
         CANDLE1.timestamp - timedelta(minutes=1),
         CANDLE1.timestamp + timedelta(minutes=1),
     )
-    end = time.time()
     assert compare_candles_list(candles, [CANDLE2, CANDLE1])
 
     MONGODB_STORAGE.clean_all_candles()
 
 
 def test_get_all_candles():
-
     MONGODB_STORAGE.clean_all_candles()
 
     MONGODB_STORAGE.add_candle(CANDLE1)
     MONGODB_STORAGE.add_candle(CANDLE2)
 
     candles = MONGODB_STORAGE.get_all_candles()
-    assert compare_candles_list(candles, [CANDLE1, CANDLE2])
+    assert compare_candles_list(candles, [CANDLE2, CANDLE1])
 
     MONGODB_STORAGE.clean_all_candles()
 
@@ -594,10 +593,9 @@ def test_add_signal(add_document_mocked):
 
 def test_clean_all_signals():
     MONGODB_STORAGE.add_signal(SIGNAL1)
-    collection = MONGODB_STORAGE.get_collection(SIGNALS_COLLECTION_NAME)
-    assert collection.count_documents({}) > 0
+    assert MONGODB_STORAGE.count(SIGNALS_COLLECTION_NAME) > 0
     MONGODB_STORAGE.clean_all_signals()
-    assert collection.count_documents({}) == 0
+    assert MONGODB_STORAGE.count(SIGNALS_COLLECTION_NAME) == 0
 
 
 def test_get_signal():
@@ -667,10 +665,9 @@ def test_add_order(add_document_mocked):
 
 def test_clean_all_orders():
     MONGODB_STORAGE.add_order(ORDER1)
-    collection = MONGODB_STORAGE.get_collection(ORDERS_COLLECTION_NAME)
-    assert collection.count_documents({}) > 0
+    assert MONGODB_STORAGE.count(ORDERS_COLLECTION_NAME) > 0
     MONGODB_STORAGE.clean_all_orders()
-    assert collection.count_documents({}) == 0
+    assert MONGODB_STORAGE.count(ORDERS_COLLECTION_NAME) == 0
 
 
 def test_get_order():
@@ -705,7 +702,6 @@ def test_get_order_by_identifier_non_existing_order():
 
 
 def test_get_all_orders():
-
     MONGODB_STORAGE.clean_all_orders()
 
     MONGODB_STORAGE.add_order(ORDER1)
@@ -718,9 +714,62 @@ def test_get_all_orders():
 
 
 def test_get_order_non_existing_id():
-
     MONGODB_STORAGE.clean_all_orders()
 
     id = "5f262523794d9a0a2816645b"
     order: Order = MONGODB_STORAGE.get_order(id)
     assert order is None
+
+
+def test_add_candle_dataframe():
+    df_candles = {
+        "timestamp": [
+            "2020-05-07 14:24:00+00:00",
+            "2020-05-07 14:25:00+00:00",
+            "2020-05-07 14:26:00+00:00",
+            "2020-05-07 14:31:00+00:00",
+        ],
+        "open": ["323.69", "323.81", "324.10", "323.93"],
+        "high": [
+            "323.81",
+            "324.21",
+            "324.10",
+            "323.95",
+        ],
+        "low": ["323.67", "323.81", "323.97", "323.83"],
+        "close": [
+            "323.81",
+            "324.10",
+            "324.03",
+            "323.88",
+        ],
+        "volume": [500, 700, 400, 300],
+    }
+    df = pd.DataFrame(
+        df_candles,
+        columns=["timestamp", "open", "high", "low", "close", "volume"],
+    )
+    df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
+    df = df.drop(["timestamp"], axis=1)
+
+    MONGODB_STORAGE.clean_all_candles()
+    candle_dataframe = CandleDataFrame.from_dataframe(df, Asset("AAPL", exchange="IEX"))
+    MONGODB_STORAGE.add_candle_dataframe(candle_dataframe)
+
+    expected_candles = candle_dataframe.to_candles()
+    candles = MONGODB_STORAGE.get_all_candles()
+
+    assert (candles == expected_candles).all(axis=None)
+
+    MONGODB_STORAGE.clean_all_candles()
+
+def test_count():
+    MONGODB_STORAGE.clean_all_candles()
+
+    MONGODB_STORAGE.add_candle(CANDLE1)
+    MONGODB_STORAGE.add_candle(CANDLE2)
+    MONGODB_STORAGE.add_candle(CANDLE3)
+
+    assert MONGODB_STORAGE.count(CANDLES_COLLECTION_NAME) == 3
+
+    MONGODB_STORAGE.clean_all_candles()

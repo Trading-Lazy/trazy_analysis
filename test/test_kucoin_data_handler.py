@@ -153,6 +153,6 @@ def test_ticker_data_to_dataframe():
 
 
 # def test_queries():
-#     KucoinHistoricalDataHandler.save_ticker_data_in_range(
+#     KucoinHistoricalDataHandler.save_ticker_data_in_csv(
 #         "BTCUSDT", "test/data/btcusdt.csv", start=datetime(2021, 3, 23, 0, 0, 0, tzinfo=timezone.utc)
 #     )

@@ -749,7 +749,7 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
 @patch(
     "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_in_range"
 )
-def test_save_ticker_data_in_range(request_ticker_data_in_range_mocked, to_csv_mocked):
+def test_save_ticker_data_in_csv(request_ticker_data_in_range_mocked, to_csv_mocked):
     request_ticker_data_in_range_mocked.return_value = (
         AAPL_CANDLE_DATAFRAME,
         set(),
@@ -759,7 +759,7 @@ def test_save_ticker_data_in_range(request_ticker_data_in_range_mocked, to_csv_m
     start = datetime.strptime("2020-06-11 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z")
     end = datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z")
     TiingoHistoricalDataHandler.MAX_DOWNLOAD_FRAME = timedelta(days=3)
-    TiingoHistoricalDataHandler.save_ticker_data_in_range(
+    TiingoHistoricalDataHandler.save_ticker_data_in_csv(
         AAPL_ASSET, csv_filename, start, end
     )
 
