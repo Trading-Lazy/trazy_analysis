@@ -208,6 +208,7 @@ def fill_missing_datetimes(
     df: CandleDataFrame,
     time_unit: timedelta,
 ) -> CandleDataFrame:
+    asset = df.asset
     resample_label = "right"
     if time_unit >= timedelta(days=1):
         resample_label = "left"
@@ -223,7 +224,7 @@ def fill_missing_datetimes(
         }
     )
     df_close = df["close"].ffill()
-    return df.fillna(
+    df = df.fillna(
         {
             "open": df_close,
             "high": df_close,
@@ -231,6 +232,7 @@ def fill_missing_datetimes(
             "close": df_close,
         }
     )
+    return CandleDataFrame.from_dataframe(df, asset)
 
 
 def resample_candle_data(
@@ -337,3 +339,6 @@ def map_ticker_to_kucoin_symbol(ticker: str) -> str:
         )
         return ticker
     return TICKER_TO_KUCOIN_SYMBOL[ticker]
+
+def datetime_to_epoch(timestamp: datetime, unit_multiplicator: int) -> int:
+    return int(timestamp.timestamp()) * unit_multiplicator

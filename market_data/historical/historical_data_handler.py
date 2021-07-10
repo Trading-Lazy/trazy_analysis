@@ -14,6 +14,7 @@ from common.helper import fill_missing_datetimes, request
 from common.meta import RateLimitedSingletonMeta
 from common.types import CandleDataFrame
 from common.utils import timestamp_to_utc
+from db_storage.db_storage import DbStorage
 from logger import logger
 from market_data.common import LOG, get_periods
 from market_data.data_handler import DataHandler
@@ -196,7 +197,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         )
 
     @classmethod
-    def save_ticker_data_in_range(
+    def save_ticker_data_in_csv(
         cls,
         ticker: Asset,
         csv_filename: str,
@@ -210,3 +211,20 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
             _,
         ) = cls.request_ticker_data_in_range(ticker, start, end)
         candle_dataframe.to_csv(csv_filename, sep)
+
+    @classmethod
+    def save_ticker_data_in_db_storage(
+        cls,
+        ticker: Asset,
+        db_storage: DbStorage,
+        start: datetime,
+        end: datetime = datetime.now(timezone.utc),
+    ) -> None:
+        (
+            candle_dataframe,
+            _,
+            _,
+        ) = cls.request_ticker_data_in_range(ticker, start, end)
+        candles = candle_dataframe.to_candles()
+        for candle in candles:
+            db_storage.add_candle(candle)
