@@ -354,7 +354,7 @@ class Broker:
                     order.order_id,
                 )
 
-    def current_price(self, asset: str):
+    def current_price(self, asset: Asset):
         return self.last_prices[asset]
 
     def update_price(self, candle: Candle):

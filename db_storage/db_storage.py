@@ -9,7 +9,9 @@ from models.order import Order
 
 
 class DbStorage:
-    def __init__(self, database_name: str, database_url: str, table_analogous_name: str = "table"):
+    def __init__(
+        self, database_name: str, database_url: str, table_analogous_name: str = "table"
+    ):
         self.database_name = database_name
         self.database_url = database_url
         self.table_analogous_name = table_analogous_name
@@ -27,7 +29,7 @@ class DbStorage:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_db_names(self) -> List[str]: # pragma: no cover
+    def get_db_names(self) -> List[str]:  # pragma: no cover
         raise NotImplementedError
 
     def check_table(self, table_name: str) -> None:
@@ -106,8 +108,8 @@ class DbStorage:
     ) -> None:  # pragma: no cover
         raise NotImplementedError
 
-    def count(self, table_name: str) -> int: # pragma: no cover
+    def count(self, table_name: str) -> int:  # pragma: no cover
         raise NotImplementedError
 
-    def close(self, table) -> None: # pragma: no cover
+    def close(self, table) -> None:  # pragma: no cover
         raise NotImplementedError

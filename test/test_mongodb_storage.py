@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timedelta
 from typing import List
 from unittest.mock import MagicMock, call, patch
@@ -20,8 +19,8 @@ from models.signal import Signal
 from settings import (
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
-    MONGODB_URL,
     DOCUMENTS_COLLECTION_NAME,
+    MONGODB_URL,
     ORDERS_COLLECTION_NAME,
     SIGNALS_COLLECTION_NAME,
 )
@@ -351,7 +350,7 @@ def test_clean_all_documents():
     MONGODB_STORAGE.add_document(DOC1, DOCUMENTS_COLLECTION_NAME)
     assert MONGODB_STORAGE.count(DOCUMENTS_COLLECTION_NAME) > 0
     MONGODB_STORAGE.clean_all_documents(DOCUMENTS_COLLECTION_NAME)
-    assert MONGODB_STORAGE.count(DOCUMENTS_COLLECTION_NAME)== 0
+    assert MONGODB_STORAGE.count(DOCUMENTS_COLLECTION_NAME) == 0
 
 
 def test_find_one():
@@ -762,6 +761,7 @@ def test_add_candle_dataframe():
     assert (candles == expected_candles).all(axis=None)
 
     MONGODB_STORAGE.clean_all_candles()
+
 
 def test_count():
     MONGODB_STORAGE.clean_all_candles()

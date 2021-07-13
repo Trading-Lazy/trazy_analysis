@@ -40,4 +40,7 @@ DEGIRO_BROKER_PASSWORD = os.environ.get("DEGIRO_BROKER_PASSWORD")
 BINANCE_API_KEY = os.environ.get("BINANCE_API_KEY")
 BINANCE_API_SECRET = os.environ.get("BINANCE_API_SECRET")
 
+KUCOIN_API_KEY = os.environ.get("KUCOIN_API_KEY")
+KUCOIN_API_SECRET = os.environ.get("KUCOIN_API_SECRET")
+
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))

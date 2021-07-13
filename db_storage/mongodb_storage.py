@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import pymongo
 from bson import ObjectId
-from pymongo.results import DeleteResult, InsertOneResult
 from pymongo.cursor import Cursor
+from pymongo.results import DeleteResult, InsertOneResult
 
 import settings
 from common.types import CandleDataFrame
@@ -20,10 +20,10 @@ from models.signal import Signal
 from settings import (
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
+    DOCUMENTS_COLLECTION_NAME,
     MONGODB_URL,
     ORDERS_COLLECTION_NAME,
     SIGNALS_COLLECTION_NAME,
-    DOCUMENTS_COLLECTION_NAME,
 )
 
 LOG = logger.get_root_logger(
@@ -155,7 +155,11 @@ class MongoDbStorage(DbStorage):
         return candles
 
     def get_all_candles(self) -> np.array:  # [Candle]
-        candles_in_dict = list(self.get_all_documents(CANDLES_COLLECTION_NAME).sort('timestamp', pymongo.ASCENDING))
+        candles_in_dict = list(
+            self.get_all_documents(CANDLES_COLLECTION_NAME).sort(
+                "timestamp", pymongo.ASCENDING
+            )
+        )
         candles: np.array = np.empty(shape=len(candles_in_dict), dtype=Candle)
         for index, candle_dict in enumerate(candles_in_dict):
             candle = Candle.from_serializable_dict(candle_dict)
@@ -195,7 +199,11 @@ class MongoDbStorage(DbStorage):
         return Signal.from_serializable_dict(signal_dict)
 
     def get_all_signals(self) -> np.array:  # [Signal]
-        signals_in_dict = list(self.get_all_documents(SIGNALS_COLLECTION_NAME).sort('generation_time', pymongo.ASCENDING))
+        signals_in_dict = list(
+            self.get_all_documents(SIGNALS_COLLECTION_NAME).sort(
+                "generation_time", pymongo.ASCENDING
+            )
+        )
         signals = np.empty(shape=len(signals_in_dict), dtype=Signal)
         for index, signal_dict in enumerate(signals_in_dict):
             signal = Signal.from_serializable_dict(signal_dict)
@@ -231,7 +239,11 @@ class MongoDbStorage(DbStorage):
         return Order.from_serializable_dict(order_dict)
 
     def get_all_orders(self) -> np.array:  # [Order]
-        orders_in_dict = list(self.get_all_documents(ORDERS_COLLECTION_NAME).sort('generation_time', pymongo.ASCENDING))
+        orders_in_dict = list(
+            self.get_all_documents(ORDERS_COLLECTION_NAME).sort(
+                "generation_time", pymongo.ASCENDING
+            )
+        )
         orders = np.empty(shape=len(orders_in_dict), dtype=Order)
         for index, order_dict in enumerate(orders_in_dict):
             order = Order.from_serializable_dict(order_dict)

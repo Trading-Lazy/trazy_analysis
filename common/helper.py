@@ -340,5 +340,6 @@ def map_ticker_to_kucoin_symbol(ticker: str) -> str:
         return ticker
     return TICKER_TO_KUCOIN_SYMBOL[ticker]
 
+
 def datetime_to_epoch(timestamp: datetime, unit_multiplicator: int) -> int:
     return int(timestamp.timestamp()) * unit_multiplicator
