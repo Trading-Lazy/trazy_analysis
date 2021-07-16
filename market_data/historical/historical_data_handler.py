@@ -225,6 +225,4 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
             _,
             _,
         ) = cls.request_ticker_data_in_range(ticker, start, end)
-        candles = candle_dataframe.to_candles()
-        for candle in candles:
-            db_storage.add_candle(candle)
+        db_storage.add_candle_dataframe(candle_dataframe)

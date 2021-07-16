@@ -236,7 +236,6 @@ class BinanceBroker(Broker):
             < BinanceBroker.UPDATE_TRANSACTIONS_PERIOD
         ):
             return
-        # get confirmed orders that are opened
         epoch_ms = int(self.transactions_last_update.timestamp()) * 1000
         for currency_pair in self.currency_pairs_traded:
             try:

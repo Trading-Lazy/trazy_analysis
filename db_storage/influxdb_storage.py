@@ -314,7 +314,12 @@ class InfluxDbStorage(DbStorage):
         candle_dataframe["symbol"] = candle_dataframe.asset.symbol
         candle_dataframe["exchange"] = candle_dataframe.asset.exchange
         self.df_client.write_points(
-            candle_dataframe, CANDLES_COLLECTION_NAME, protocol="line"
+            candle_dataframe,
+            CANDLES_COLLECTION_NAME,
+            tag_columns=["symbol", "exchange"],
+            field_columns=["open", "high", "low", "close", "volume"],
+            database=DATABASE_NAME,
+            protocol="line",
         )
 
     def count(self, table_name: str) -> int:
@@ -333,5 +338,5 @@ class InfluxDbStorage(DbStorage):
         count_key = count_keys[0]
         return int(point[count_key])
 
-    def close(self, table) -> None: # pragma: no cover
+    def close(self, table) -> None:  # pragma: no cover
         self.client.close()

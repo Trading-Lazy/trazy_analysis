@@ -1,12 +1,10 @@
-import time
+from datetime import datetime, timedelta
 from datetime import datetime, timedelta
 from typing import List
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 import pandas as pd
 import pytest
-from bson import ObjectId
-from pymongo.results import InsertOneResult
 
 from common.clock import SimulatedClock
 from common.constants import DATE_FORMAT

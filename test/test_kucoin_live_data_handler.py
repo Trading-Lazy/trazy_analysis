@@ -122,13 +122,13 @@ def test_parse_ticker_latest_data_points():
     ).all()
 
 
-@freeze_time("2018-04-14 00:00:00+00:00")
+@freeze_time("2021-04-14 00:00:00+00:00")
 def test_generate_ticker_latest_data_points_url():
     expected_url = (
         "https://api.kucoin.com/api/v1/market/candles?"
         "symbol=BTC-USDT&"
         "type=1min&"
-        "startAt=1523662200&"
-        "endAt=1523664000"
+        "startAt=1618356600&"
+        "endAt=1618358400"
     )
     assert expected_url == KucoinLiveDataHandler.generate_ticker_latest_data_url(ASSET)

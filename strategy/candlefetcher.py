@@ -6,7 +6,6 @@ import pandas as pd
 from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
-from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
 from common.constants import DATE_DIR_FORMAT
 from common.helper import resample_candle_data
 from common.types import CandleDataFrame
@@ -22,7 +21,7 @@ class CandleFetcher:
         self,
         db_storage: DbStorage,
         file_storage: FileStorage,
-        market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
+        market_cal: MarketCalendar = None,
     ):
         self.db_storage = db_storage
         self.file_storage = file_storage
@@ -120,9 +119,13 @@ class CandleFetcher:
         if not df.empty:
             df_start = df.iloc[0].name
             df_end = df.iloc[-1].name
-            market_cal_df = self.market_cal.schedule(
-                start_date=df_start.strftime("%Y-%m-%d"),
-                end_date=df_end.strftime("%Y-%m-%d"),
-            )
+
+            if self.market_cal is not None:
+                market_cal_df = self.market_cal.schedule(
+                    start_date=df_start.strftime("%Y-%m-%d"),
+                    end_date=df_end.strftime("%Y-%m-%d"),
+                )
+            else:
+                market_cal_df = None
             df = resample_candle_data(df, time_unit, market_cal_df)
         return df
