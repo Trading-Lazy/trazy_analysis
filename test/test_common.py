@@ -1,20 +1,21 @@
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 
 import numpy as np
 import pytest
+import pytz
 
-from broker.common import get_rejected_order_error_message
-from common.clock import LiveClock
-from common.helper import get_or_create_nested_dict
-from common.meta import RateLimitedSingletonMeta
-from file_storage.common import concat_path
-from indicators.common import get_state
-from indicators.crossover import CrossoverState
-from market_data.common import get_periods
-from models.asset import Asset
-from models.enums import Action, Direction, OrderType
-from models.order import Order
+from trazy_analysis.broker.common import get_rejected_order_error_message
+from trazy_analysis.common.clock import LiveClock
+from trazy_analysis.common.helper import get_or_create_nested_dict
+from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.file_storage.common import concat_path
+from trazy_analysis.indicators.common import get_state
+from trazy_analysis.indicators.crossover import CrossoverState
+from trazy_analysis.market_data.common import get_periods
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
 
 
 def test_concat_path_base_and_complement_empty():
@@ -109,6 +110,25 @@ def test_get_periods():
     assert (periods == expected_periods).all()
 
 
+def test_get_periods_days_with_seconds():
+    start = datetime.strptime("2020-06-11 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    end = datetime.strptime("2020-06-26 16:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
+    download_frame = timedelta(days=3, seconds=18000)
+    periods = get_periods(download_frame, start, end)
+
+    expected_periods = np.array(
+        [
+            (date(2020, 6, 11), date(2020, 6, 13)),
+            (date(2020, 6, 14), date(2020, 6, 16)),
+            (date(2020, 6, 17), date(2020, 6, 19)),
+            (date(2020, 6, 20), date(2020, 6, 22)),
+            (date(2020, 6, 23), date(2020, 6, 25)),
+            (date(2020, 6, 26), date(2020, 6, 26)),
+        ]
+    )
+    assert (periods == expected_periods).all()
+
+
 def test_get_intraday_periods():
     start = datetime.strptime("2020-06-11 23:45:00+0000", "%Y-%m-%d %H:%M:%S%z")
     end = datetime.strptime("2020-06-12 00:14:59+0000", "%Y-%m-%d %H:%M:%S%z")
@@ -118,28 +138,28 @@ def test_get_intraday_periods():
     expected_periods = np.array(
         [
             [
-                datetime(2020, 6, 11, 23, 45, tzinfo=timezone.utc),
-                datetime(2020, 6, 11, 23, 49, 59, tzinfo=timezone.utc),
+                datetime(2020, 6, 11, 23, 45, tzinfo=pytz.UTC),
+                datetime(2020, 6, 11, 23, 49, 59, tzinfo=pytz.UTC),
             ],
             [
-                datetime(2020, 6, 11, 23, 50, tzinfo=timezone.utc),
-                datetime(2020, 6, 11, 23, 54, 59, tzinfo=timezone.utc),
+                datetime(2020, 6, 11, 23, 50, tzinfo=pytz.UTC),
+                datetime(2020, 6, 11, 23, 54, 59, tzinfo=pytz.UTC),
             ],
             [
-                datetime(2020, 6, 11, 23, 55, tzinfo=timezone.utc),
-                datetime(2020, 6, 11, 23, 59, 59, tzinfo=timezone.utc),
+                datetime(2020, 6, 11, 23, 55, tzinfo=pytz.UTC),
+                datetime(2020, 6, 11, 23, 59, 59, tzinfo=pytz.UTC),
             ],
             [
-                datetime(2020, 6, 12, 0, 0, tzinfo=timezone.utc),
-                datetime(2020, 6, 12, 0, 4, 59, tzinfo=timezone.utc),
+                datetime(2020, 6, 12, 0, 0, tzinfo=pytz.UTC),
+                datetime(2020, 6, 12, 0, 4, 59, tzinfo=pytz.UTC),
             ],
             [
-                datetime(2020, 6, 12, 0, 5, tzinfo=timezone.utc),
-                datetime(2020, 6, 12, 0, 9, 59, tzinfo=timezone.utc),
+                datetime(2020, 6, 12, 0, 5, tzinfo=pytz.UTC),
+                datetime(2020, 6, 12, 0, 9, 59, tzinfo=pytz.UTC),
             ],
             [
-                datetime(2020, 6, 12, 0, 10, tzinfo=timezone.utc),
-                datetime(2020, 6, 12, 0, 14, 59, tzinfo=timezone.utc),
+                datetime(2020, 6, 12, 0, 10, tzinfo=pytz.UTC),
+                datetime(2020, 6, 12, 0, 14, 59, tzinfo=pytz.UTC),
             ],
         ],
     )
@@ -185,8 +205,8 @@ def test_get_intraday_periods_single_datetime():
     expected_periods = np.array(
         [
             [
-                datetime(2020, 6, 26, 16, 0, tzinfo=timezone.utc),
-                datetime(2020, 6, 26, 16, 0, tzinfo=timezone.utc),
+                datetime(2020, 6, 26, 16, 0, tzinfo=pytz.UTC),
+                datetime(2020, 6, 26, 16, 0, tzinfo=pytz.UTC),
             ]
         ]
     )

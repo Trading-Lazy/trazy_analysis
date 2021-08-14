@@ -8,26 +8,27 @@ from typing import Dict, List
 import pandas as pd
 from kucoin.client import Market, Trade, User
 
-import settings
-from settings import KUCOIN_API_KEY, KUCOIN_API_SECRET
-from broker.broker import Broker
-from broker.common import get_rejected_order_error_message
-from broker.kucoin_fee_model import KucoinFeeModel
-from common.clock import Clock
-from common.constants import CONNECTION_ERROR_MESSAGE
-from common.helper import datetime_to_epoch, get_or_create_nested_dict
-from logger import logger
-from market_data.common import datetime_from_epoch
-from models.asset import Asset
-from models.candle import Candle
-from models.enums import Action, Direction, OrderType
-from models.order import Order
-from portfolio.portfolio_event import PortfolioEvent
-from position.position import Position
-from position.transaction import Transaction
+import trazy_analysis.settings
+from trazy_analysis.broker.broker import Broker
+from trazy_analysis.broker.ccxt_parser import KucoinParser
+from trazy_analysis.broker.common import get_rejected_order_error_message
+from trazy_analysis.broker.kucoin_fee_model import KucoinFeeModel
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE
+from trazy_analysis.common.helper import datetime_to_epoch, get_or_create_nested_dict
+from trazy_analysis.logger import logger
+from trazy_analysis.market_data.common import datetime_from_epoch
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.position.position import Position
+from trazy_analysis.position.transaction import Transaction
+from trazy_analysis.settings import KUCOIN_API_KEY, KUCOIN_API_SECRET
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -50,6 +51,7 @@ class KucoinBroker(Broker):
         supported_currencies: List[str] = ["EUR", "USDT"],
     ):
         fee_model = KucoinFeeModel()
+        parser = KucoinParser
         exchange = "KUCOIN"
         super().__init__(
             clock=clock,
@@ -57,6 +59,7 @@ class KucoinBroker(Broker):
             base_currency=base_currency,
             supported_currencies=supported_currencies,
             fee_model=fee_model,
+            parser=parser,
             execute_at_end_of_day=False,
             exchange=exchange,
         )
@@ -72,7 +75,6 @@ class KucoinBroker(Broker):
         self.price_last_update = None
         self.currency_pairs_traded = set()
         self.lot_size = {}
-        self.symbol_to_kucoin_symbol = {}
         self.lot_size_last_update = None
         self.update_lot_size_info()
         self.update_price()
@@ -100,12 +102,9 @@ class KucoinBroker(Broker):
             return
 
         for symbol_info in symbols_info:
-            kucoin_symbol = symbol_info["symbol"]
-            symbol = kucoin_symbol.replace("-", "")
+            symbol, symbol_lot_size = self.parser.parse_lot_size_info(symbol_info)
             asset = Asset(symbol=symbol, exchange=self.exchange)
-            symbol_lot_size = float(symbol_info["baseMinSize"])
             self.lot_size[asset] = symbol_lot_size
-            self.symbol_to_kucoin_symbol[symbol] = kucoin_symbol
         self.lot_size_last_update = self.clock.current_time()
 
     def update_price(self, candle: Candle = None) -> None:
@@ -126,9 +125,8 @@ class KucoinBroker(Broker):
             )
             return
         for price_dict in prices_dict:
-            symbol = price_dict["symbol"].replace("-", "")
+            symbol, price = self.parser.parse_price_info(price_dict)
             asset = Asset(symbol=symbol, exchange=self.exchange)
-            price = float(price_dict["last"])
             self.last_prices[asset] = price
             self.portfolio.update_market_value_of_symbol(asset, price, now)
         self.price_last_update = self.clock.current_time()
@@ -143,11 +141,7 @@ class KucoinBroker(Broker):
                 traceback.format_exc(),
             )
             return {}
-        trade_accounts = [account for account in accounts if account["type"] == "trade"]
-        balances = {
-            account["currency"]: float(account["available"])
-            for account in trade_accounts
-        }
+        balances = self.parser.parse_balances_info(accounts)
 
         # cash balances
         for currency in self.supported_currencies:
@@ -175,10 +169,10 @@ class KucoinBroker(Broker):
                 sell_size = size
 
             currency_pair = Asset(
-                symbol=symbol + self.base_currency, exchange=self.exchange
+                symbol=symbol + "/" + self.base_currency, exchange=self.exchange
             )
             currency_pair_reversed = Asset(
-                symbol=self.base_currency + symbol, exchange=self.exchange
+                symbol=self.base_currency + "/" + symbol, exchange=self.exchange
             )
             if currency_pair not in self.lot_size:
                 continue
@@ -257,19 +251,21 @@ class KucoinBroker(Broker):
             return
         trades = trades_dict["items"]
         for trade in trades:
-            trade_epoch_ms = int(trade["createdAt"])
+            (
+                trade_epoch_ms,
+                symbol,
+                size,
+                action,
+                price,
+                order_id,
+                commission,
+                transaction_id,
+            ) = self.parser.parse_trade_info(trade)
             if trade_epoch_ms < epoch_ms:
                 continue
             timestamp = datetime_from_epoch(trade_epoch_ms)
-            symbol = trade["symbol"].replace("-", "")
             asset = Asset(symbol=symbol, exchange=self.exchange)
-            size = float(trade["size"])
-            action = Action.BUY if trade["side"] == "buy" else Action.SELL
             direction = Direction.LONG if size > 0.0 else Direction.SHORT
-            price = float(trade["price"])
-            order_id = str(trade["orderId"])
-            commission = float(trade["fee"])
-            transaction_id = trade["tradeId"]
             transaction = Transaction(
                 asset=asset,
                 size=size,
@@ -366,12 +362,13 @@ class KucoinBroker(Broker):
                     order.size = available_size
             truncated_size = self.truncate_order_size(order)
             LOG.info("truncated order size: %s", truncated_size)
-            symbol = self.symbol_to_kucoin_symbol[order.asset.symbol]
+            symbol = order.asset.symbol.replace("/", "-")
             side = order.action.BUY.name.lower()
             order_response = self.trade_client.create_market_order(
                 symbol=symbol, side=side, size=float(truncated_size)
             )
-            order.order_id = str(order_response["orderId"])
+            order_id, order_status = self.parser.parse_order_info(order_response)
+            order.order_id = order_id
             self.open_orders_ids.add(order.order_id)
             self.currency_pairs_traded.add(order.asset)
             order.complete()
@@ -392,7 +389,7 @@ class KucoinBroker(Broker):
                 ][limit_order.direction].net_size
                 limit_order.size = min(limit_order.size, available_size)
             truncated_size = self.truncate_order_size(limit_order)
-            symbol = self.symbol_to_kucoin_symbol[limit_order.asset.symbol]
+            symbol = limit_order.asset.symbol.replace("/", "-")
             side = limit_order.action.BUY.name.lower()
             order_response = self.trade_client.create_limit_order(
                 symbol=symbol,

@@ -2,9 +2,9 @@ from datetime import datetime
 
 import pytest
 
-from models.enums import Action, Direction
-from position.position_handler import PositionHandler
-from position.transaction import Transaction
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.position.position_handler import PositionHandler
+from trazy_analysis.position.transaction import Transaction
 
 
 def test_transact_position_new_position():

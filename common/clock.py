@@ -1,10 +1,13 @@
 import abc
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
+import pytz
 from pandas_market_calendars import MarketCalendar
 
-from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
-from common.utils import timestamp_to_utc
+from trazy_analysis.common.american_stock_exchange_calendar import (
+    AmericanStockExchangeCalendar,
+)
+from trazy_analysis.common.utils import timestamp_to_utc
 
 
 class Clock:
@@ -14,7 +17,7 @@ class Clock:
         self.market_cal = market_cal
 
     @abc.abstractmethod
-    def current_time(self, tz=timezone.utc) -> datetime:  # pragma: no cover
+    def current_time(self, tz=pytz.UTC) -> datetime:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -51,7 +54,7 @@ class Clock:
 
 
 class LiveClock(Clock):
-    def current_time(self, tz=timezone.utc) -> datetime:
+    def current_time(self, tz=pytz.UTC) -> datetime:
         return datetime.now(tz=tz)
 
     def update_time(self, timestamp: datetime) -> None:  # pragma: no cover
@@ -78,9 +81,9 @@ class SimulatedClock(Clock):
     def update_bars(self) -> None:
         self.bars += 1
 
-    def current_time(self, tz=timezone.utc) -> datetime:
+    def current_time(self, tz=pytz.UTC) -> datetime:
         if self.timestamp is None:
-            self.timestamp = datetime.now(timezone.utc)
+            self.timestamp = datetime.now(pytz.UTC)
         return self.timestamp
 
     def current_bars(self) -> int:

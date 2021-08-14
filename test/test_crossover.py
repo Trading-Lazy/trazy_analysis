@@ -1,7 +1,7 @@
 import pytest
 
-from indicators.crossover import Crossover, CrossoverState
-from indicators.indicator import Indicator
+from trazy_analysis.indicators.crossover import Crossover, CrossoverState
+from trazy_analysis.indicators.indicator import Indicator
 
 
 @pytest.fixture

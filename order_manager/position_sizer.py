@@ -1,6 +1,10 @@
-from broker.broker_manager import BrokerManager
-from models.multiple_order import ArbitragePairOrder, BracketOrder, CoverOrder
-from models.order import Order
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.models.multiple_order import (
+    ArbitragePairOrder,
+    BracketOrder,
+    CoverOrder,
+)
+from trazy_analysis.models.order import Order
 
 
 class PositionSizer:

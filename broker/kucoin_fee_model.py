@@ -1,4 +1,4 @@
-from broker.percent_fee_model import PercentFeeModel
+from trazy_analysis.broker.percent_fee_model import PercentFeeModel
 
 
 class KucoinFeeModel(PercentFeeModel):

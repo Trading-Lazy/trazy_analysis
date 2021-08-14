@@ -1,9 +1,9 @@
 from datetime import date
 
-from market_data.historical.tiingo_historical_data_handler import (
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
-from models.asset import Asset
+from trazy_analysis.models.asset import Asset
 
 
 def test_generate_ticker_data_url():

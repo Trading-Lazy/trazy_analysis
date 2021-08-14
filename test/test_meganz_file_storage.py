@@ -1,11 +1,14 @@
+from pathlib import Path
 from unittest.mock import call, patch
 
 import numpy as np
 import pytest
-from pathlib import Path
 
-from file_storage.common import PATH_SEPARATOR
-from file_storage.meganz_file_storage import MegaExtended, MegaNzFileStorage
+from trazy_analysis.file_storage.common import PATH_SEPARATOR
+from trazy_analysis.file_storage.meganz_file_storage import (
+    MegaExtended,
+    MegaNzFileStorage,
+)
 
 MEGA_NZ_STORAGE = MegaNzFileStorage()
 FILE_CONTENT = "YOLO"
@@ -47,7 +50,7 @@ def test_get_id_from_file(mega_extended_fixture):
     assert FILE_ID == MEGA_NZ_STORAGE.get_id_from_file(file)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
 def test_exists_true(find_mocked, mega_extended_fixture):
     find_response = {
         "h": DIR1_ID,
@@ -65,7 +68,7 @@ def test_exists_true(find_mocked, mega_extended_fixture):
     find_mocked.assert_has_calls(find_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
 def test_exists_false(find_mocked, mega_extended_fixture):
     find_mocked.return_value = None
     assert not MEGA_NZ_STORAGE.exists(FILE_NAME)
@@ -73,7 +76,7 @@ def test_exists_false(find_mocked, mega_extended_fixture):
     find_mocked.assert_has_calls(find_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
 def test_ls_not_existing_dir(find_mocked, mega_extended_fixture):
     find_mocked.return_value = None
     expected_list = np.array([], dtype="U256")
@@ -82,8 +85,8 @@ def test_ls_not_existing_dir(find_mocked, mega_extended_fixture):
     find_mocked.assert_has_calls(find_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.get_files_in_node")
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.get_files_in_node")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
 def test_ls_existing_dir(find_mocked, get_files_in_node_mocked, mega_extended_fixture):
     find_mocked.return_value = {
         "h": DIR1_ID,
@@ -160,7 +163,7 @@ def test_ls_existing_dir(find_mocked, get_files_in_node_mocked, mega_extended_fi
     get_files_in_node_mocked.assert_has_calls(get_files_in_node_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
 def test_mkdir_folder_already_exists(find_mocked, mega_extended_fixture):
     find_response = {
         "h": DIR1_ID,
@@ -178,9 +181,9 @@ def test_mkdir_folder_already_exists(find_mocked, mega_extended_fixture):
     find_mocked.assert_has_calls(find_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.exists")
-@patch("file_storage.meganz_file_storage.MegaExtended.create_folder")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.exists")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.create_folder")
 def test_mkdir_non_existing_folder(
     create_folder_mocked, exists_mocked, find_mocked, mega_extended_fixture
 ):
@@ -207,10 +210,10 @@ def test_mkdir_non_existing_folder(
     create_folder_mocked.assert_has_calls(create_folder_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.upload")
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
-@patch("file_storage.meganz_file_storage.MegaExtended.destroy")
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.exists")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.upload")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.destroy")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.exists")
 def test_write_file_already_exists(
     exists_mocked, destroy_mocked, find_mocked, upload_mocked, mega_extended_fixture
 ):
@@ -265,9 +268,9 @@ def test_write_file_already_exists(
     upload_mocked.assert_has_calls(upload_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.upload")
-@patch("file_storage.meganz_file_storage.MegaExtended.find")
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.exists")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.upload")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.find")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.exists")
 def test_write_non_existing_file(
     exists_mocked, find_mocked, upload_mocked, mega_extended_fixture
 ):
@@ -295,7 +298,7 @@ def test_write_non_existing_file(
     upload_mocked.assert_has_calls(upload_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaExtended.get_file_content")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaExtended.get_file_content")
 def test_get_file_content(get_file_content_mocked):
     get_file_content_mocked.return_value = FILE_CONTENT
     assert MEGA_NZ_STORAGE.get_file_content(FILE_NAME) == FILE_CONTENT

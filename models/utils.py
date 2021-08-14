@@ -1,4 +1,4 @@
-from models.enums import Action, Direction
+from trazy_analysis.models.enums import Action, Direction
 
 
 def is_closed_position(action: Action, direction: Direction):

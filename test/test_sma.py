@@ -3,11 +3,11 @@ from datetime import timedelta
 import pandas as pd
 import pytest
 
-from indicators.common import PriceType
-from indicators.indicator import Indicator
-from indicators.indicators_manager import IndicatorsManager
-from indicators.rolling_window import RollingWindow
-from indicators.sma import Sma, SmaManager
+from trazy_analysis.indicators.common import PriceType
+from trazy_analysis.indicators.indicator import Indicator
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.indicators.rolling_window import RollingWindow
+from trazy_analysis.indicators.sma import Sma, SmaManager
 
 SYMBOL1 = "IVV"
 SYMBOL2 = "AAPL"

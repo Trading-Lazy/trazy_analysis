@@ -1,8 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
-from common.utils import generate_object_id
-from models.asset import Asset
-from models.enums import Action, Direction
+import pytz
+
+from trazy_analysis.common.utils import generate_object_id
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
 
 
 class Transaction:
@@ -34,7 +36,7 @@ class Transaction:
         price: float,
         order_id: str,
         commission=0.0,
-        timestamp: datetime = datetime.now(timezone.utc),
+        timestamp: datetime = datetime.now(pytz.UTC),
         transaction_id: str = None,
     ):
         self.asset = asset

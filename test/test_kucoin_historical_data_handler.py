@@ -1,13 +1,13 @@
 from datetime import date
 
-from market_data.historical.kucoin_historical_data_handler import (
+from trazy_analysis.market_data.historical.kucoin_historical_data_handler import (
     KucoinHistoricalDataHandler,
 )
-from models.asset import Asset
+from trazy_analysis.models.asset import Asset
 
 
 def test_generate_ticker_data_url():
-    ticker = Asset(symbol="XRPUSDT", exchange="BINANCE")
+    ticker = Asset(symbol="XRP/USDT", exchange="BINANCE")
     period = (
         date(2018, 4, 13),
         date(2018, 4, 13),

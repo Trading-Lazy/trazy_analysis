@@ -4,17 +4,17 @@ from typing import List
 
 from rx import interval
 
-import logger
-import settings
-from candles_queue.candles_queue import CandlesQueue
-from db_storage.db_storage import DbStorage
-from indicators.indicators_manager import IndicatorsManager
-from models.candle import Candle
-from order_manager.order_manager import OrderManager
-from strategy.strategy import Strategy
+import trazy_analysis.logger
+import trazy_analysis.settings
+from trazy_analysis.candles_queue.candles_queue import CandlesQueue
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.strategy.strategy import Strategy
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

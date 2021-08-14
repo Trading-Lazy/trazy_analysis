@@ -10,7 +10,7 @@ class PriceType(Enum):
 
 
 def get_state(data: float) -> "CrossoverState":
-    from indicators.crossover import CrossoverState
+    from trazy_analysis.indicators.crossover import CrossoverState
 
     if data is None or data == 0:
         return CrossoverState.IDLE

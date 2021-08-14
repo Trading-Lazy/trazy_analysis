@@ -1,14 +1,17 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 
 import numpy as np
+import pytz
 from freezegun import freeze_time
 
-from market_data.live.kucoin_live_data_handler import KucoinLiveDataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.market_data.live.kucoin_live_data_handler import (
+    KucoinLiveDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
-SYMBOL = "BTCUSDT"
+SYMBOL = "BTC/USDT"
 EXCHANGE = "IEX"
 ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 TOKEN = "abcde"
@@ -76,7 +79,7 @@ def test_parse_ticker_latest_data_points():
                 low=9730.5,
                 close=9731.7,
                 volume=4000.27909583,
-                timestamp=datetime(2020, 5, 19, 23, 9, 0, tzinfo=timezone.utc),
+                timestamp=datetime(2020, 5, 19, 23, 9, 0, tzinfo=pytz.UTC),
             ),
             Candle(
                 asset=ASSET,
@@ -85,7 +88,7 @@ def test_parse_ticker_latest_data_points():
                 low=9731.1,
                 close=9734.0,
                 volume=12815.907322113,
-                timestamp=datetime(2020, 5, 19, 23, 10, 0, tzinfo=timezone.utc),
+                timestamp=datetime(2020, 5, 19, 23, 10, 0, tzinfo=pytz.UTC),
             ),
             Candle(
                 asset=ASSET,
@@ -94,7 +97,7 @@ def test_parse_ticker_latest_data_points():
                 low=9729.7,
                 close=9729.7,
                 volume=12135.843512373,
-                timestamp=datetime(2020, 5, 19, 23, 11, 0, tzinfo=timezone.utc),
+                timestamp=datetime(2020, 5, 19, 23, 11, 0, tzinfo=pytz.UTC),
             ),
             Candle(
                 asset=ASSET,
@@ -103,7 +106,7 @@ def test_parse_ticker_latest_data_points():
                 low=9723.4,
                 close=9724.1,
                 volume=7734.768300982,
-                timestamp=datetime(2020, 5, 19, 23, 12, 0, tzinfo=timezone.utc),
+                timestamp=datetime(2020, 5, 19, 23, 12, 0, tzinfo=pytz.UTC),
             ),
             Candle(
                 asset=ASSET,
@@ -112,7 +115,7 @@ def test_parse_ticker_latest_data_points():
                 low=9724.0,
                 close=9724.9,
                 volume=1530.276009862,
-                timestamp=datetime(2020, 5, 19, 23, 13, 0, tzinfo=timezone.utc),
+                timestamp=datetime(2020, 5, 19, 23, 13, 0, tzinfo=pytz.UTC),
             ),
         ],
         dtype=Candle,

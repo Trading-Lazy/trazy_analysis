@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
 
 PE1 = PortfolioEvent(
     timestamp=datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z"),

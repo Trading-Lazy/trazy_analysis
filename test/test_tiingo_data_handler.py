@@ -1,6 +1,6 @@
 import pandas as pd
 
-from market_data.historical.tiingo_historical_data_handler import (
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
 

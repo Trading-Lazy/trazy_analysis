@@ -8,25 +8,26 @@ from typing import Dict, List
 import pandas as pd
 from binance.client import Client
 
-import settings
-from broker.binance_fee_model import BinanceFeeModel
-from broker.broker import Broker
-from broker.common import get_rejected_order_error_message
-from common.clock import Clock
-from common.constants import CONNECTION_ERROR_MESSAGE
-from common.helper import get_or_create_nested_dict
-from logger import logger
-from market_data.common import datetime_from_epoch
-from models.asset import Asset
-from models.candle import Candle
-from models.enums import Action, Direction, OrderType
-from models.order import Order
-from portfolio.portfolio_event import PortfolioEvent
-from position.position import Position
-from position.transaction import Transaction
+import trazy_analysis.settings
+from trazy_analysis.broker.binance_fee_model import BinanceFeeModel
+from trazy_analysis.broker.broker import Broker
+from trazy_analysis.broker.ccxt_parser import BinanceParser
+from trazy_analysis.broker.common import get_rejected_order_error_message
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE
+from trazy_analysis.common.helper import get_or_create_nested_dict
+from trazy_analysis.logger import logger
+from trazy_analysis.market_data.common import datetime_from_epoch
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.position.position import Position
+from trazy_analysis.position.transaction import Transaction
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -49,6 +50,7 @@ class BinanceBroker(Broker):
         supported_currencies: List[str] = ["EUR", "USDT"],
     ):
         fee_model = BinanceFeeModel()
+        parser = BinanceParser
         exchange = "BINANCE"
         super().__init__(
             clock=clock,
@@ -56,12 +58,13 @@ class BinanceBroker(Broker):
             base_currency=base_currency,
             supported_currencies=supported_currencies,
             fee_model=fee_model,
+            parser=parser,
             execute_at_end_of_day=False,
             exchange=exchange,
         )
         self.client = Client(
-            settings.BINANCE_API_KEY,
-            settings.BINANCE_API_SECRET,
+            trazy_analysis.settings.BINANCE_API_KEY,
+            trazy_analysis.settings.BINANCE_API_SECRET,
         )
         self.price_last_update = None
         self.currency_pairs_traded = set()
@@ -93,15 +96,9 @@ class BinanceBroker(Broker):
             return
         symbols_info = exchange_info["symbols"]
         for symbol_info in symbols_info:
-            symbol = symbol_info["symbol"]
+            symbol, lot_size = self.parser.parse_lot_size_info(symbol_info)
             asset = Asset(symbol=symbol, exchange=self.exchange)
-            symbol_filters = symbol_info["filters"]
-            for symbol_filter in symbol_filters:
-                if symbol_filter["filterType"] != "LOT_SIZE":
-                    continue
-                symbol_lot_size = float(symbol_filter["minQty"])
-                self.lot_size[asset] = symbol_lot_size
-                break
+            self.lot_size[asset] = lot_size
         self.lot_size_last_update = self.clock.current_time()
 
     def update_price(self, candle: Candle = None) -> None:
@@ -121,8 +118,7 @@ class BinanceBroker(Broker):
             )
             return
         for price_dict in prices_dict:
-            symbol = price_dict["symbol"]
-            price = float(price_dict["price"])
+            symbol, price = self.parser.parse_price_info(price_dict)
             asset = Asset(symbol=symbol, exchange=self.exchange)
             self.last_prices[asset] = price
             self.portfolio.update_market_value_of_symbol(asset, price, now)
@@ -138,12 +134,7 @@ class BinanceBroker(Broker):
                 traceback.format_exc(),
             )
             return {}
-        balances = account_info["balances"]
-        open_balances = {
-            balance["asset"]: float(balance["free"])
-            for balance in balances
-            if float(balance["free"]) != 0.0
-        }
+        open_balances = self.parser.parse_balances_info(account_info)
 
         # cash balances
         for currency in self.supported_currencies:
@@ -171,10 +162,10 @@ class BinanceBroker(Broker):
                 sell_size = size
 
             currency_pair = Asset(
-                symbol=symbol + self.base_currency, exchange=self.exchange
+                symbol=symbol + "/" + self.base_currency, exchange=self.exchange
             )
             currency_pair_reversed = Asset(
-                symbol=self.base_currency + symbol, exchange=self.exchange
+                symbol=self.base_currency + "/" + symbol, exchange=self.exchange
             )
             if currency_pair not in self.lot_size:
                 continue
@@ -251,19 +242,21 @@ class BinanceBroker(Broker):
                 )
                 return
             for trade in symbol_trades:
-                trade_epoch_ms = int(trade["time"])
+                (
+                    trade_epoch_ms,
+                    symbol,
+                    size,
+                    action,
+                    price,
+                    order_id,
+                    commission,
+                    transaction_id,
+                ) = self.parser.parse_trade_info(trade)
                 if trade_epoch_ms < epoch_ms:
                     continue
                 timestamp = datetime_from_epoch(trade_epoch_ms)
-                symbol = trade["symbol"]
                 asset = Asset(symbol=symbol, exchange=self.exchange)
-                size = float(trade["qty"])
-                action = Action.BUY if trade["isBuyer"] else Action.SELL
                 direction = Direction.LONG if size > 0.0 else Direction.SHORT
-                price = float(trade["price"])
-                order_id = str(trade["orderId"])
-                commission = float(trade["commission"])
-                transaction_id = trade["id"]
                 transaction = Transaction(
                     asset=asset,
                     size=size,
@@ -327,8 +320,8 @@ class BinanceBroker(Broker):
         price = self.current_price(asset)
         return self.fee_model.calc_max_size_for_cash(cash=cash, price=price)
 
-    def position_size(self, symbol: str, direction: Direction) -> int:
-        return super().position_size(symbol, direction)
+    def position_size(self, asset: Asset, direction: Direction) -> int:
+        return super().position_size(asset, direction)
 
     def get_market_action_func(self, action: Action):
         if action == Action.BUY:

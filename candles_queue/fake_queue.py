@@ -2,13 +2,13 @@ import os
 import traceback
 from typing import Callable
 
-import settings
-from candles_queue.candles_queue import CandlesQueue
-from logger import logger
-from models.candle import Candle
+import trazy_analysis.settings
+from trazy_analysis.candles_queue.candles_queue import CandlesQueue
+from trazy_analysis.logger import logger
+from trazy_analysis.models.candle import Candle
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

@@ -3,10 +3,10 @@ from typing import List
 
 import pytest
 
-from db_storage.db_storage import DbStorage
-from models.candle import Candle
-from models.order import Order
-from models.signal import Signal
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import Signal
 
 
 def clean_candles_in_db(db_storage: DbStorage):

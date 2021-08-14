@@ -8,9 +8,9 @@ from freezegun import freeze_time
 from pytz import timezone
 from requests import Response, Session
 
-from common.constants import DATE_FORMAT
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
-from common.helper import (
+from trazy_analysis.common.constants import DATE_FORMAT
+from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from trazy_analysis.common.helper import (
     TimeInterval,
     calc_required_history_start_timestamp,
     ceil_time,
@@ -22,8 +22,8 @@ from common.helper import (
     resample_candle_data,
     round_time,
 )
-from common.types import CandleDataFrame
-from test.tools.tools import not_raises
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.test.tools.tools import not_raises
 
 SYMBOL = "IVV"
 MARKET_CAL = EuronextExchangeCalendar()

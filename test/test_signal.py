@@ -1,11 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pandas as pd
+import pytz
 
-from common.clock import SimulatedClock
-from models.asset import Asset
-from models.enums import Action, Direction
-from models.signal import Signal
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.signal import Signal
 
 clock = SimulatedClock()
 IVV_ASSET = Asset(symbol="IVV", exchange="IEX")
@@ -74,7 +75,7 @@ def test_no_clock_no_generation_time():
         ),
         parameters={},
     )
-    assert datetime.now(timezone.utc) - signal.generation_time < pd.offsets.Second(1)
+    assert datetime.now(pytz.UTC) - signal.generation_time < pd.offsets.Second(1)
 
 
 def test_eq():

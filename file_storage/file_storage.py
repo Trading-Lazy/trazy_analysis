@@ -2,7 +2,12 @@ import abc
 
 import numpy as np
 
-from file_storage.common import DONE_DIR, ERROR_DIR, NONE_DIR, concat_path
+from trazy_analysis.file_storage.common import (
+    DONE_DIR,
+    ERROR_DIR,
+    NONE_DIR,
+    concat_path,
+)
 
 
 class FileStorage:

@@ -6,21 +6,21 @@ import pytest
 from freezegun import freeze_time
 from pytz import timezone
 
-from broker.kucoin_broker import KucoinBroker
-from common.clock import LiveClock
-from models.asset import Asset
-from models.enums import Action, Direction, OrderType
-from models.order import Order
-from portfolio.portfolio_event import PortfolioEvent
-from position.position import Position
+from trazy_analysis.broker.kucoin_broker import KucoinBroker
+from trazy_analysis.common.clock import LiveClock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.position.position import Position
 
 INITIAL_CASH = "32.429"
 
 EXCHANGE = "KUCOIN"
 
-SYMBOL1 = "ETHUSDT"
-SYMBOL2 = "XRPUSDT"
-SYMBOL3 = "SXPUSDT"
+SYMBOL1 = "ETH/USDT"
+SYMBOL2 = "XRP/USDT"
+SYMBOL3 = "SXP/USDT"
 
 ASSET1 = Asset(symbol=SYMBOL1, exchange=EXCHANGE)
 ASSET2 = Asset(symbol=SYMBOL2, exchange=EXCHANGE)
@@ -322,9 +322,9 @@ CREATE_MARKET_ORDER_BUY_RESPONSE = {"orderId": "60ee040c651416000684b835"}
 CREATE_MARKET_ORDER_SELL_RESPONSE = {"orderId": "60ee040c651416000684b843"}
 
 
-@patch("broker.kucoin_broker.KucoinBroker.update_transactions")
-@patch("broker.kucoin_broker.KucoinBroker.update_balances_and_positions")
-@patch("broker.kucoin_broker.KucoinBroker.update_price")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_transactions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_balances_and_positions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_price")
 @patch("kucoin.client.Market.get_symbol_list")
 @patch("kucoin.client.User.__init__")
 @patch("kucoin.client.Trade.__init__")
@@ -346,18 +346,11 @@ def test_lot_size_info(
     events = deque()
     kucoin_broker = KucoinBroker(clock=clock, events=events)
     assert kucoin_broker.lot_size == {
-        Asset(symbol="BTCUSDT", exchange=EXCHANGE): 0.00001,
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE): 0.0001,
-        Asset(symbol="LINKUSDT", exchange=EXCHANGE): 0.001,
-        Asset(symbol="SXPUSDT", exchange=EXCHANGE): 0.01,
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE): 0.1,
-    }
-    assert kucoin_broker.symbol_to_kucoin_symbol == {
-        "BTCUSDT": "BTC-USDT",
-        "ETHUSDT": "ETH-USDT",
-        "LINKUSDT": "LINK-USDT",
-        "SXPUSDT": "SXP-USDT",
-        "XRPUSDT": "XRP-USDT",
+        Asset(symbol="BTC/USDT", exchange=EXCHANGE): 0.00001,
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE): 0.0001,
+        Asset(symbol="LINK/USDT", exchange=EXCHANGE): 0.001,
+        Asset(symbol="SXP/USDT", exchange=EXCHANGE): 0.01,
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE): 0.1,
     }
 
     assert isinstance(kucoin_broker.lot_size_last_update, datetime)
@@ -368,8 +361,8 @@ def test_lot_size_info(
     assert kucoin_broker.lot_size_last_update == timestamp
 
 
-@patch("broker.kucoin_broker.KucoinBroker.update_transactions")
-@patch("broker.kucoin_broker.KucoinBroker.update_balances_and_positions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_transactions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_balances_and_positions")
 @patch("kucoin.client.Market.get_all_tickers")
 @patch("kucoin.client.Market.get_symbol_list")
 @patch("kucoin.client.User.__init__")
@@ -393,11 +386,11 @@ def test_update_price(
     events = deque()
     kucoin_broker = KucoinBroker(clock=clock, events=events)
     assert kucoin_broker.last_prices == {
-        Asset(symbol="BTCUSDT", exchange=EXCHANGE): 58947.6,
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE): 1931.87,
-        Asset(symbol="LINKUSDT", exchange=EXCHANGE): 28.7599,
-        Asset(symbol="SXPUSDT", exchange=EXCHANGE): 3.4033,
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE): 0.56,
+        Asset(symbol="BTC/USDT", exchange=EXCHANGE): 58947.6,
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE): 1931.87,
+        Asset(symbol="LINK/USDT", exchange=EXCHANGE): 28.7599,
+        Asset(symbol="SXP/USDT", exchange=EXCHANGE): 3.4033,
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE): 0.56,
     }
 
     assert isinstance(kucoin_broker.price_last_update, datetime)
@@ -408,7 +401,7 @@ def test_update_price(
     assert kucoin_broker.price_last_update == timestamp
 
 
-@patch("broker.kucoin_broker.KucoinBroker.update_transactions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_transactions")
 @patch("kucoin.client.User.get_account_list")
 @patch("kucoin.client.Market.get_all_tickers")
 @patch("kucoin.client.Market.get_symbol_list")
@@ -488,7 +481,7 @@ def test_update_balances_and_positions(
     get_all_tickers_mocked.assert_has_calls([call()])
 
 
-@patch("broker.kucoin_broker.KucoinBroker.update_transactions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_transactions")
 @patch("kucoin.client.User.get_account_list")
 @patch("kucoin.client.Market.get_all_tickers")
 @patch("kucoin.client.Market.get_symbol_list")
@@ -522,7 +515,7 @@ def test_has_opened_position(
     assert not kucoin_broker.has_opened_position(ASSET3, Direction.SHORT)
 
 
-@patch("common.clock.LiveClock.current_time")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
 @patch("kucoin.client.Trade.get_fill_list")
 @patch("kucoin.client.User.get_account_list")
 @patch("kucoin.client.Market.get_all_tickers")
@@ -588,7 +581,7 @@ def test_update_transactions(
     assert kucoin_broker.portfolio.history[0] == PortfolioEvent(
         timestamp=datetime.strptime("2021-07-12 21:58:46+0000", "%Y-%m-%d %H:%M:%S%z"),
         type="symbol_transaction",
-        description="BUY LONG 0.45434801 KUCOIN-NANOUSDT 4.401912 12/07/2021",
+        description="BUY LONG 0.45434801 KUCOIN-NANO/USDT 4.401912 12/07/2021",
         debit=2.001999957352515,
         credit=0.0,
         balance=32.429,
@@ -596,7 +589,7 @@ def test_update_transactions(
     assert kucoin_broker.portfolio.history[1] == PortfolioEvent(
         timestamp=datetime.strptime("2021-07-12 21:41:56+0000", "%Y-%m-%d %H:%M:%S%z"),
         type="symbol_transaction",
-        description="BUY LONG 7.99948803 KUCOIN-XRPUSDT 0.62504 12/07/2021",
+        description="BUY LONG 7.99948803 KUCOIN-XRP/USDT 0.62504 12/07/2021",
         debit=5.004999998269472,
         credit=0.0,
         balance=32.429,
@@ -604,7 +597,7 @@ def test_update_transactions(
     assert kucoin_broker.portfolio.history[2] == PortfolioEvent(
         timestamp=datetime.strptime("2021-07-12 22:16:59+0000", "%Y-%m-%d %H:%M:%S%z"),
         type="symbol_transaction",
-        description="SELL LONG 0.01 KUCOIN-NANOUSDT 4.417691 12/07/2021",
+        description="SELL LONG 0.01 KUCOIN-NANO/USDT 4.417691 12/07/2021",
         debit=0.0,
         credit=0.04,
         balance=32.43,
@@ -665,16 +658,16 @@ def test_execute_market_order(
     )
 
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
     }
 
     kucoin_broker.execute_order(buy_order)
     assert buy_order.order_id == "60ee040c651416000684b835"
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
-        Asset(symbol="SXPUSDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
+        Asset(symbol="SXP/USDT", exchange=EXCHANGE),
     }
 
     # test kucoin buyorder Exception
@@ -692,17 +685,17 @@ def test_execute_market_order(
     )
 
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
-        Asset(symbol="SXPUSDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
+        Asset(symbol="SXP/USDT", exchange=EXCHANGE),
     }
 
     kucoin_broker.execute_order(sell_order)
     assert sell_order.order_id == "60ee040c651416000684b843"
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
-        Asset(symbol="SXPUSDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
+        Asset(symbol="SXP/USDT", exchange=EXCHANGE),
     }
     assert kucoin_broker.open_orders_ids == {
         "60ee040c651416000684b843",
@@ -767,15 +760,15 @@ def test_execute_limit_order(
     )
 
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
     }
 
     kucoin_broker.execute_order(buy_order)
     assert buy_order.order_id == "60ee040c651416000684b835"
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
     }
     assert kucoin_broker.open_orders_ids == {"60ee040c651416000684b835"}
 
@@ -795,14 +788,14 @@ def test_execute_limit_order(
     )
 
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
     }
     kucoin_broker.execute_order(sell_order)
     assert sell_order.order_id == "60ee040c651416000684b843"
     assert kucoin_broker.currency_pairs_traded == {
-        Asset(symbol="ETHUSDT", exchange=EXCHANGE),
-        Asset(symbol="XRPUSDT", exchange=EXCHANGE),
+        Asset(symbol="ETH/USDT", exchange=EXCHANGE),
+        Asset(symbol="XRP/USDT", exchange=EXCHANGE),
     }
     assert kucoin_broker.open_orders_ids == {
         "60ee040c651416000684b835",
@@ -818,7 +811,7 @@ def test_execute_limit_order(
     create_limit_order_mocked.assert_has_calls(create_limit_order_mocked_calls)
 
 
-@patch("broker.kucoin_broker.KucoinBroker.execute_market_order")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.execute_market_order")
 @patch("kucoin.client.Trade.get_fill_list")
 @patch("kucoin.client.User.get_account_list")
 @patch("kucoin.client.Market.get_all_tickers")
@@ -890,7 +883,7 @@ def test_execute_stop_order(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.kucoin_broker.KucoinBroker.execute_market_order")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.execute_market_order")
 @patch("kucoin.client.Trade.get_fill_list")
 @patch("kucoin.client.User.get_account_list")
 @patch("kucoin.client.Market.get_all_tickers")
@@ -966,7 +959,7 @@ def test_execute_target_order(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.kucoin_broker.KucoinBroker.execute_market_order")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.execute_market_order")
 @patch("kucoin.client.Trade.get_fill_list")
 @patch("kucoin.client.User.get_account_list")
 @patch("kucoin.client.Market.get_all_tickers")
@@ -1027,7 +1020,7 @@ def test_execute_trailing_stop_order_sell(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.kucoin_broker.KucoinBroker.execute_market_order")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.execute_market_order")
 @patch("kucoin.client.Trade.get_fill_list")
 @patch("kucoin.client.User.get_account_list")
 @patch("kucoin.client.Market.get_all_tickers")
@@ -1088,10 +1081,10 @@ def test_execute_trailing_stop_order_buy(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.kucoin_broker.KucoinBroker.update_balances_and_positions")
-@patch("broker.kucoin_broker.KucoinBroker.update_lot_size_info")
-@patch("broker.kucoin_broker.KucoinBroker.update_transactions")
-@patch("broker.kucoin_broker.KucoinBroker.update_price")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_balances_and_positions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_lot_size_info")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_transactions")
+@patch("trazy_analysis.broker.kucoin_broker.KucoinBroker.update_price")
 @patch("kucoin.client.User.__init__")
 @patch("kucoin.client.Trade.__init__")
 @patch("kucoin.client.Market.__init__")

@@ -7,16 +7,16 @@ import pytest
 from bson import ObjectId
 from pymongo.results import InsertOneResult
 
-from common.clock import SimulatedClock
-from common.constants import DATE_FORMAT
-from common.types import CandleDataFrame
-from db_storage.mongodb_storage import MongoDbStorage
-from models.asset import Asset
-from models.candle import Candle
-from models.enums import Action, Direction
-from models.order import Order
-from models.signal import Signal
-from settings import (
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.common.constants import DATE_FORMAT
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.db_storage.mongodb_storage import MongoDbStorage
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.settings import (
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
     DOCUMENTS_COLLECTION_NAME,
@@ -24,7 +24,7 @@ from settings import (
     ORDERS_COLLECTION_NAME,
     SIGNALS_COLLECTION_NAME,
 )
-from test.tools.tools import (
+from trazy_analysis.test.tools.tools import (
     compare_candles_list,
     compare_orders_list,
     compare_signals_list,
@@ -209,7 +209,12 @@ def test_init(mongo_client_mocked):
     assert mongodb_storage.database_url == database_url
 
     mongo_client_calls = [
-        call(host=database_url, tz_aware=True, serverSelectionTimeoutMS=2000)
+        call(
+            connect=False,
+            host=database_url,
+            tz_aware=True,
+            serverSelectionTimeoutMS=2000,
+        )
     ]
     mongo_client_mocked.assert_has_calls(mongo_client_calls)
 
@@ -238,12 +243,15 @@ def test_init_non_existing_database_name(mongo_client_mocked):
     ]
 
     with pytest.raises(Exception):
-        mongodb_storage = MongoDbStorage(
-            database_url=database_url, database_name=database_name1
-        )
+        MongoDbStorage(database_url=database_url, database_name=database_name1)
 
     mongo_client_calls = [
-        call(host=database_url, tz_aware=True, serverSelectionTimeoutMS=2000)
+        call(
+            connect=False,
+            host=database_url,
+            tz_aware=True,
+            serverSelectionTimeoutMS=2000,
+        )
     ]
     mongo_client_mocked.assert_has_calls(mongo_client_calls)
 
@@ -451,7 +459,7 @@ def test_get_document_by_id_non_existing_id():
     assert doc is None
 
 
-@patch("db_storage.mongodb_storage.MongoDbStorage.add_document")
+@patch("trazy_analysis.db_storage.mongodb_storage.MongoDbStorage.add_document")
 def test_add_candle(add_document_mocked):
     mongodb_storage = MongoDbStorage()
 
@@ -573,7 +581,7 @@ def test_get_all_candles():
     MONGODB_STORAGE.clean_all_candles()
 
 
-@patch("db_storage.mongodb_storage.MongoDbStorage.add_document")
+@patch("trazy_analysis.db_storage.mongodb_storage.MongoDbStorage.add_document")
 def test_add_signal(add_document_mocked):
     mongodb_storage = MongoDbStorage()
 
@@ -648,7 +656,7 @@ def test_get_signal_non_existing_id():
     assert signal is None
 
 
-@patch("db_storage.mongodb_storage.MongoDbStorage.add_document")
+@patch("trazy_analysis.db_storage.mongodb_storage.MongoDbStorage.add_document")
 def test_add_order(add_document_mocked):
     mongodb_storage = MongoDbStorage()
 

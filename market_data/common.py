@@ -1,25 +1,26 @@
 import os
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_UP
 from typing import List, Tuple
 
 import numpy as np
+import pytz
 
-import settings
-from common.utils import timestamp_to_utc
-from logger import logger
+import trazy_analysis.settings
+from trazy_analysis.common.utils import timestamp_to_utc
+from trazy_analysis.logger import logger
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
 def get_intraday_periods(
     download_frame: timedelta,
     start: datetime,
-    end: datetime = datetime.now(timezone.utc),
+    end: datetime = datetime.now(pytz.UTC),
 ):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(pytz.UTC)
     end = min(end, now)
     nb_seconds = (end - start).total_seconds() + 1
     nb_periods_decimal = Decimal.from_float(nb_seconds) / Decimal.from_float(
@@ -43,7 +44,7 @@ def get_intraday_periods(
 def get_daily_periods(
     download_frame: timedelta,
     start: datetime,
-    end: datetime = datetime.now(timezone.utc),
+    end: datetime = datetime.now(pytz.UTC),
 ):
     start_date = start.date()
     date_today = date.today()
@@ -70,9 +71,10 @@ def get_daily_periods(
 def get_periods(
     download_frame: timedelta,
     start: datetime,
-    end: datetime = datetime.now(timezone.utc),
+    end: datetime = datetime.now(pytz.UTC),
 ) -> List[Tuple[datetime, datetime]]:
     if download_frame >= timedelta(days=1):
+        download_frame = timedelta(days=download_frame.days)
         return get_daily_periods(download_frame, start, end)
     else:
         return get_intraday_periods(download_frame, start, end)

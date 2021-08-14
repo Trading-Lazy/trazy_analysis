@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, call, patch
 
 import pika
 
-import settings
-from candles_queue.rabbit_mq import RabbitMq
-from models.asset import Asset
-from models.candle import Candle
+import trazy_analysis.settings
+from trazy_analysis.candles_queue.rabbit_mq import RabbitMq
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 QUEUE_NAME1 = "candles1"
 QUEUE_NAME2 = "candles2"
@@ -23,7 +23,7 @@ CANDLE = Candle(
     volume=2324,
     timestamp=datetime.strptime("2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
-CONNECTION_URL = settings.CLOUDAMQP_URL
+CONNECTION_URL = trazy_analysis.settings.CLOUDAMQP_URL
 CONNECTION = pika.BlockingConnection(pika.URLParameters(CONNECTION_URL))
 CHANNEL = CONNECTION.channel()
 

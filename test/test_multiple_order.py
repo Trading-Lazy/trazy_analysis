@@ -2,10 +2,10 @@ from datetime import datetime
 
 import pytest
 
-from common.clock import SimulatedClock
-from models.asset import Asset
-from models.enums import Action, Direction, OrderStatus, OrderType
-from models.multiple_order import (
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction, OrderStatus, OrderType
+from trazy_analysis.models.multiple_order import (
     BracketOrder,
     CoverOrder,
     HomogeneousSequentialOrder,
@@ -13,7 +13,7 @@ from models.multiple_order import (
     OcoOrder,
     SequentialOrder,
 )
-from models.order import Order
+from trazy_analysis.models.order import Order
 
 EXCHANGE = "IEX"
 

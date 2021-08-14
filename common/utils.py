@@ -29,7 +29,7 @@ def timestamp_to_utc(timestamp: Union[pd.Timestamp, pd.DatetimeIndex, datetime])
         timestamp = timestamp.tz_convert("UTC")
     elif isinstance(timestamp, datetime):
         if timestamp.tzinfo is None or timestamp.tzinfo.utcoffset(timestamp) is None:
-            timestamp = pytz.timezone("UTC").localize(timestamp)
+            timestamp = pytz.UTC.localize(timestamp)
         timestamp = timestamp.astimezone(pytz.UTC)
     else:
         raise Exception(

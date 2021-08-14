@@ -3,11 +3,11 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from models.asset import Asset
-from models.enums import Action, Direction
-from portfolio.portfolio import Portfolio
-from portfolio.portfolio_event import PortfolioEvent
-from position.transaction import Transaction
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.portfolio.portfolio import Portfolio
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.position.transaction import Transaction
 
 
 def test_initial_settings_for_default_portfolio():

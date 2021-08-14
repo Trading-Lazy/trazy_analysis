@@ -4,9 +4,9 @@ from unittest.mock import patch
 
 import numpy as np
 
-from common.types import CandleDataFrame
-from db_storage.mongodb_storage import MongoDbStorage
-from feed.feed import (
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.db_storage.mongodb_storage import MongoDbStorage
+from trazy_analysis.feed.feed import (
     CsvFeed,
     ExternalStorageFeed,
     Feed,
@@ -14,15 +14,17 @@ from feed.feed import (
     LiveFeed,
     PandasFeed,
 )
-from file_storage.meganz_file_storage import MegaNzFileStorage
-from market_data.historical.tiingo_historical_data_handler import (
+from trazy_analysis.file_storage.meganz_file_storage import MegaNzFileStorage
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
-from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
-from models.asset import Asset
-from models.candle import Candle
-from models.event import MarketDataEndEvent, MarketDataEvent
-from settings import DATABASE_NAME
+from trazy_analysis.market_data.live.tiingo_live_data_handler import (
+    TiingoLiveDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.event import MarketDataEndEvent, MarketDataEvent
+from trazy_analysis.settings import DATABASE_NAME
 
 DB_STORAGE = MongoDbStorage(DATABASE_NAME)
 QUEUE_NAME = "candles"
@@ -256,7 +258,7 @@ def test_feed():
 
 
 @patch(
-    "market_data.live.tiingo_live_data_handler.TiingoLiveDataHandler.request_ticker_lastest_candles"
+    "trazy_analysis.market_data.live.tiingo_live_data_handler.TiingoLiveDataHandler.request_ticker_lastest_candles"
 )
 def test_live_feed(request_ticker_lastest_candles_mocked):
     request_ticker_lastest_candles_mocked.side_effect = [
@@ -295,7 +297,7 @@ def test_live_feed(request_ticker_lastest_candles_mocked):
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_in_range"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_in_range"
 )
 def test_historical_feed(request_ticker_data_in_range_mocked):
     events = deque()
@@ -431,7 +433,9 @@ def test_csv_feed():
     assert isinstance(events_list[7], MarketDataEndEvent)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content")
+@patch(
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content"
+)
 def test_external_storage_feed(get_file_content_mocked):
     DB_STORAGE.clean_all_candles()
     for candle in CANDLES:

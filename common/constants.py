@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from common.utils import timestamp_to_utc
+from trazy_analysis.common.utils import timestamp_to_utc
 
 ENCODING = "utf8"
 DATE_DIR_FORMAT = "%Y%m%d"

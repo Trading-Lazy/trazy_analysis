@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 from typing import List
 
-from common.helper import map_ticker_to_kucoin_symbol
-from market_data.kucoin_data_handler import KucoinDataHandler
-from market_data.live.live_data_handler import LiveDataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.common.helper import map_ticker_to_kucoin_symbol
+from trazy_analysis.market_data.kucoin_data_handler import KucoinDataHandler
+from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 
 class KucoinLiveDataHandler(KucoinDataHandler, LiveDataHandler):

@@ -5,7 +5,11 @@ import pytest
 import pytz
 from dateutil.parser import parse
 
-from common.utils import lists_equal, timestamp_to_utc, validate_dataframe_columns
+from trazy_analysis.common.utils import (
+    lists_equal,
+    timestamp_to_utc,
+    validate_dataframe_columns,
+)
 
 
 def test_validate_dataframe_columns_ok():

@@ -1,9 +1,11 @@
 from datetime import date, datetime, timedelta
 from typing import Tuple
 
-from market_data.binance_data_handler import BinanceDataHandler
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from models.asset import Asset
+from trazy_analysis.market_data.binance_data_handler import BinanceDataHandler
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.models.asset import Asset
 
 
 class BinanceHistoricalDataHandler(BinanceDataHandler, HistoricalDataHandler):

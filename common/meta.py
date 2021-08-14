@@ -19,7 +19,7 @@ class RateLimitedSingletonMeta(InheritableSingletonMeta):
         if not isinstance(cls.MAX_CALLS, property) and not isinstance(
             cls.PERIOD, property
         ):
-            from common.helper import request
+            from trazy_analysis.common.helper import request
 
             setattr(
                 cls,

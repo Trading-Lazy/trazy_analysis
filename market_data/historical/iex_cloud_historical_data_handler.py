@@ -7,10 +7,12 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from common.types import CandleDataFrame
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from models.asset import Asset
-from settings import IEX_CLOUD_API_TOKEN
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.settings import IEX_CLOUD_API_TOKEN
 
 
 class IexCloudHistoricalDataHandler(HistoricalDataHandler):

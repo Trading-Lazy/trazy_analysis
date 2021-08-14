@@ -4,9 +4,11 @@ from datetime import datetime
 import numpy as np
 from freezegun import freeze_time
 
-from market_data.live.tiingo_live_crypto_data_handler import TiingoLiveCryptoDataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.market_data.live.tiingo_live_crypto_data_handler import (
+    TiingoLiveCryptoDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 SYMBOL = "BTCUSD"
 EXCHANGE = "BINANCE"

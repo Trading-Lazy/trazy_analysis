@@ -1,7 +1,8 @@
-from common.helper import get_or_create_nested_dict
-from models.enums import Direction
-from position.position import Position
-from position.transaction import Transaction
+from trazy_analysis.common.helper import get_or_create_nested_dict
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Direction
+from trazy_analysis.position.position import Position
+from trazy_analysis.position.transaction import Transaction
 
 
 class PositionHandler:
@@ -17,7 +18,7 @@ class PositionHandler:
         """
         self.positions = {}
 
-    def position_size(self, asset: str, direction: Direction) -> int:
+    def position_size(self, asset: Asset, direction: Direction) -> int:
         return self.positions[asset][direction].net_size
 
     def transact_position(self, transaction: Transaction) -> None:

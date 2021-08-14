@@ -5,10 +5,12 @@ import numpy as np
 from freezegun import freeze_time
 from requests import Response
 
-from market_data.live.live_data_handler import LiveDataHandler
-from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
+from trazy_analysis.market_data.live.tiingo_live_data_handler import (
+    TiingoLiveDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 SYMBOL = "AAPL"
 EXCHANGE = "IEX"
@@ -18,7 +20,7 @@ STATUS_CODE_OK = 200
 STATUS_CODE_KO = 404
 
 
-@patch("market_data.live.live_data_handler.request")
+@patch("trazy_analysis.market_data.live.live_data_handler.request")
 @freeze_time("2020-06-18")
 def test_request_ticker_latest_data_tiingo(request_mocked):
     TiingoLiveDataHandler.API_TOKEN = TOKEN
@@ -36,7 +38,9 @@ def test_request_ticker_latest_data_tiingo(request_mocked):
     request_mocked.assert_has_calls(request_mocked_calls)
 
 
-@patch("market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data")
+@patch(
+    "trazy_analysis.market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data"
+)
 @patch("requests.Response.content")
 def test_request_ticker_lastest_candles_tiingo(
     content_mocked, request_ticker_latest_data_mocked
@@ -95,7 +99,9 @@ def test_request_ticker_lastest_candles_tiingo(
     assert (expected_candles == candles).all()
 
 
-@patch("market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data")
+@patch(
+    "trazy_analysis.market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data"
+)
 @patch("requests.Response.content")
 def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
     content_mocked, request_ticker_latest_data_mocked
@@ -176,7 +182,9 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
     assert (expected_candles == candles).all()
 
 
-@patch("market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data")
+@patch(
+    "trazy_analysis.market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data"
+)
 @patch("requests.Response.content")
 def test_request_ticker_lastest_candles_ticker_data_is_none_tiingo(
     content_mocked, request_ticker_latest_data_mocked
@@ -191,7 +199,9 @@ def test_request_ticker_lastest_candles_ticker_data_is_none_tiingo(
     assert (expected_candles == candles).all()
 
 
-@patch("market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data")
+@patch(
+    "trazy_analysis.market_data.live.live_data_handler.LiveDataHandler.request_ticker_latest_data"
+)
 @patch("requests.Response.content")
 def test_request_ticker_lastest_candles_error_tiingo(
     content_mocked, request_ticker_latest_data_mocked
@@ -207,7 +217,7 @@ def test_request_ticker_lastest_candles_error_tiingo(
 
 
 @patch(
-    "market_data.live.live_data_handler.LiveDataHandler.request_ticker_lastest_candles"
+    "trazy_analysis.market_data.live.live_data_handler.LiveDataHandler.request_ticker_lastest_candles"
 )
 def test_request_ticker_lastest_candle(request_ticker_lastest_candles_mocked):
     request_ticker_lastest_candles_mocked.return_value = np.array(
@@ -267,7 +277,7 @@ def test_request_ticker_lastest_candle(request_ticker_lastest_candles_mocked):
 
 
 @patch(
-    "market_data.live.live_data_handler.LiveDataHandler.request_ticker_lastest_candles"
+    "trazy_analysis.market_data.live.live_data_handler.LiveDataHandler.request_ticker_lastest_candles"
 )
 def test_request_ticker_lastest_candle_no_available_candle(
     request_ticker_lastest_candles_mocked,

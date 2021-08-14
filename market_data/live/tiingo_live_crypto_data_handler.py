@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from market_data.live.live_data_handler import LiveDataHandler
-from market_data.tiingo_crypto_data_handler import TiingoCryptoDataHandler
-from models.candle import Candle
+from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
+from trazy_analysis.market_data.tiingo_crypto_data_handler import (
+    TiingoCryptoDataHandler,
+)
+from trazy_analysis.models.candle import Candle
 
 
 class TiingoLiveCryptoDataHandler(TiingoCryptoDataHandler, LiveDataHandler):

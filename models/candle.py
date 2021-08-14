@@ -1,7 +1,9 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 
-from models.asset import Asset
+import pytz
+
+from trazy_analysis.models.asset import Asset
 
 
 class Candle:
@@ -13,7 +15,7 @@ class Candle:
         low: float,
         close: float,
         volume: int,
-        timestamp: datetime = datetime.now(timezone.utc),
+        timestamp: datetime = datetime.now(pytz.UTC),
     ):
         self.asset: Asset = asset
         self.open: float = open
@@ -21,13 +23,13 @@ class Candle:
         self.low: float = low
         self.close: float = close
         self.volume: int = volume
-        from common.utils import timestamp_to_utc
+        from trazy_analysis.common.utils import timestamp_to_utc
 
         self.timestamp = timestamp_to_utc(timestamp)
 
     @staticmethod
     def from_serializable_dict(candle_dict: dict) -> "Candle":
-        from common.utils import timestamp_to_utc
+        from trazy_analysis.common.utils import timestamp_to_utc
 
         timestamp = timestamp_to_utc(candle_dict["timestamp"])
         candle: Candle = Candle(

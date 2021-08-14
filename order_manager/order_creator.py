@@ -2,17 +2,21 @@ import os
 
 import pandas as pd
 
-import settings
-from broker.broker_manager import BrokerManager
-from common.clock import Clock
-from logger import logger
-from models.enums import Action, OrderType
-from models.multiple_order import ArbitragePairOrder, BracketOrder, CoverOrder
-from models.order import Order
-from models.signal import ArbitragePairSignal, Signal
+import trazy_analysis.settings
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.logger import logger
+from trazy_analysis.models.enums import Action, OrderType
+from trazy_analysis.models.multiple_order import (
+    ArbitragePairOrder,
+    BracketOrder,
+    CoverOrder,
+)
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import ArbitragePairSignal, Signal
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

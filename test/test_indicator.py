@@ -2,7 +2,7 @@ import operator
 
 import pytest
 
-from indicators.indicator import Indicator, ZipIndicator
+from trazy_analysis.indicators.indicator import Indicator, ZipIndicator
 
 
 def test_handle_new_data_default_transform():

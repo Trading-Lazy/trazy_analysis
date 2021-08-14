@@ -3,14 +3,14 @@ from collections import deque
 from datetime import timedelta
 from typing import Dict, List
 
-import logger
-import settings
-from common.constants import MAX_TIMESTAMP
-from models.asset import Asset
-from models.candle import Candle
+import trazy_analysis.logger
+import trazy_analysis.settings
+from trazy_analysis.common.constants import MAX_TIMESTAMP
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -34,7 +34,7 @@ class Context:
     def get_last_candle(self, asset: Asset) -> Candle:
         return self.last_candles[asset]
 
-    def update(self) -> List[Candle]:
+    def update(self) -> None:
         self.last_candles = {}
         current_timestamp = self.current_timestamp
         next_timestamp = MAX_TIMESTAMP

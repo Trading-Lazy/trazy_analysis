@@ -1,4 +1,4 @@
-from broker.fee_model import FeeModel
+from trazy_analysis.broker.fee_model import FeeModel
 
 
 class FixedFeeModel(FeeModel):

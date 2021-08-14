@@ -1,13 +1,13 @@
 from datetime import date
 
-from market_data.historical.tiingo_historical_crypto_data_handler import (
+from trazy_analysis.market_data.historical.tiingo_historical_crypto_data_handler import (
     TiingoHistoricalCryptoDataHandler,
 )
-from models.asset import Asset
+from trazy_analysis.models.asset import Asset
 
 
 def test_generate_ticker_data_url():
-    ticker = Asset(symbol="btcusd", exchange="BINANCE")
+    ticker = Asset(symbol="btc/usd", exchange="BINANCE")
     period = (date(1996, 4, 13), date(1996, 5, 13))
     TiingoHistoricalCryptoDataHandler.API_TOKEN = "abcde"
     expected_url = (

@@ -1,12 +1,12 @@
 from collections import deque
 from typing import Dict, List
 
-from common.clock import Clock
-from indicators.indicators_manager import IndicatorsManager
-from models.signal import Signal
-from order_manager.order_manager import OrderManager
-from strategy.context import Context
-from strategy.strategy import Strategy
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.strategy.context import Context
+from trazy_analysis.strategy.strategy import Strategy
 
 
 class IdleStrategy(Strategy):

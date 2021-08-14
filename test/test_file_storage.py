@@ -1,16 +1,15 @@
+from pathlib import Path
 from unittest.mock import call, patch
 
-from pathlib import Path
-
-from file_storage.common import DONE_DIR, ERROR_DIR, NONE_DIR
-from file_storage.meganz_file_storage import MegaNzFileStorage
+from trazy_analysis.file_storage.common import DONE_DIR, ERROR_DIR, NONE_DIR
+from trazy_analysis.file_storage.meganz_file_storage import MegaNzFileStorage
 
 MEGA_NZ_STORAGE = MegaNzFileStorage()
 BASE_PATH = "datasets"
 DIR = "20200913"
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.mkdir")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.mkdir")
 def test_create_date_directories(mkdir_mocked):
     path = str(Path(BASE_PATH) / DIR)
     none_dir_path = "{}/{}/".format(path, NONE_DIR)
@@ -26,7 +25,7 @@ def test_create_date_directories(mkdir_mocked):
     mkdir_mocked.assert_has_calls(mkdir_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.mkdir")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.mkdir")
 def test_create_all_dates_directories(mkdir_mocked) -> None:
     dates_strs = ["20200413", "20200414"]
     path1 = str(BASE_PATH / Path(dates_strs[0]))
@@ -51,7 +50,7 @@ def test_create_all_dates_directories(mkdir_mocked) -> None:
     mkdir_mocked.assert_has_calls(mkdir_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.mkdir")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.mkdir")
 def test_create_directory(mkdir_mocked) -> None:
     path = str(Path(BASE_PATH) / DIR)
     mkdir_mocked_calls = [call(path)]

@@ -1,18 +1,19 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from unittest.mock import call, patch
 
 import pandas as pd
+import pytz
 
-from common.clock import Clock, LiveClock, SimulatedClock
-from models.asset import Asset
+from trazy_analysis.common.clock import Clock, LiveClock, SimulatedClock
+from trazy_analysis.models.asset import Asset
 
 SYMBOL = "AAPL"
 EXCHANGE = "IEX"
 ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 
 
-@patch("common.clock.Clock.update_bars")
-@patch("common.clock.Clock.update_time")
+@patch("trazy_analysis.common.clock.Clock.update_bars")
+@patch("trazy_analysis.common.clock.Clock.update_time")
 def test_update(update_time_mocked, update_bars_mocked):
     clock = Clock()
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
@@ -25,13 +26,13 @@ def test_update(update_time_mocked, update_bars_mocked):
 
 def test_current_time_live_clock():
     clock = LiveClock()
-    timestamp = datetime.now(timezone.utc)
+    timestamp = datetime.now(pytz.UTC)
     assert clock.current_time() - timestamp < pd.offsets.Second(1)
 
 
 def test_current_time_simulated_clock():
     clock = SimulatedClock()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(pytz.UTC)
     assert clock.current_time() - now < pd.offsets.Second(1)
     assert clock.current_bars() == 0
 

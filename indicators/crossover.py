@@ -3,9 +3,9 @@ from enum import Enum
 
 import numpy as np
 
-from common.helper import check_type
-from indicators.common import get_state
-from indicators.indicator import Indicator
+from trazy_analysis.common.helper import check_type
+from trazy_analysis.indicators.common import get_state
+from trazy_analysis.indicators.indicator import Indicator
 
 
 class CrossoverState(Enum):

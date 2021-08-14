@@ -5,7 +5,7 @@ from typing import Any, Callable, List, Union
 
 import numpy as np
 
-from common.helper import check_type
+from trazy_analysis.common.helper import check_type
 
 
 class Indicator:

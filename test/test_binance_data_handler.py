@@ -2,10 +2,10 @@ import json
 
 import pandas as pd
 
-from market_data.historical.binance_historical_data_handler import (
+from trazy_analysis.market_data.historical.binance_historical_data_handler import (
     BinanceHistoricalDataHandler,
 )
-from models.asset import Asset
+from trazy_analysis.models.asset import Asset
 
 SYMBOL = "BTCUSDT"
 EXCHANGE = "BINANCE"

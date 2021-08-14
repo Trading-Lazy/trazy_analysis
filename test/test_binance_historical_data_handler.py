@@ -1,16 +1,18 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
-from market_data.historical.binance_historical_data_handler import (
+import pytz
+
+from trazy_analysis.market_data.historical.binance_historical_data_handler import (
     BinanceHistoricalDataHandler,
 )
-from models.asset import Asset
+from trazy_analysis.models.asset import Asset
 
 
 def test_generate_ticker_data_url():
     ticker = Asset(symbol="XRPEUR", exchange="BINANCE")
     period = (
-        datetime(2018, 4, 13, tzinfo=timezone.utc),
-        datetime(2018, 4, 13, 23, 59, 59, tzinfo=timezone.utc),
+        datetime(2018, 4, 13, tzinfo=pytz.UTC),
+        datetime(2018, 4, 13, 23, 59, 59, tzinfo=pytz.UTC),
     )
     BinanceHistoricalDataHandler.API_TOKEN = "abcde"
     expected_url = (

@@ -1,11 +1,14 @@
 import numpy as np
 import pandas as pd
 
-from common.helper import get_or_create_nested_dict
-from indicators.common import PriceType
-from indicators.indicator import Indicator
-from indicators.rolling_window import PriceRollingWindowManager, RollingWindow
-from models.asset import Asset
+from trazy_analysis.common.helper import get_or_create_nested_dict
+from trazy_analysis.indicators.common import PriceType
+from trazy_analysis.indicators.indicator import Indicator
+from trazy_analysis.indicators.rolling_window import (
+    PriceRollingWindowManager,
+    RollingWindow,
+)
+from trazy_analysis.models.asset import Asset
 
 
 class Sma(RollingWindow):

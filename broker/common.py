@@ -1,4 +1,4 @@
-from models.order import Order
+from trazy_analysis.models.order import Order
 
 
 def get_rejected_order_error_message(order: Order) -> str:

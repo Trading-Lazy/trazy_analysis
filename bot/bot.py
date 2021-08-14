@@ -3,26 +3,27 @@ import importlib
 import inspect
 import os
 from collections import deque
+from pathlib import Path
 from typing import List, Set
 
-from pathlib import Path
+from trazy_analysis.bot.event_loop import EventLoop
+from trazy_analysis.broker.binance_broker import BinanceBroker
 
-from bot.event_loop import EventLoop
-from broker.binance_broker import BinanceBroker
-
-# from broker.degiro_broker import DegiroBroker
-from broker.broker_manager import BrokerManager
-from common.clock import LiveClock
-from feed.feed import Feed, LiveFeed
-from indicators.indicators_manager import IndicatorsManager
-from market_data.live.binance_live_data_handler import BinanceLiveDataHandler
-from order_manager.order_creator import OrderCreator
-from order_manager.order_manager import OrderManager
-from order_manager.position_sizer import PositionSizer
-from strategy.strategies.sma_crossover_strategy import (
+# from trazy_analysis.broker.degiro_broker import DegiroBroker
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.common.clock import LiveClock
+from trazy_analysis.feed.feed import Feed, LiveFeed
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.market_data.live.binance_live_data_handler import (
+    BinanceLiveDataHandler,
+)
+from trazy_analysis.order_manager.order_creator import OrderCreator
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.order_manager.position_sizer import PositionSizer
+from trazy_analysis.strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
-from strategy.strategy import Strategy
+from trazy_analysis.strategy.strategy import Strategy
 
 EXCHANGE = "IEX"
 

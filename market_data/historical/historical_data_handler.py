@@ -1,28 +1,29 @@
 import abc
 import os
 import traceback
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from typing import Dict, List, Set, Tuple
 
 import numpy as np
+import pytz
 from pandas.core.groupby.generic import DataFrameGroupBy
 from requests.models import Response
 
-import settings
-from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
-from common.helper import fill_missing_datetimes, request
-from common.meta import RateLimitedSingletonMeta
-from common.types import CandleDataFrame
-from common.utils import timestamp_to_utc
-from db_storage.db_storage import DbStorage
-from logger import logger
-from market_data.common import LOG, get_periods
-from market_data.data_handler import DataHandler
-from models.asset import Asset
-from models.candle import Candle
+import trazy_analysis.settings
+from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
+from trazy_analysis.common.helper import fill_missing_datetimes, request
+from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.common.utils import timestamp_to_utc
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.logger import logger
+from trazy_analysis.market_data.common import LOG, get_periods
+from trazy_analysis.market_data.data_handler import DataHandler
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -177,7 +178,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         cls,
         ticker: Asset,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
     ) -> Tuple[CandleDataFrame, List[Tuple[date, date]], Dict[Tuple[date, date], str]]:
         periods = get_periods(cls.MAX_DOWNLOAD_FRAME, start, end)
         (
@@ -202,7 +203,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         ticker: Asset,
         csv_filename: str,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
         sep: str = ",",
     ) -> None:
         (
@@ -218,7 +219,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         ticker: Asset,
         db_storage: DbStorage,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
     ) -> None:
         (
             candle_dataframe,

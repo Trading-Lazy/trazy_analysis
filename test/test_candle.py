@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 IVV_ASSET = Asset(symbol="IVV", exchange="IEX")
 

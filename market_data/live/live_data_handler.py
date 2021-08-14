@@ -5,17 +5,17 @@ from typing import List
 
 from requests.models import Response
 
-import logger
-import settings
-from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
-from common.helper import request
-from common.meta import RateLimitedSingletonMeta
-from market_data.data_handler import DataHandler
-from models.asset import Asset
-from models.candle import Candle
+import trazy_analysis.logger
+import trazy_analysis.settings
+from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
+from trazy_analysis.common.helper import request
+from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.market_data.data_handler import DataHandler
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

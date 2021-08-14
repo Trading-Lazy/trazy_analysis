@@ -3,9 +3,9 @@ from typing import List
 
 import pandas as pd
 
-from common.types import CandleDataFrame
-from market_data.data_handler import DataHandler
-from settings import TIINGO_API_TOKEN
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.market_data.data_handler import DataHandler
+from trazy_analysis.settings import TIINGO_API_TOKEN
 
 
 class TiingoCryptoDataHandler(DataHandler):

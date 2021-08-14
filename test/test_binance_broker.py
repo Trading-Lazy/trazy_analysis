@@ -7,22 +7,22 @@ import pytest
 from freezegun import freeze_time
 from pytz import timezone
 
-from broker.binance_broker import BinanceBroker
-from common.clock import LiveClock
-from models.asset import Asset
-from models.enums import Action, Direction, OrderType
-from models.order import Order
-from portfolio.portfolio_event import PortfolioEvent
-from position.position import Position
+from trazy_analysis.broker.binance_broker import BinanceBroker
+from trazy_analysis.common.clock import LiveClock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.position.position import Position
 
 INITIAL_CASH = "51.07118"
 
 EXCHANGE = "BINANCE"
-SYMBOL1 = "ETHEUR"
+SYMBOL1 = "ETH/EUR"
 ASSET1 = Asset(symbol=SYMBOL1, exchange=EXCHANGE)
-SYMBOL2 = "XRPEUR"
+SYMBOL2 = "XRP/EUR"
 ASSET2 = Asset(symbol=SYMBOL2, exchange=EXCHANGE)
-SYMBOL3 = "SXPEUR"
+SYMBOL3 = "SXP/EUR"
 ASSET3 = Asset(symbol=SYMBOL3, exchange=EXCHANGE)
 
 ORDER_ID1 = "c8741cfa-6170-42c9-b952-e915bc614b36"
@@ -140,7 +140,7 @@ GET_MY_TRADES_SIDE_EFFECT = [
     ],
     [
         {
-            "symbol": "BTCEUR",
+            "symbol": "ETHEUR",
             "id": 6360297,
             "orderId": 131249805,
             "orderListId": -1,
@@ -155,7 +155,7 @@ GET_MY_TRADES_SIDE_EFFECT = [
             "isBestMatch": True,
         },
         {
-            "symbol": "BTCEUR",
+            "symbol": "ETHEUR",
             "id": 6360397,
             "orderId": 132149502,
             "orderListId": -1,
@@ -630,9 +630,11 @@ LIMIT_SELL_ORDER_RESPONSE = {
 }
 
 
-@patch("broker.binance_broker.BinanceBroker.update_transactions")
-@patch("broker.binance_broker.BinanceBroker.update_balances_and_positions")
-@patch("broker.binance_broker.BinanceBroker.update_price")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_transactions")
+@patch(
+    "trazy_analysis.broker.binance_broker.BinanceBroker.update_balances_and_positions"
+)
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_price")
 @patch("binance.client.Client.get_exchange_info")
 @patch("binance.client.Client.__init__")
 def test_lot_size_info(
@@ -648,11 +650,11 @@ def test_lot_size_info(
     events = deque()
     binance_broker = BinanceBroker(clock=clock, events=events)
     assert binance_broker.lot_size == {
-        Asset(symbol="BTCEUR", exchange=EXCHANGE): 0.000001,
-        Asset(symbol="ETHEUR", exchange=EXCHANGE): 0.00001,
-        Asset(symbol="LINKEUR", exchange=EXCHANGE): 0.001,
-        Asset(symbol="SXPEUR", exchange=EXCHANGE): 0.001,
-        Asset(symbol="XRPEUR", exchange=EXCHANGE): 0.1,
+        Asset(symbol="BTC/EUR", exchange=EXCHANGE): 0.000001,
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE): 0.00001,
+        Asset(symbol="LINK/EUR", exchange=EXCHANGE): 0.001,
+        Asset(symbol="SXP/EUR", exchange=EXCHANGE): 0.001,
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE): 0.1,
     }
 
     assert isinstance(binance_broker.lot_size_last_update, datetime)
@@ -663,8 +665,10 @@ def test_lot_size_info(
     assert binance_broker.lot_size_last_update == timestamp
 
 
-@patch("broker.binance_broker.BinanceBroker.update_transactions")
-@patch("broker.binance_broker.BinanceBroker.update_balances_and_positions")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_transactions")
+@patch(
+    "trazy_analysis.broker.binance_broker.BinanceBroker.update_balances_and_positions"
+)
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
 @patch("binance.client.Client.__init__")
@@ -682,11 +686,11 @@ def test_update_price(
     events = deque()
     binance_broker = BinanceBroker(clock=clock, events=events)
     assert binance_broker.last_prices == {
-        Asset(symbol="BTCEUR", exchange=EXCHANGE): 40825.94,
-        Asset(symbol="ETHEUR", exchange=EXCHANGE): 1353.12,
-        Asset(symbol="LINKEUR", exchange=EXCHANGE): 22.55,
-        Asset(symbol="SXPEUR", exchange=EXCHANGE): 1.904,
-        Asset(symbol="XRPEUR", exchange=EXCHANGE): 0.391,
+        Asset(symbol="BTC/EUR", exchange=EXCHANGE): 40825.94,
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE): 1353.12,
+        Asset(symbol="LINK/EUR", exchange=EXCHANGE): 22.55,
+        Asset(symbol="SXP/EUR", exchange=EXCHANGE): 1.904,
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE): 0.391,
     }
 
     assert isinstance(binance_broker.price_last_update, datetime)
@@ -697,7 +701,7 @@ def test_update_price(
     assert binance_broker.price_last_update == timestamp
 
 
-@patch("broker.binance_broker.BinanceBroker.update_transactions")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_transactions")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_account")
 @patch("binance.client.Client.get_exchange_info")
@@ -771,7 +775,7 @@ def test_update_balances_and_positions(
     get_all_tickers_mocked.assert_has_calls([call()])
 
 
-@patch("broker.binance_broker.BinanceBroker.update_transactions")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_transactions")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
 @patch("binance.client.Client.get_account")
@@ -800,7 +804,7 @@ def test_has_opened_position(
     assert not binance_broker.has_opened_position(ASSET3, Direction.SHORT)
 
 
-@patch("common.clock.LiveClock.current_time")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
 @patch("binance.client.Client.get_my_trades")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
@@ -882,7 +886,7 @@ def test_update_transactions(
             "2021-02-23 11:45:59.873000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="BUY LONG 0.000367 BINANCE-BTCEUR 40825.94 23/02/2021",
+        description="BUY LONG 0.000367 BINANCE-ETHEUR 40825.94 23/02/2021",
         debit=15.01261998,
         credit=0.0,
         balance=51.07118,
@@ -892,7 +896,7 @@ def test_update_transactions(
             "2021-02-23 21:29:49.610000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="SELL LONG 0.000367 BINANCE-BTCEUR 43825.94 23/02/2021",
+        description="SELL LONG 0.000367 BINANCE-ETHEUR 43825.94 23/02/2021",
         debit=0.0,
         credit=16.08,
         balance=51.07,
@@ -904,11 +908,8 @@ def test_update_transactions(
     get_my_trades_mocked_calls = [
         call(startTime=1612796880000, symbol="ETHEUR"),
         call(startTime=1612796880000, symbol="XRPEUR"),
-        call(startTime=1612797000000, symbol="ETHEUR"),
     ]
-    assert get_my_trades_mocked.assaert_has_calls(
-        get_my_trades_mocked_calls, any_order=True
-    )
+    get_my_trades_mocked.assaert_has_calls(get_my_trades_mocked_calls, any_order=True)
 
 
 @patch("binance.client.Client.order_market_sell")
@@ -958,15 +959,15 @@ def test_execute_market_order(
     )
 
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
     }
     binance_broker.execute_order(buy_order)
     assert buy_order.order_id == "134562464"
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
-        Asset(symbol="SXPEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
+        Asset(symbol="SXP/EUR", exchange=EXCHANGE),
     }
     # Order submitted to the broker but not filled yet
     binance_broker.execute_order(buy_order)
@@ -987,16 +988,16 @@ def test_execute_market_order(
     )
 
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
-        Asset(symbol="SXPEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
+        Asset(symbol="SXP/EUR", exchange=EXCHANGE),
     }
     binance_broker.execute_order(sell_order)
     assert sell_order.order_id == "134791954"
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
-        Asset(symbol="SXPEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
+        Asset(symbol="SXP/EUR", exchange=EXCHANGE),
     }
     # Order submitted to the broker but not filled yet
     binance_broker.execute_order(sell_order)
@@ -1058,14 +1059,14 @@ def test_execute_limit_order(
     )
 
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
     }
     binance_broker.execute_order(buy_order)
     assert buy_order.order_id == "134879100"
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
     }
     assert binance_broker.open_orders_ids == {"134879100"}
 
@@ -1085,30 +1086,31 @@ def test_execute_limit_order(
     )
 
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
     }
     binance_broker.execute_order(sell_order)
     assert sell_order.order_id == "134912358"
     assert binance_broker.currency_pairs_traded == {
-        Asset(symbol="XRPEUR", exchange=EXCHANGE),
-        Asset(symbol="ETHEUR", exchange=EXCHANGE),
+        Asset(symbol="XRP/EUR", exchange=EXCHANGE),
+        Asset(symbol="ETH/EUR", exchange=EXCHANGE),
     }
     assert binance_broker.open_orders_ids == {"134912358", "134879100"}
 
     # check mock calls
     order_limit_buy_mocked_calls = [
-        call(price=0.3534, quantity=Decimal("26.97654"), symbol="ETHEUR")
+        call(price=0.3534, quantity=Decimal("26.97654"), symbol="ETH/EUR"),
+        call(price=0.3534, quantity=Decimal("26.97654"), symbol="ETH/EUR"),
     ]
     order_limit_buy_mocked.assert_has_calls(order_limit_buy_mocked_calls)
 
     order_limit_sell_mocked_calls = [
-        call(price=0.4534, quantity=Decimal("0.15067"), symbol="ETHEUR")
+        call(price=0.4534, quantity=Decimal("0.15067"), symbol="ETH/EUR")
     ]
     order_limit_sell_mocked.assert_has_calls(order_limit_sell_mocked_calls)
 
 
-@patch("broker.binance_broker.BinanceBroker.execute_market_order")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.execute_market_order")
 @patch("binance.client.Client.get_my_trades")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
@@ -1174,7 +1176,7 @@ def test_execute_stop_order(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.binance_broker.BinanceBroker.execute_market_order")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.execute_market_order")
 @patch("binance.client.Client.get_my_trades")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
@@ -1244,7 +1246,7 @@ def test_execute_target_order(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.binance_broker.BinanceBroker.execute_market_order")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.execute_market_order")
 @patch("binance.client.Client.get_my_trades")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
@@ -1298,7 +1300,7 @@ def test_execute_trailing_stop_order_sell(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.binance_broker.BinanceBroker.execute_market_order")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.execute_market_order")
 @patch("binance.client.Client.get_my_trades")
 @patch("binance.client.Client.get_all_tickers")
 @patch("binance.client.Client.get_exchange_info")
@@ -1352,10 +1354,12 @@ def test_execute_trailing_stop_order_buy(
     execute_market_order_mocked.assert_has_calls(execute_market_order_mocked_calls)
 
 
-@patch("broker.binance_broker.BinanceBroker.update_balances_and_positions")
-@patch("broker.binance_broker.BinanceBroker.update_lot_size_info")
-@patch("broker.binance_broker.BinanceBroker.update_transactions")
-@patch("broker.binance_broker.BinanceBroker.update_price")
+@patch(
+    "trazy_analysis.broker.binance_broker.BinanceBroker.update_balances_and_positions"
+)
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_lot_size_info")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_transactions")
+@patch("trazy_analysis.broker.binance_broker.BinanceBroker.update_price")
 @patch("binance.client.Client.__init__")
 def test_synchronize(
     init_mocked,

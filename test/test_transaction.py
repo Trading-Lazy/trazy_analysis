@@ -2,9 +2,9 @@ from datetime import datetime
 
 import pytest
 
-from models.asset import Asset
-from models.enums import Action, Direction
-from position.transaction import Transaction
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.position.transaction import Transaction
 
 AAPL_SYMBOL = "AAPL"
 EXCHANGE = "IEX"

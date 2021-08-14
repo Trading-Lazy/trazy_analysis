@@ -2,19 +2,19 @@ import os
 from collections import deque
 from typing import Dict, List, Union
 
-import settings
-from broker.broker import Broker
-from broker.fee_model import FeeModel
-from broker.fixed_fee_model import FixedFeeModel
-from common.clock import Clock
-from logger import logger
-from models.asset import Asset
-from models.enums import Action, Direction, OrderType
-from models.order import Order
-from position.transaction import Transaction
+import trazy_analysis.settings
+from trazy_analysis.broker.broker import Broker
+from trazy_analysis.broker.fee_model import FeeModel
+from trazy_analysis.broker.fixed_fee_model import FixedFeeModel
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.position.transaction import Transaction
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

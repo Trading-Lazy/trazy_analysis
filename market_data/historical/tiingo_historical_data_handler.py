@@ -1,9 +1,11 @@
 from datetime import date, timedelta
 from typing import Tuple
 
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from market_data.tiingo_data_handler import TiingoDataHandler
-from models.asset import Asset
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.market_data.tiingo_data_handler import TiingoDataHandler
+from trazy_analysis.models.asset import Asset
 
 
 class TiingoHistoricalDataHandler(TiingoDataHandler, HistoricalDataHandler):

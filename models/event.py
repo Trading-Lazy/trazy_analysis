@@ -3,9 +3,9 @@ from typing import Dict, List
 
 import numpy as np
 
-from models.asset import Asset
-from models.enums import EventType
-from models.signal import Signal
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import EventType
+from trazy_analysis.models.signal import Signal
 
 
 class Event:
