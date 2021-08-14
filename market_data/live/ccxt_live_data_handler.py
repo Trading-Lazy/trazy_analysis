@@ -1,16 +1,12 @@
-import abc
 import os
 import traceback
 from typing import List
 
-from requests.models import Response
-
 import trazy_analysis.logger
 import trazy_analysis.settings
-from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
-from trazy_analysis.common.helper import request
-from trazy_analysis.common.meta import RateLimitedSingletonMeta
-from trazy_analysis.market_data.data_handler import DataHandler
+from trazy_analysis.common.ccxt_connector import CcxtConnector
+from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE
+from trazy_analysis.market_data.ccxt_data_handler import CcxtDataHandler
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
 
@@ -19,45 +15,27 @@ LOG = trazy_analysis.logger.get_root_logger(
 )
 
 
-class CcxtLiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
-    @property
-    @classmethod
-    @abc.abstractmethod
-    def BASE_URL_TICKER_LATEST_DATA(cls) -> str:  # pragma: no cover
-        pass
+class CcxtLiveDataHandler(CcxtDataHandler):
+    def __init__(self, ccxt_connector: CcxtConnector):
+        super().__init__(ccxt_connector)
 
-    # methods
-    @classmethod
-    @abc.abstractmethod
-    def parse_ticker_latest_data(
-        cls, symbol: Asset, data: str
-    ) -> List[Candle]:  # pragma: no cover
-        raise NotImplementedError
-
-    @classmethod
-    @abc.abstractmethod
-    def generate_ticker_latest_data_url(cls, ticker: Asset) -> str:  # pragma: no cover
-        raise NotImplementedError
-
-    @classmethod
-    def request_ticker_latest_data(cls, ticker: Asset) -> Response:
-        latest_data_points_url = cls.generate_ticker_latest_data_url(ticker)
-        LOG.info("Url for %s: %s", ticker.key(), latest_data_points_url)
-        return request(latest_data_points_url)
-
-    @classmethod
-    def request_ticker_lastest_candle(cls, ticker: Asset) -> Candle:
-        latest_candles = cls.request_ticker_lastest_candles(ticker)
+    def request_ticker_lastest_candle(self, ticker: Asset) -> Candle:
+        latest_candles = self.request_ticker_lastest_candles(ticker)
         if len(latest_candles) == 0:
             return None
-        return cls.request_ticker_lastest_candles(ticker)[-1]
+        return latest_candles[-1]
 
-    @classmethod
     def request_ticker_lastest_candles(
-        cls, ticker: Asset, nb_candles: int = 1
+        self, ticker: Asset, nb_candles: int = 1
     ) -> List[Candle]:
+        exchange_to_lower = ticker.exchange.lower()
+        exchange_instance = self.ccxt_connector.get_exchange_instance(exchange_to_lower)
         try:
-            response = cls.request_ticker_latest_data(ticker)
+            raw_candles = exchange_instance.fetchOHLCV(symbol=ticker.symbol)
+            candle_dataframe = self.ticker_data_to_dataframe(ticker, raw_candles)
+            latest_candles = candle_dataframe.to_candles()
+            start = max(-nb_candles, -len(latest_candles))
+            return latest_candles[start:]
         except Exception as e:
             LOG.error(
                 CONNECTION_ERROR_MESSAGE,
@@ -65,20 +43,3 @@ class CcxtLiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
                 traceback.format_exc(),
             )
             return []
-        data: str = response.content.decode(ENCODING)
-        if response:
-            if not cls.ticker_data_is_none(data):
-                latest_candles = cls.parse_ticker_latest_data(ticker, data)
-                start = max(-nb_candles, -len(latest_candles))
-                return latest_candles[start:]
-            else:
-                LOG.info("No available data for ticker %s latest candles", ticker.key())
-                return []
-        else:
-            LOG.info(
-                "Ticker %s latest candles request error status_code = %s, message = %s",
-                ticker.key(),
-                response.status_code,
-                data,
-            )
-        return []

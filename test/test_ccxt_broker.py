@@ -17,7 +17,6 @@ from trazy_analysis.models.enums import Action, Direction, OrderType
 from trazy_analysis.models.order import Order
 from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
 from trazy_analysis.position.position import Position
-from trazy_analysis.settings import BINANCE_API_KEY, BINANCE_API_SECRET
 
 INITIAL_CASH = "51.07118"
 
