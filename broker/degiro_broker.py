@@ -7,24 +7,24 @@ from typing import List
 
 import pandas as pd
 
-import settings
-from broker import degiroapi
-from broker.broker import Broker
-from broker.common import get_rejected_order_error_message
-from common.clock import Clock
-from common.constants import DEGIRO_DATETIME_FORMAT
-from common.helper import get_or_create_nested_dict
-from common.utils import timestamp_to_utc
-from logger import logger
-from models.asset import Asset
-from models.enums import Action, Direction, OrderCondition, OrderType
-from models.order import Order
-from portfolio.portfolio_event import PortfolioEvent
-from position.position import Position
-from position.transaction import Transaction
+import trazy_analysis.settings
+from trazy_analysis.broker import degiroapi
+from trazy_analysis.broker.broker import Broker
+from trazy_analysis.broker.common import get_rejected_order_error_message
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.common.constants import DEGIRO_DATETIME_FORMAT
+from trazy_analysis.common.helper import get_or_create_nested_dict
+from trazy_analysis.common.utils import timestamp_to_utc
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction, OrderCondition, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.position.position import Position
+from trazy_analysis.position.transaction import Transaction
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -55,7 +55,10 @@ class DegiroBroker(Broker):
             exchange=exchange,
         )
         self.degiro = degiroapi.DeGiro()
-        self.degiro.login(settings.DEGIRO_BROKER_LOGIN, settings.DEGIRO_BROKER_PASSWORD)
+        self.degiro.login(
+            trazy_analysis.settings.DEGIRO_BROKER_LOGIN,
+            trazy_analysis.settings.DEGIRO_BROKER_PASSWORD,
+        )
         self.product_id_to_asset = {}
         self.asset_to_product_id = {}
         self.product_info_last_update = {}

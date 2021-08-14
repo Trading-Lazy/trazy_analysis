@@ -7,17 +7,17 @@ from urllib.parse import urlparse
 import numpy as np
 from influxdb import DataFrameClient, InfluxDBClient
 
-import settings
-from common.helper import datetime_to_epoch
-from common.types import CandleDataFrame
-from common.utils import timestamp_to_utc
-from db_storage.db_storage import DbStorage
-from logger import logger
-from models.asset import Asset
-from models.candle import Candle
-from models.order import Order
-from models.signal import Signal
-from settings import (
+import trazy_analysis.settings
+from trazy_analysis.common.helper import datetime_to_epoch
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.common.utils import timestamp_to_utc
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.settings import (
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
     INFLUXDB_URL,
@@ -25,8 +25,8 @@ from settings import (
     SIGNALS_COLLECTION_NAME,
 )
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

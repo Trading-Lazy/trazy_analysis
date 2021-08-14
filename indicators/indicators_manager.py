@@ -2,12 +2,12 @@ from typing import Dict
 
 import numpy as np
 
-from indicators.rolling_window import (
+from trazy_analysis.indicators.rolling_window import (
     PriceRollingWindowManager,
     RollingWindowManager,
     TimeFramedCandleRollingWindowManager,
 )
-from indicators.sma import SmaManager
+from trazy_analysis.indicators.sma import SmaManager
 
 
 class IndicatorsManager:

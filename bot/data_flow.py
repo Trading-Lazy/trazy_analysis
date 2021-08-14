@@ -1,5 +1,5 @@
-from bot.data_consumer import DataConsumer
-from feed.feed import Feed
+from trazy_analysis.bot.data_consumer import DataConsumer
+from trazy_analysis.feed.feed import Feed
 
 
 class DataFlow:

@@ -1,14 +1,17 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 
 import numpy as np
+import pytz
 from freezegun import freeze_time
 
-from market_data.live.binance_live_data_handler import BinanceLiveDataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.market_data.live.binance_live_data_handler import (
+    BinanceLiveDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
-SYMBOL = "BTCUSDT"
+SYMBOL = "BTC/USDT"
 EXCHANGE = "BINANCE"
 ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 TOKEN = "abcde"
@@ -92,49 +95,49 @@ def test_parse_ticker_latest_data_points():
     expected_candles = np.array(
         [
             Candle(
-                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
+                asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
                 open=7922.99,
                 high=7936.99,
                 low=7919.84,
                 close=7935.61,
                 volume=53.68618,
-                timestamp=datetime(2018, 4, 13, tzinfo=timezone.utc),
+                timestamp=datetime(2018, 4, 13, tzinfo=pytz.UTC),
             ),
             Candle(
-                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
+                asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
                 open=7935.54,
                 high=7954.99,
                 low=7930.09,
                 close=7945.67,
                 volume=39.595335,
-                timestamp=datetime(2018, 4, 13, 0, 1, tzinfo=timezone.utc),
+                timestamp=datetime(2018, 4, 13, 0, 1, tzinfo=pytz.UTC),
             ),
             Candle(
-                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
+                asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
                 open=7950.0,
                 high=7954.98,
                 low=7946.0,
                 close=7948.0,
                 volume=28.717295,
-                timestamp=datetime(2018, 4, 13, 0, 2, tzinfo=timezone.utc),
+                timestamp=datetime(2018, 4, 13, 0, 2, tzinfo=pytz.UTC),
             ),
             Candle(
-                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
+                asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
                 open=7950.26,
                 high=7959.72,
                 low=7950.0,
                 close=7957.0,
                 volume=56.889722,
-                timestamp=datetime(2018, 4, 13, 0, 3, tzinfo=timezone.utc),
+                timestamp=datetime(2018, 4, 13, 0, 3, tzinfo=pytz.UTC),
             ),
             Candle(
-                asset=Asset(symbol="BTCUSDT", exchange="BINANCE"),
+                asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
                 open=7957.0,
                 high=7979.0,
                 low=7942.35,
                 close=7978.89,
                 volume=75.47576,
-                timestamp=datetime(2018, 4, 13, 0, 4, tzinfo=timezone.utc),
+                timestamp=datetime(2018, 4, 13, 0, 4, tzinfo=pytz.UTC),
             ),
         ],
         dtype=Candle,

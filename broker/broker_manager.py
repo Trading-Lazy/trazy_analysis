@@ -1,7 +1,7 @@
 from typing import Dict
 
-from broker.broker import Broker
-from common.clock import Clock
+from trazy_analysis.broker.broker import Broker
+from trazy_analysis.common.clock import Clock
 
 
 class BrokerManager:

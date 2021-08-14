@@ -5,9 +5,9 @@ import pandas as pd
 from pandas import DataFrame, DatetimeIndex
 from pandas_market_calendars import MarketCalendar
 
-from common.utils import timestamp_to_utc, validate_dataframe_columns
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.common.utils import timestamp_to_utc, validate_dataframe_columns
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 
 class CandleDataFrame(DataFrame):
@@ -26,7 +26,12 @@ class CandleDataFrame(DataFrame):
         candles_data_in_init = "candles_data" in kwargs
         if candles_data_in_init:
             candles_data = kwargs.pop("candles_data")
-            kwargs.update({"data": candles_data})
+            if isinstance(candles_data, DataFrame):
+                len_candles_data = len(candles_data.index)
+            else:  # dict or list
+                len_candles_data = len(candles_data)
+            if len_candles_data != 0:
+                kwargs.update({"data": candles_data})
         super().__init__(*args, **kwargs)
         if candles_data_in_init:
             datetime_index_exist = isinstance(self.index, DatetimeIndex)
@@ -126,7 +131,7 @@ class CandleDataFrame(DataFrame):
             end_date=end.strftime("%Y-%m-%d"),
         )
 
-        from common.helper import resample_candle_data
+        from trazy_analysis.common.helper import resample_candle_data
 
         aggregated_candle_dataframe = resample_candle_data(
             self, time_unit, market_cal_df

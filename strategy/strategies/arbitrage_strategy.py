@@ -1,13 +1,13 @@
 from collections import deque
 from typing import Dict, List
 
-from common.clock import Clock
-from indicators.indicators_manager import IndicatorsManager
-from models.enums import Action, Direction
-from models.signal import ArbitragePairSignal, Signal
-from order_manager.order_manager import OrderManager
-from strategy.context import Context
-from strategy.strategy import LOG, Strategy
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.signal import ArbitragePairSignal, Signal
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.strategy.context import Context
+from trazy_analysis.strategy.strategy import LOG, Strategy
 
 
 class ArbitrageStrategy(Strategy):
@@ -40,8 +40,16 @@ class ArbitrageStrategy(Strategy):
                 if candle1.volume == 0 or candle2.volume == 0:
                     continue
                 diff = abs(candle1.close - candle2.close)
-                fee1 = candle1.close * self.commission
-                fee2 = candle2.close * self.commission
+                broker1 = self.order_manager.broker_manager.get_broker(
+                    candle1.asset.exchange
+                )
+                commission1 = broker1.fee_model.commission_pct
+                broker2 = self.order_manager.broker_manager.get_broker(
+                    candle2.asset.exchange
+                )
+                commission2 = broker2.fee_model.commission_pct
+                fee1 = candle1.close * commission1
+                fee2 = candle2.close * commission2
                 total_fee = fee1 + fee2
                 LOG.info(f"diff = {diff}")
                 LOG.info(f"total fee = {total_fee}")

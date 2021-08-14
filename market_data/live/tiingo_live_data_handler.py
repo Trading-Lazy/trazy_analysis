@@ -1,10 +1,10 @@
 from datetime import date
 from typing import List
 
-from market_data.live.live_data_handler import LiveDataHandler
-from market_data.tiingo_data_handler import TiingoDataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
+from trazy_analysis.market_data.tiingo_data_handler import TiingoDataHandler
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 
 class TiingoLiveDataHandler(TiingoDataHandler, LiveDataHandler):

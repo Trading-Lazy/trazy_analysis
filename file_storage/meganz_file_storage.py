@@ -1,6 +1,7 @@
 import io
 import os
 import random
+from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
@@ -21,18 +22,17 @@ from mega.crypto import (
     str_to_a32,
 )
 from mega.errors import RequestError
-from pathlib import Path
 
-import settings
-from common.constants import ENCODING
-from common.decorators import try_until_success
-from file_storage.common import PATH_SEPARATOR
-from file_storage.file_storage import FileStorage
-from logger import logger
-from settings import MEGA_API_EMAIL, MEGA_API_PASSWORD
+import trazy_analysis.settings
+from trazy_analysis.common.constants import ENCODING
+from trazy_analysis.common.decorators import try_until_success
+from trazy_analysis.file_storage.common import PATH_SEPARATOR
+from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.logger import logger
+from trazy_analysis.settings import MEGA_API_EMAIL, MEGA_API_PASSWORD
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 NODE_ID_KEY = "h"
 NODE_PARENT_KEY = "p"

@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from common.constants import DATE_FORMAT
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
-from common.types import CandleDataFrame
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.common.constants import DATE_FORMAT
+from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 SYMBOL = "IVV"
 CANDLE1 = Candle(

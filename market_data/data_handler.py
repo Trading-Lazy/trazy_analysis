@@ -5,14 +5,14 @@ from typing import List
 
 import numpy as np
 
-import settings
-from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
-from common.meta import RateLimitedSingletonMeta
-from common.types import CandleDataFrame
-from logger import logger
+import trazy_analysis.settings
+from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
+from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.logger import logger
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

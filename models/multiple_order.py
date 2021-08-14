@@ -1,12 +1,13 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import numpy as np
+import pytz
 
-from common.clock import Clock
-from models.asset import Asset
-from models.enums import Action, OrderStatus, OrderType
-from models.order import Order, OrderBase
-from models.utils import is_closed_position, is_open_position
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, OrderStatus, OrderType
+from trazy_analysis.models.order import Order, OrderBase
+from trazy_analysis.models.utils import is_closed_position, is_open_position
 
 
 class MultipleOrder(OrderBase):
@@ -14,7 +15,7 @@ class MultipleOrder(OrderBase):
         self,
         orders: np.array,  # [OrderBase]
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: str = timedelta(minutes=5),
     ):
         self.orders = orders
@@ -53,7 +54,7 @@ class MultipleOrder(OrderBase):
     def completed_orders(self) -> None:
         return [order for order in self.orders if order.status == OrderStatus.COMPLETED]
 
-    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
+    def submit(self, submission_time: datetime = datetime.now(pytz.UTC)) -> None:
         super().submit(submission_time)
         for order in self.orders:
             order.submit(submission_time)
@@ -69,7 +70,7 @@ class SequentialOrder(MultipleOrder):
         self,
         orders: np.array,  # [OrderBase]
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: str = timedelta(minutes=5),
     ) -> None:
         super().__init__(orders, status, generation_time, time_in_force)
@@ -88,7 +89,7 @@ class SequentialOrder(MultipleOrder):
             )
         return self.orders[0]
 
-    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
+    def submit(self, submission_time: datetime = datetime.now(pytz.UTC)) -> None:
         first_order = self.get_first_order()
         first_order.submit(submission_time)
 
@@ -98,7 +99,7 @@ class OcoOrder(MultipleOrder):
         self,
         orders: np.array,  # [OrderBase]
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: str = timedelta(minutes=5),
     ) -> None:
         super().__init__(orders, status, generation_time, time_in_force)
@@ -138,7 +139,7 @@ class HomogeneousSequentialOrder(SequentialOrder):
         orders: np.array,  # [OrderBase]
         clock: Clock = None,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: str = timedelta(minutes=5),
     ):
         self.asset = asset
@@ -146,7 +147,7 @@ class HomogeneousSequentialOrder(SequentialOrder):
         self.check_orders_asset(orders)
         super().__init__(orders, status, generation_time, time_in_force)
 
-    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
+    def submit(self, submission_time: datetime = datetime.now(pytz.UTC)) -> None:
         if self.clock is not None:
             submission_time = self.clock.current_time()
         first_order = self.get_first_order()
@@ -162,7 +163,7 @@ class CoverOrder(HomogeneousSequentialOrder):
         stop_order: Order,
         clock: Clock = None,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: Order = timedelta(minutes=5),
     ):
         # check allowed orders types
@@ -208,7 +209,7 @@ class BracketOrder(HomogeneousSequentialOrder):
         stop_order: Order,
         clock: Clock = None,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: timedelta = timedelta(minutes=5),
     ):
         # check allowed orders
@@ -264,7 +265,7 @@ class ArbitragePairOrder(MultipleOrder):
         buy_order: Order,
         sell_order: Order,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: str = timedelta(minutes=5),
     ):
         if buy_order.action != Action.BUY:

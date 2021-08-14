@@ -1,16 +1,18 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from math import floor
 from typing import Any
 
-import settings
-from logger import logger
-from models.asset import Asset
-from models.enums import Action, Direction
-from position.transaction import Transaction
+import pytz
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+import trazy_analysis.settings
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.position.transaction import Transaction
+
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -55,7 +57,7 @@ class Position:
         avg_sold: float = 0.0,
         buy_commission: float = 0.0,
         sell_commission: float = 0.0,
-        timestamp: datetime = datetime.now(timezone.utc),
+        timestamp: datetime = datetime.now(pytz.UTC),
     ) -> None:
         self.asset = asset
         self.price = price
@@ -270,7 +272,7 @@ class Position:
         """
         return self.realised_pnl + self.unrealised_pnl
 
-    def update_price(self, price, timestamp=datetime.now(timezone.utc)) -> float:
+    def update_price(self, price, timestamp=datetime.now(pytz.UTC)) -> float:
         """
         Updates the Position's awareness of the current market price
         of the asset.

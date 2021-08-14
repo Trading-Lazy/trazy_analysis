@@ -1,19 +1,24 @@
 from abc import abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+import pytz
 from pandas_market_calendars import MarketCalendar
 
-from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
-from common.types import CandleDataFrame
-from db_storage.db_storage import DbStorage
-from file_storage.file_storage import FileStorage
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from models.asset import Asset
-from models.candle import Candle
-from strategy.candlefetcher import CandleFetcher
+from trazy_analysis.common.american_stock_exchange_calendar import (
+    AmericanStockExchangeCalendar,
+)
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.strategy.candlefetcher import CandleFetcher
 
 
 class Loader:
@@ -89,7 +94,7 @@ class ExternalStorageLoader:
         assets: List[Asset],
         time_unit: timedelta,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,
         market_cal: MarketCalendar = AmericanStockExchangeCalendar(),

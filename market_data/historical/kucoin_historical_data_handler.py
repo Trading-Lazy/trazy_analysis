@@ -1,10 +1,12 @@
 from datetime import date, datetime, timedelta, timezone
 from typing import Tuple
 
-from common.helper import map_ticker_to_kucoin_symbol
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from market_data.kucoin_data_handler import KucoinDataHandler
-from models.asset import Asset
+from trazy_analysis.common.helper import map_ticker_to_kucoin_symbol
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.market_data.kucoin_data_handler import KucoinDataHandler
+from trazy_analysis.models.asset import Asset
 
 
 class KucoinHistoricalDataHandler(KucoinDataHandler, HistoricalDataHandler):

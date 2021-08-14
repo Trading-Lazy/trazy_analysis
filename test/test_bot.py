@@ -1,5 +1,5 @@
-from bot.bot import get_strategies_classes
-from strategy.strategy import Strategy
+from trazy_analysis.bot.bot import get_strategies_classes
+from trazy_analysis.strategy.strategy import Strategy
 
 
 def test_get_strategies_classes():

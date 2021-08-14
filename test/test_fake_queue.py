@@ -1,12 +1,12 @@
-import settings
-from candles_queue.fake_queue import FakeQueue
+import trazy_analysis.settings
+from trazy_analysis.candles_queue.fake_queue import FakeQueue
 
 QUEUE_NAME = "candles"
 OTHER_QUEUE_NAME = "other_candles"
 MESSAGE1 = "Rabbits like carrots"
 MESSAGE2 = "I am the master of the world"
 MESSAGE3 = "I like tests"
-CONNECTION_URL = settings.CLOUDAMQP_URL
+CONNECTION_URL = trazy_analysis.settings.CLOUDAMQP_URL
 
 
 def test_flush():

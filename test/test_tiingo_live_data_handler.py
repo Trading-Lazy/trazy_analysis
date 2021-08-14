@@ -3,9 +3,11 @@ from datetime import datetime
 import numpy as np
 from freezegun import freeze_time
 
-from market_data.live.tiingo_live_data_handler import TiingoLiveDataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.market_data.live.tiingo_live_data_handler import (
+    TiingoLiveDataHandler,
+)
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 AAPL_SYMBOL = "AAPL"
 EXCHANGE = "IEX"

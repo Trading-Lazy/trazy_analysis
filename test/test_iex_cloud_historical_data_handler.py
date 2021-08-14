@@ -4,10 +4,10 @@ import numpy as np
 import pandas as pd
 from pandas._libs.tslibs.timestamps import Timestamp
 
-from market_data.historical.iex_cloud_historical_data_handler import (
+from trazy_analysis.market_data.historical.iex_cloud_historical_data_handler import (
     IexCloudHistoricalDataHandler,
 )
-from models.asset import Asset
+from trazy_analysis.models.asset import Asset
 
 SYMBOL = "IVV"
 

@@ -4,23 +4,29 @@ from unittest.mock import call, patch
 import numpy as np
 from freezegun import freeze_time
 
-from common.constants import DATE_DIR_FORMAT
-from common.types import CandleDataFrame
-from file_storage.common import DATASETS_DIR, DONE_DIR, ERROR_DIR, NONE_DIR, TICKERS_DIR
-from file_storage.meganz_file_storage import MegaNzFileStorage
-from market_data.historical.historical_data_pipeline import (
+from trazy_analysis.common.constants import DATE_DIR_FORMAT
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.file_storage.common import (
+    DATASETS_DIR,
+    DONE_DIR,
+    ERROR_DIR,
+    NONE_DIR,
+    TICKERS_DIR,
+)
+from trazy_analysis.file_storage.meganz_file_storage import MegaNzFileStorage
+from trazy_analysis.market_data.historical.historical_data_pipeline import (
     HistoricalDataPipeline,
     TERMINATION_FILE,
     TICKERS_FILE_BASE_NAME,
 )
-from market_data.historical.iex_cloud_historical_data_handler import (
+from trazy_analysis.market_data.historical.iex_cloud_historical_data_handler import (
     IexCloudHistoricalDataHandler,
 )
-from market_data.historical.tiingo_historical_data_handler import (
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 TIINGO_HISTORICAL_DATA_HANDLER = TiingoHistoricalDataHandler()
 IEX_CLOUD_HISTORICAL_DATA_HANDLER = IexCloudHistoricalDataHandler()
@@ -32,7 +38,7 @@ EXCHANGE = "IEX"
 AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.write")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.write")
 def test_write_candle_dataframe_in_file_storage(write_mocked):
     candles = np.array(
         [
@@ -145,7 +151,7 @@ def test_write_candle_dataframe_in_file_storage(write_mocked):
     write_mocked.assert_has_calls(write_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.ls")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.ls")
 def test_get_todo_dates(ls_mocked):
     historical_data_pipeline = HistoricalDataPipeline(
         TIINGO_HISTORICAL_DATA_HANDLER, STORAGE
@@ -184,7 +190,7 @@ def test_get_todo_dates(ls_mocked):
     ls_mocked.assert_has_calls(ls_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.ls")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.ls")
 def test_get_todo_dates_no_available_date_for_download(ls_mocked):
     historical_data_pipeline = HistoricalDataPipeline(
         TIINGO_HISTORICAL_DATA_HANDLER, STORAGE
@@ -212,8 +218,10 @@ def test_get_todo_dates_no_available_date_for_download(ls_mocked):
     ls_mocked.assert_has_calls(ls_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.write")
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.create_directory")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.write")
+@patch(
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.create_directory"
+)
 def test_write_tickers_list_in_file_storage(create_directory_mocked, write_mocked):
     tickers = [
         AAPL_ASSET,
@@ -241,8 +249,8 @@ def test_write_tickers_list_in_file_storage(create_directory_mocked, write_mocke
     write_mocked.assert_has_calls(write_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.write")
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.exists")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.write")
+@patch("trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.exists")
 def test_handle_states(exists_mocked, write_mocked):
     exists_mocked.side_effect = [True, True, False]
 
@@ -354,13 +362,13 @@ def test_get_period_dates():
 
 
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.handle_states"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.handle_states"
 )
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.write_candle_dataframe_in_file_storage"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.write_candle_dataframe_in_file_storage"
 )
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_from_periods"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_from_periods"
 )
 def test_get_all_tickers_for_all_periods(
     request_ticker_data_from_periods_mocked,
@@ -535,17 +543,17 @@ def test_get_all_tickers_for_all_periods(
 
 
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_all_tickers_for_all_periods"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_all_tickers_for_all_periods"
 )
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.write_tickers_list_in_file_storage"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.write_tickers_list_in_file_storage"
 )
-@patch("market_data.historical.historical_data_pipeline.get_periods")
+@patch("trazy_analysis.market_data.historical.historical_data_pipeline.get_periods")
 @patch(
-    "file_storage.meganz_file_storage.MegaNzFileStorage.create_all_dates_directories"
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.create_all_dates_directories"
 )
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_todo_dates"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_todo_dates"
 )
 @freeze_time("2020-06-18")
 def test_start_flow_no_todo_dates(
@@ -573,18 +581,18 @@ def test_start_flow_no_todo_dates(
 
 
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_all_tickers_for_all_periods"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_all_tickers_for_all_periods"
 )
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.write_tickers_list_in_file_storage"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.write_tickers_list_in_file_storage"
 )
-@patch("market_data.data_handler.DataHandler.get_tickers_list")
-@patch("market_data.historical.historical_data_pipeline.get_periods")
+@patch("trazy_analysis.market_data.data_handler.DataHandler.get_tickers_list")
+@patch("trazy_analysis.market_data.historical.historical_data_pipeline.get_periods")
 @patch(
-    "file_storage.meganz_file_storage.MegaNzFileStorage.create_all_dates_directories"
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.create_all_dates_directories"
 )
 @patch(
-    "market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_todo_dates"
+    "trazy_analysis.market_data.historical.historical_data_pipeline.HistoricalDataPipeline.get_todo_dates"
 )
 @freeze_time("2020-06-18")
 def test_start_flow(

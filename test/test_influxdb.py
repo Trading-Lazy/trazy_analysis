@@ -1,28 +1,27 @@
 from datetime import datetime, timedelta
-from datetime import datetime, timedelta
 from typing import List
 from unittest.mock import call, patch
 
 import pandas as pd
 import pytest
 
-from common.clock import SimulatedClock
-from common.constants import DATE_FORMAT
-from common.types import CandleDataFrame
-from db_storage.influxdb_storage import InfluxDbStorage
-from models.asset import Asset
-from models.candle import Candle
-from models.enums import Action, Direction
-from models.order import Order
-from models.signal import Signal
-from settings import (
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.common.constants import DATE_FORMAT
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.db_storage.influxdb_storage import InfluxDbStorage
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.settings import (
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
     INFLUXDB_URL,
     ORDERS_COLLECTION_NAME,
     SIGNALS_COLLECTION_NAME,
 )
-from test.tools.tools import (
+from trazy_analysis.test.tools.tools import (
     compare_candles_list,
     compare_orders_list,
     compare_signals_list,

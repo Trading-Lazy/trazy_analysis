@@ -2,7 +2,7 @@ import json
 import os
 import re
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import List
 
 import numpy as np
@@ -14,19 +14,19 @@ from pandas_market_calendars import MarketCalendar
 from pandasql import sqldf
 from requests import Response
 
-import logger
-import settings
-from common.calendar import is_business_day, is_business_hour
-from common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
-from common.types import CandleDataFrame
-from common.utils import timestamp_to_utc
+import trazy_analysis.logger
+import trazy_analysis.settings
+from trazy_analysis.common.calendar import is_business_day, is_business_hour
+from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.common.utils import timestamp_to_utc
 
 MINUTE_IN_ONE_HOUR = 60
 MAP_TICKER_KUCOIN_SYMBOL_LAST_UPDATE = None
 UPDATE_KUCOIN_SYMBOLS_MAPPING = timedelta(days=1)
 TICKER_TO_KUCOIN_SYMBOL = {}
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -56,7 +56,7 @@ def round_time(dt=None, time_delta=timedelta(minutes=1)):
     time_delta : timedelta object, we round to a multiple of this, default 1 minute.
     """
     if dt == None:
-        dt = datetime.now(timezone.utc)
+        dt = datetime.now(pytz.UTC)
     round_to = time_delta.total_seconds()
     seconds = dt.timestamp()
 
@@ -72,7 +72,7 @@ def ceil_time(dt=None, time_delta=timedelta(minutes=1)):
     time_delta : timedelta object, we round to a multiple of this, default 1 minute.
     """
     if dt == None:
-        dt = datetime.now(timezone.utc)
+        dt = datetime.now(pytz.UTC)
     if isinstance(dt, pd.Timestamp):
         return pd.Timestamp(
             ceil_time(dt.to_pydatetime(), pd.Timedelta(time_delta).to_pytimedelta())
@@ -181,7 +181,7 @@ def calc_required_history_start_timestamp(
     time_unit: timedelta,
     period: int,
     business_calendar: MarketCalendar,
-    end_timestamp: datetime = datetime.now(timezone.utc),
+    end_timestamp: datetime = datetime.now(pytz.UTC),
 ) -> datetime:
     interval_unit = "day" if time_unit.name == "D" else "minute"
     interval = TimeInterval(interval_unit, time_unit.n)
@@ -214,6 +214,7 @@ def fill_missing_datetimes(
         resample_label = "left"
     if df.empty:
         return df
+    # print(df.resample(time_unit, label=resample_label, closed="right"))
     df = df.resample(time_unit, label=resample_label, closed="right").agg(
         {
             "open": "first",
@@ -306,7 +307,7 @@ def parse_timedelta_str(timedelta_str: str) -> timedelta:
 
 
 def map_ticker_to_kucoin_symbol(ticker: str) -> str:
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=pytz.UTC)
     global TICKER_TO_KUCOIN_SYMBOL
     if (
         MAP_TICKER_KUCOIN_SYMBOL_LAST_UPDATE is not None
@@ -314,7 +315,7 @@ def map_ticker_to_kucoin_symbol(ticker: str) -> str:
     ):
         return TICKER_TO_KUCOIN_SYMBOL
     try:
-        from market_data.kucoin_data_handler import KucoinDataHandler
+        from trazy_analysis.market_data.kucoin_data_handler import KucoinDataHandler
 
         response = request(KucoinDataHandler.BASE_URL_GET_TICKERS_LIST)
     except Exception as e:
@@ -330,7 +331,7 @@ def map_ticker_to_kucoin_symbol(ticker: str) -> str:
         tickers_info = tickers_dict["data"]
         tickers_with_hyphen = [ticker_info["symbol"] for ticker_info in tickers_info]
         TICKER_TO_KUCOIN_SYMBOL = {
-            ticker.replace("-", ""): ticker for ticker in tickers_with_hyphen
+            ticker.replace("-", "/"): ticker for ticker in tickers_with_hyphen
         }
     else:
         LOG.error(

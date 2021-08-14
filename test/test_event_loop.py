@@ -2,20 +2,20 @@ from collections import deque
 from datetime import datetime
 from unittest.mock import call, patch
 
-from bot.event_loop import EventLoop
-from broker.broker_manager import BrokerManager
-from broker.simulated_broker import SimulatedBroker
-from common.clock import SimulatedClock
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
-from feed.feed import CsvFeed
-from indicators.indicators_manager import IndicatorsManager
-from models.asset import Asset
-from models.candle import Candle
-from order_manager.order_creator import OrderCreator
-from order_manager.order_manager import OrderManager
-from order_manager.position_sizer import PositionSizer
-from strategy.strategies.idle_strategy import IdleStrategy
-from strategy.strategies.sma_crossover_strategy import (
+from trazy_analysis.bot.event_loop import EventLoop
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.broker.simulated_broker import SimulatedBroker
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from trazy_analysis.feed.feed import CsvFeed
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.order_manager.order_creator import OrderCreator
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.order_manager.position_sizer import PositionSizer
+from trazy_analysis.strategy.strategies.idle_strategy import IdleStrategy
+from trazy_analysis.strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
 
@@ -115,7 +115,7 @@ def test_init_backtest():
 
 
 @patch(
-    "strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context"
+    "trazy_analysis.strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context"
 )
 def test_run_strategy(process_context):
     assets = [AAPL_ASSET, GOOGL_ASSET]
@@ -142,7 +142,7 @@ def test_run_strategy(process_context):
     process_context.assert_has_calls(process_context_calls)
 
 
-@patch("bot.event_loop.EventLoop.run_strategy")
+@patch("trazy_analysis.bot.event_loop.EventLoop.run_strategy")
 def test_run_strategies(run_strategy_mocked):
     assets = [AAPL_ASSET, GOOGL_ASSET]
     strategies_classes = {

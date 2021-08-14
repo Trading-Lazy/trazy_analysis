@@ -5,16 +5,18 @@ import numpy as np
 import pandas as pd
 from requests import Response
 
-from common.types import CandleDataFrame
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from market_data.historical.iex_cloud_historical_data_handler import (
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.market_data.historical.iex_cloud_historical_data_handler import (
     IexCloudHistoricalDataHandler,
 )
-from market_data.historical.tiingo_historical_data_handler import (
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 IVV_SYMBOL = "IVV"
 EXCHANGE = "IEX"
@@ -134,7 +136,7 @@ def test_parse_ticker_data_tiingo():
         "2020-06-18 09:32:00-04:00,354.22,354.26,353.95,353.98,1186.0\n"
     )
     groups_df = TiingoHistoricalDataHandler.group_ticker_data_by_date(IVV_ASSET, data)
-    expected_dates = ["20200617", "20200618", "20200619"]
+    expected_dates = ["20200617", "20200618"]
     expected_dfs = [
         pd.DataFrame(
             {
@@ -225,7 +227,7 @@ def test_parse_ticker_data_iex():
 
 
 @patch(
-    "market_data.historical.tiingo_historical_data_handler.TiingoHistoricalDataHandler.request"
+    "trazy_analysis.market_data.historical.tiingo_historical_data_handler.TiingoHistoricalDataHandler.request"
 )
 @patch("requests.Response.content")
 def test_get_tickers_success_tiingo(content_mocked, request_mocked):
@@ -299,7 +301,7 @@ def test_get_tickers_success_tiingo(content_mocked, request_mocked):
 
 
 @patch(
-    "market_data.historical.iex_cloud_historical_data_handler.IexCloudHistoricalDataHandler.request"
+    "trazy_analysis.market_data.historical.iex_cloud_historical_data_handler.IexCloudHistoricalDataHandler.request"
 )
 @patch("requests.Response.content")
 def test_get_tickers_success_iex(content_mocked, request_mocked):
@@ -335,7 +337,7 @@ def test_get_tickers_success_iex(content_mocked, request_mocked):
 
 
 @patch(
-    "market_data.historical.tiingo_historical_data_handler.TiingoHistoricalDataHandler.request"
+    "trazy_analysis.market_data.historical.tiingo_historical_data_handler.TiingoHistoricalDataHandler.request"
 )
 def test_get_tickers_failure_tiingo(request_mocked):
     request_mocked.return_value = Response()
@@ -349,7 +351,7 @@ def test_get_tickers_failure_tiingo(request_mocked):
 
 
 @patch(
-    "market_data.historical.iex_cloud_historical_data_handler.IexCloudHistoricalDataHandler.request"
+    "trazy_analysis.market_data.historical.iex_cloud_historical_data_handler.IexCloudHistoricalDataHandler.request"
 )
 def test_get_tickers_failure_iex(request_mocked):
     request_mocked.return_value = Response()
@@ -364,7 +366,7 @@ def test_get_tickers_failure_iex(request_mocked):
     request_mocked.assert_has_calls(request_mocked_calls)
 
 
-@patch("market_data.historical.historical_data_handler.request")
+@patch("trazy_analysis.market_data.historical.historical_data_handler.request")
 def test_request_ticker_data_tiingo(request_mocked):
     ticker = Asset(symbol="aapl", exchange="IEX")
     period = (date(1996, 4, 13), date(1996, 5, 13))
@@ -387,7 +389,7 @@ def test_request_ticker_data_tiingo(request_mocked):
     request_mocked.assert_has_calls(request_mocked_calls)
 
 
-@patch("market_data.historical.historical_data_handler.request")
+@patch("trazy_analysis.market_data.historical.historical_data_handler.request")
 def test_request_ticker_data_iex(request_mocked):
     ticker = Asset(symbol="aapl", exchange="IEX")
     period = (date(1996, 4, 13), date(1996, 4, 13))
@@ -409,7 +411,7 @@ def test_request_ticker_data_iex(request_mocked):
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
 )
 @patch("requests.Response.content")
 def test_request_ticker_data_for_period_tiingo(
@@ -477,7 +479,7 @@ def test_request_ticker_data_for_period_tiingo(
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
 )
 @patch("requests.Response.content")
 def test_request_ticker_data_for_period_ticker_data_is_none_tiingo(
@@ -503,7 +505,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_tiingo(
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
 )
 @patch("requests.Response.content")
 def test_request_ticker_data_for_period_error_tiingo(
@@ -531,7 +533,7 @@ def test_request_ticker_data_for_period_error_tiingo(
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
 )
 @patch("requests.Response.content")
 def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_mocked):
@@ -597,7 +599,7 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
 )
 @patch("requests.Response.content")
 def test_request_ticker_data_for_period_ticker_data_is_none_iex(
@@ -623,7 +625,7 @@ def test_request_ticker_data_for_period_ticker_data_is_none_iex(
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data"
 )
 @patch("requests.Response.content")
 def test_request_ticker_data_for_period_error_iex(
@@ -651,7 +653,7 @@ def test_request_ticker_data_for_period_error_iex(
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_for_period"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_for_period"
 )
 def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked):
     expected_candles = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2, AAPL_CANDLES3])
@@ -681,11 +683,6 @@ def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked)
     assert none_response_periods == set()
     assert error_response_periods == {}
 
-    request_ticker_data_for_period_mocked_calls = [
-        call(IVV_ASSET, periods[0], set(), {}),
-        call(IVV_ASSET, periods[1], set(), {}),
-        call(IVV_ASSET, periods[2], set(), {}),
-    ]
     for i, call_arg_tuple in enumerate(
         request_ticker_data_for_period_mocked.call_args_list
     ):
@@ -701,7 +698,7 @@ def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked)
 
 
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_from_periods"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_from_periods"
 )
 def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
     request_ticker_data_from_periods_mocked.return_value = (
@@ -747,7 +744,7 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
 
 @patch("pandas.DataFrame.to_csv")
 @patch(
-    "market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_in_range"
+    "trazy_analysis.market_data.historical.historical_data_handler.HistoricalDataHandler.request_ticker_data_in_range"
 )
 def test_save_ticker_data_in_csv(request_ticker_data_in_range_mocked, to_csv_mocked):
     request_ticker_data_in_range_mocked.return_value = (

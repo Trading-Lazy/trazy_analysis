@@ -1,13 +1,13 @@
 from collections import deque
 from datetime import datetime
 
-from broker.simulated_broker import SimulatedBroker
-from common.clock import SimulatedClock
-from models.asset import Asset
-from models.enums import Action, Direction
-from models.order import Order
-from models.signal import Signal
-from order_manager.order_creator import OrderCreator
+from trazy_analysis.broker.simulated_broker import SimulatedBroker
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.order_manager.order_creator import OrderCreator
 
 
 def test_create_order_from_signal():

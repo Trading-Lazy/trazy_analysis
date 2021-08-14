@@ -1,20 +1,29 @@
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Dict, List
 
 import numpy as np
+import pytz
 from pandas_market_calendars import MarketCalendar
 
-from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
-from common.constants import MAX_TIMESTAMP
-from db_storage.db_storage import DbStorage
-from feed.loader import CsvLoader, ExternalStorageLoader, HistoricalDataLoader
-from file_storage.file_storage import FileStorage
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from market_data.live.live_data_handler import LiveDataHandler
-from models.asset import Asset
-from models.candle import Candle
-from models.event import (
+from trazy_analysis.common.american_stock_exchange_calendar import (
+    AmericanStockExchangeCalendar,
+)
+from trazy_analysis.common.constants import MAX_TIMESTAMP
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.feed.loader import (
+    CsvLoader,
+    ExternalStorageLoader,
+    HistoricalDataLoader,
+)
+from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.event import (
     MarketDataEndEvent,
     MarketDataEvent,
 )
@@ -46,6 +55,9 @@ class Feed:
         min_timestamp = MAX_TIMESTAMP
         completed = 0
         for asset in self.candles:
+            # print(f"asset = {asset}")
+            # indexes = {str(k): v for k, v in self.indexes.items()}
+            # print(f"indexes = {indexes}")
             if self.indexes[asset] < len(self.candles[asset]):
                 index = self.indexes[asset]
                 candle = self.candles[asset][index]
@@ -56,12 +68,15 @@ class Feed:
             else:
                 completed += 1
         if candles:
+            # print(f"candles = {[str(candle) for candle in candles]}")
             self.current_timestamp = min_timestamp
             assets = {}
             for candle in candles:
                 if candle.timestamp == self.current_timestamp:
                     self.indexes[candle.asset] += 1
                     assets[candle.asset] = np.array([candle], dtype=Candle)
+            str_assets = {str(k): v for k, v in assets.items()}
+            # print(f"{str_assets}")
             self.events.append(MarketDataEvent(assets, self.current_timestamp))
         elif completed == len(self.candles):
             self.events.append(
@@ -82,7 +97,7 @@ class LiveFeed(Feed):
         self.live_data_handler = live_data_handler
 
     def update_latest_data(self):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(pytz.UTC)
         candles_dict = {}
         min_timestamp = MAX_TIMESTAMP
         for asset in self.assets:
@@ -109,7 +124,7 @@ class ExternalStorageFeed(Feed):
         events: deque,
         time_unit: timedelta,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,
         market_cal: MarketCalendar = AmericanStockExchangeCalendar(),

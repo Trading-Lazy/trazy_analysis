@@ -1,9 +1,9 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-from market_data.historical.start_historical_data_pipeline import (
+from trazy_analysis.market_data.historical.start_historical_data_pipeline import (
     start_historical_data_pipeline,
 )
-from settings import (
+from trazy_analysis.settings import (
     HISTORICAL_FEED_DAY_OF_WEEK,
     HISTORICAL_FEED_HOUR,
     HISTORICAL_FEED_MINUTE,

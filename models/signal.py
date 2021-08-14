@@ -1,13 +1,14 @@
 from abc import abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import numpy as np
+import pytz
 
-from common.clock import Clock
-from common.helper import parse_timedelta_str
-from models.asset import Asset
-from models.enums import Action, Direction
-from models.utils import is_closed_position
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.common.helper import parse_timedelta_str
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.utils import is_closed_position
 
 
 class SignalBase:
@@ -96,7 +97,7 @@ class Signal(SignalBase):
         elif self.clock is not None:
             self.generation_time = self.clock.current_time()
         else:
-            self.generation_time = datetime.now(timezone.utc)
+            self.generation_time = datetime.now(pytz.UTC)
         self.signal_id = asset.key() + "-" + strategy + "-" + str(root_candle_timestamp)
 
     @staticmethod

@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
-from models.enums import Action, Direction
+import pytz
+
+from trazy_analysis.models.enums import Action, Direction
 
 
 class PortfolioEvent:
@@ -68,7 +70,7 @@ class PortfolioEvent:
         cls,
         credit: float,
         balance: float,
-        timestamp: datetime = datetime.now(timezone.utc),
+        timestamp: datetime = datetime.now(pytz.UTC),
     ):
         return SubscriptionEvent(timestamp=timestamp, credit=credit, balance=balance)
 
@@ -77,7 +79,7 @@ class PortfolioEvent:
         cls,
         debit: float,
         balance: float,
-        timestamp: datetime = datetime.now(timezone.utc),
+        timestamp: datetime = datetime.now(pytz.UTC),
     ):
         return WithdrawalEvent(timestamp=timestamp, debit=debit, balance=balance)
 

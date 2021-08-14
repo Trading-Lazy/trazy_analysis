@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
-from indicators.common import PriceType
-from indicators.indicator import Indicator
-from indicators.indicators_manager import IndicatorsManager
-from indicators.rolling_window import (
+from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from trazy_analysis.indicators.common import PriceType
+from trazy_analysis.indicators.indicator import Indicator
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.indicators.rolling_window import (
     PriceRollingWindowManager,
     RollingWindow,
     RollingWindowManager,
@@ -16,8 +16,8 @@ from indicators.rolling_window import (
     TimeFramedCandleRollingWindowManager,
     get_price_selector_function,
 )
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 SYMBOL1 = "IVV"
 SYMBOL2 = "AAPL"

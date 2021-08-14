@@ -1,22 +1,22 @@
 from collections import deque
 from unittest.mock import PropertyMock, call, patch
 
-from bot.event_loop import EventLoop
-from broker.broker import Broker
-from broker.broker_manager import BrokerManager
-from broker.simulated_broker import SimulatedBroker
-from common.clock import SimulatedClock
-from feed.feed import CsvFeed, Feed
-from indicators.indicators_manager import IndicatorsManager
-from models.asset import Asset
-from models.enums import Action, Direction, OrderStatus
-from models.multiple_order import MultipleOrder, SequentialOrder
-from models.order import Order
-from order_manager.order_creator import OrderCreator
-from order_manager.order_manager import OrderManager
-from order_manager.position_sizer import PositionSizer
-from portfolio.portfolio import Portfolio
-from strategy.strategies.sma_crossover_strategy import (
+from trazy_analysis.bot.event_loop import EventLoop
+from trazy_analysis.broker.broker import Broker
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.broker.simulated_broker import SimulatedBroker
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.feed.feed import CsvFeed, Feed
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction, OrderStatus
+from trazy_analysis.models.multiple_order import MultipleOrder, SequentialOrder
+from trazy_analysis.models.order import Order
+from trazy_analysis.order_manager.order_creator import OrderCreator
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.order_manager.position_sizer import PositionSizer
+from trazy_analysis.portfolio.portfolio import Portfolio
+from trazy_analysis.strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
 
@@ -47,7 +47,10 @@ def test_init():
     assert broker.portfolio == port
 
 
-@patch("portfolio.portfolio.Portfolio.total_market_value", new_callable=PropertyMock)
+@patch(
+    "trazy_analysis.portfolio.portfolio.Portfolio.total_market_value",
+    new_callable=PropertyMock,
+)
 def test_get_portfolio_total_market_value(total_market_value_mocked):
     clock = SimulatedClock()
     events = deque()
@@ -58,7 +61,10 @@ def test_get_portfolio_total_market_value(total_market_value_mocked):
     total_market_value_mocked.assert_has_calls(total_market_value_mocked_calls)
 
 
-@patch("portfolio.portfolio.Portfolio.total_equity", new_callable=PropertyMock)
+@patch(
+    "trazy_analysis.portfolio.portfolio.Portfolio.total_equity",
+    new_callable=PropertyMock,
+)
 def test_get_portfolio_total_equity(total_equity_mocked):
     clock = SimulatedClock()
     events = deque()
@@ -69,7 +75,7 @@ def test_get_portfolio_total_equity(total_equity_mocked):
     total_equity_mocked.assert_has_calls(total_equity_mocked_calls)
 
 
-@patch("portfolio.portfolio.Portfolio.portfolio_to_dict")
+@patch("trazy_analysis.portfolio.portfolio.Portfolio.portfolio_to_dict")
 def test_get_portfolio_as_dict(portfolio_to_dict_mocked):
     clock = SimulatedClock()
     events = deque()

@@ -1,21 +1,22 @@
 import copy
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pandas as pd
+import pytz
 
-import settings
-from common.constants import DATE_FORMAT
-from common.helper import get_or_create_nested_dict
-from logger import logger
-from models.asset import Asset
-from models.enums import Action
-from portfolio.portfolio_event import PortfolioEvent, TransactionEvent
-from position.position_handler import PositionHandler
-from position.transaction import Transaction
+import trazy_analysis.settings
+from trazy_analysis.common.constants import DATE_FORMAT
+from trazy_analysis.common.helper import get_or_create_nested_dict
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent, TransactionEvent
+from trazy_analysis.position.position_handler import PositionHandler
+from trazy_analysis.position.transaction import Transaction
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -45,7 +46,7 @@ class Portfolio:
         currency: str = "USD",
         portfolio_id: str = None,
         name: str = None,
-        timestamp: datetime = datetime.now(timezone.utc),
+        timestamp: datetime = datetime.now(pytz.UTC),
     ) -> None:
         """
         Initialise the Portfolio object with a PositionHandler,
@@ -66,7 +67,7 @@ class Portfolio:
         self._initialise_portfolio_with_cash(timestamp)
 
     def _initialise_portfolio_with_cash(
-        self, timestamp: datetime = datetime.now(timezone.utc)
+        self, timestamp: datetime = datetime.now(pytz.UTC)
     ) -> None:
         """
         Initialise the portfolio with a (default) currency Cash Symbol
@@ -128,7 +129,7 @@ class Portfolio:
         return self.pos_handler.total_pnl()
 
     def subscribe_funds(
-        self, amount: float, timestamp: datetime = datetime.now(timezone.utc)
+        self, amount: float, timestamp: datetime = datetime.now(pytz.UTC)
     ) -> None:
         """
         Credit funds to the portfolio.
@@ -157,7 +158,7 @@ class Portfolio:
         )
 
     def withdraw_funds(
-        self, amount: float, timestamp: datetime = datetime.now(timezone.utc)
+        self, amount: float, timestamp: datetime = datetime.now(pytz.UTC)
     ) -> None:
         """
         Withdraw funds from the portfolio if there is enough
@@ -293,7 +294,7 @@ class Portfolio:
         return holdings
 
     def update_market_value_of_symbol(
-        self, asset: Asset, current_price: float, timestamp=datetime.now(timezone.utc)
+        self, asset: Asset, current_price: float, timestamp=datetime.now(pytz.UTC)
     ) -> None:
         """
         Update the market value of the asset to the current

@@ -1,7 +1,7 @@
 import abc
 from typing import Callable
 
-from models.candle import Candle
+from trazy_analysis.models.candle import Candle
 
 
 class CandlesQueue:

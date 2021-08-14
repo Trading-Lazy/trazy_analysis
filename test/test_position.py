@@ -2,10 +2,10 @@ from datetime import datetime
 
 import pytest
 
-from models.asset import Asset
-from models.enums import Action, Direction
-from position.position import Position
-from position.transaction import Transaction
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.position.position import Position
+from trazy_analysis.position.transaction import Transaction
 
 EXCHANGE = "IEX"
 

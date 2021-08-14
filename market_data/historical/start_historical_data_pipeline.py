@@ -1,8 +1,12 @@
-from file_storage.file_storage import FileStorage
-from file_storage.meganz_file_storage import MegaNzFileStorage
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from market_data.historical.historical_data_pipeline import HistoricalDataPipeline
-from market_data.historical.tiingo_historical_data_handler import (
+from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.file_storage.meganz_file_storage import MegaNzFileStorage
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.market_data.historical.historical_data_pipeline import (
+    HistoricalDataPipeline,
+)
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
 

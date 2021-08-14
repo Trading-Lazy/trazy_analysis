@@ -3,9 +3,9 @@ from datetime import datetime
 import pandas as pd
 from pytz import timezone
 
-from common.calendar import is_business_day, is_business_hour
-from common.constants import DATE_FORMAT
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
+from trazy_analysis.common.calendar import is_business_day, is_business_hour
+from trazy_analysis.common.constants import DATE_FORMAT
+from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
 
 euronext_cal = EuronextExchangeCalendar()
 

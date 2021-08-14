@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from typing import List
 
-from market_data.binance_data_handler import BinanceDataHandler
-from market_data.live.live_data_handler import LiveDataHandler
-from models.candle import Candle
+from trazy_analysis.market_data.binance_data_handler import BinanceDataHandler
+from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
+from trazy_analysis.models.candle import Candle
 
 
 class BinanceLiveDataHandler(BinanceDataHandler, LiveDataHandler):
@@ -27,6 +27,9 @@ class BinanceLiveDataHandler(BinanceDataHandler, LiveDataHandler):
         now_epoch = int(now.timestamp()) * 1000
         THIRTY_MINUTES_IN_MILLISECONDS = 30 * 60 * 1000
         ticker_url = cls.BASE_URL_TICKER_LATEST_DATA.format(
-            ticker, now_epoch - THIRTY_MINUTES_IN_MILLISECONDS, now_epoch, cls.API_TOKEN
+            ticker.replace("/", ""),
+            now_epoch - THIRTY_MINUTES_IN_MILLISECONDS,
+            now_epoch,
+            cls.API_TOKEN,
         )
         return ticker_url

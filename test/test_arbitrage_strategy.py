@@ -3,27 +3,27 @@ from datetime import timedelta
 
 import pytest
 
-from bot.event_loop import EventLoop
-from broker.binance_fee_model import BinanceFeeModel
-from broker.broker_manager import BrokerManager
-from broker.kucoin_fee_model import KucoinFeeModel
-from broker.simulated_broker import SimulatedBroker
-from common.clock import SimulatedClock
-from feed.feed import CsvFeed, Feed
-from indicators.indicators_manager import IndicatorsManager
-from models.asset import Asset
-from models.candle import Candle
-from models.enums import Action, Direction, OrderType
-from models.order import Order
-from order_manager.order_creator import OrderCreator
-from order_manager.order_manager import OrderManager
-from order_manager.position_sizer import PositionSizer
-from strategy.strategies.arbitrage_strategy import ArbitrageStrategy
+from trazy_analysis.bot.event_loop import EventLoop
+from trazy_analysis.broker.binance_fee_model import BinanceFeeModel
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.broker.kucoin_fee_model import KucoinFeeModel
+from trazy_analysis.broker.simulated_broker import SimulatedBroker
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.feed.feed import CsvFeed, Feed
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.order_manager.order_creator import OrderCreator
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.order_manager.position_sizer import PositionSizer
+from trazy_analysis.strategy.strategies.arbitrage_strategy import ArbitrageStrategy
 
 BINANCE_EXCHANGE = "BINANCE"
 KUCOIN_EXCHANGE = "KUCOIN"
-BINANCE_ASSET = Asset(symbol="XRPUSDT", exchange=BINANCE_EXCHANGE)
-KUCOIN_ASSET = Asset(symbol="XRPUSDT", exchange=KUCOIN_EXCHANGE)
+BINANCE_ASSET = Asset(symbol="XRP/USDT", exchange=BINANCE_EXCHANGE)
+KUCOIN_ASSET = Asset(symbol="XRP/USDT", exchange=KUCOIN_EXCHANGE)
 
 
 def test_arbitrage_strategy():

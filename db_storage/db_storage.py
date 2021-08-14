@@ -2,10 +2,10 @@ import abc
 from datetime import datetime
 from typing import List
 
-from common.types import CandleDataFrame
-from models.asset import Asset
-from models.candle import Candle
-from models.order import Order
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.order import Order
 
 
 class DbStorage:

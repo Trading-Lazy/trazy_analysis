@@ -1,18 +1,22 @@
 import os
 from collections import deque
 
-import settings
-from broker.broker_manager import BrokerManager
-from logger import logger
-from models.event import PendingSignalEvent
-from models.multiple_order import ArbitragePairOrder, BracketOrder, CoverOrder
-from models.order import Order
-from models.signal import ArbitragePairSignal, Signal
-from order_manager.order_creator import OrderCreator
-from order_manager.position_sizer import PositionSizer
+import trazy_analysis.settings
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.logger import logger
+from trazy_analysis.models.event import PendingSignalEvent
+from trazy_analysis.models.multiple_order import (
+    ArbitragePairOrder,
+    BracketOrder,
+    CoverOrder,
+)
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import ArbitragePairSignal, Signal
+from trazy_analysis.order_manager.order_creator import OrderCreator
+from trazy_analysis.order_manager.position_sizer import PositionSizer
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 

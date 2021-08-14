@@ -1,33 +1,35 @@
 import os
 from datetime import datetime
-from typing import List
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pandas as pd
 import pymongo
+import pytz
 from bson import ObjectId
 from pymongo.cursor import Cursor
 from pymongo.results import DeleteResult, InsertOneResult
 
-import settings
-from common.types import CandleDataFrame
-from db_storage.db_storage import DbStorage
-from logger import logger
-from models.asset import Asset
-from models.candle import Candle
-from models.order import Order
-from models.signal import Signal
-from settings import (
+import trazy_analysis.settings
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.settings import (
     CANDLES_COLLECTION_NAME,
     DATABASE_NAME,
     DOCUMENTS_COLLECTION_NAME,
+    MARKET_STATES_COLLECTION_NAME,
     MONGODB_URL,
     ORDERS_COLLECTION_NAME,
     SIGNALS_COLLECTION_NAME,
 )
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -36,7 +38,10 @@ class MongoDbStorage(DbStorage):
         self, database_name: str = DATABASE_NAME, database_url: str = MONGODB_URL
     ):
         self.client = pymongo.MongoClient(
-            host=database_url, tz_aware=True, serverSelectionTimeoutMS=2000
+            host=database_url,
+            tz_aware=True,
+            serverSelectionTimeoutMS=2000,
+            connect=False,
         )
         super().__init__(database_name, database_url, table_analogous_name="collection")
 
@@ -91,6 +96,33 @@ class MongoDbStorage(DbStorage):
         collection = self.get_collection(collection_name)
         delete_result: DeleteResult = collection.delete_many({})
         return delete_result.deleted_count
+
+    def save_state(
+        self,
+        state_key: str,
+        content: Dict[Any, Any],
+        timestamp: datetime = datetime.now(pytz.UTC),
+    ):
+        state = {
+            "timestamp": timestamp,
+            "state_key": state_key,
+            "content": content,
+        }
+        self.add_document(doc=state, collection_name=MARKET_STATES_COLLECTION_NAME)
+
+    def get_state(
+        self, state_key: str, limit: Union[datetime, None] = None
+    ) -> Union[Dict[Any, Any], None]:
+        query = {"state_key": state_key}
+        if limit is not None:
+            query["timestamp"] = {"$gte": limit}
+        cursor = self.find(query, MARKET_STATES_COLLECTION_NAME)
+        for result in cursor.limit(1):
+            return result["content"]
+        return None
+
+    def clean_all_states(self):
+        return self.clean_all_documents(MARKET_STATES_COLLECTION_NAME)
 
     def find_one(self, query: dict, collection_name: str) -> dict:
         collection = self.get_collection(collection_name)

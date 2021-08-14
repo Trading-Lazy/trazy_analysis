@@ -2,14 +2,14 @@ from collections import deque
 from datetime import timedelta
 from typing import Dict, List
 
-from common.clock import Clock
-from indicators.crossover import Crossover
-from indicators.indicators_manager import IndicatorsManager
-from models.enums import Action, Direction
-from models.signal import Signal
-from order_manager.order_manager import OrderManager
-from strategy.context import Context
-from strategy.strategy import LOG, Strategy
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.indicators.crossover import Crossover
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.strategy.context import Context
+from trazy_analysis.strategy.strategy import LOG, Strategy
 
 
 class SmaCrossoverStrategy(Strategy):

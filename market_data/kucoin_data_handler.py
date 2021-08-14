@@ -4,13 +4,13 @@ from typing import List
 
 import numpy as np
 
-from common.crypto_stock_exchange_calendar import CryptoStockExchangeCalendar
-from common.helper import fill_missing_datetimes
-from common.types import CandleDataFrame
-from market_data.common import datetime_from_epoch
-from market_data.data_handler import DataHandler
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.common.crypto_exchange_calendar import CryptoExchangeCalendar
+from trazy_analysis.common.helper import fill_missing_datetimes
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.market_data.common import datetime_from_epoch
+from trazy_analysis.market_data.data_handler import DataHandler
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 
 class KucoinDataHandler(DataHandler):
@@ -35,7 +35,7 @@ class KucoinDataHandler(DataHandler):
     MAX_CALLS = 1800
     PERIOD = 60
     TICKER_DATA_TIMEZONE = "UTC"
-    MARKET_CAL = CryptoStockExchangeCalendar()
+    MARKET_CAL = CryptoExchangeCalendar()
 
     @classmethod
     def ticker_data_is_none(cls, data: str) -> bool:

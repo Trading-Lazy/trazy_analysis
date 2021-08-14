@@ -4,17 +4,17 @@ from unittest.mock import call, patch
 import numpy as np
 import pandas as pd
 
-from common.constants import DATE_FORMAT
-from common.exchange_calendar_euronext import EuronextExchangeCalendar
-from common.types import CandleDataFrame
-from db_storage.mongodb_storage import MongoDbStorage
-from file_storage.common import DATASETS_DIR, DONE_DIR
-from file_storage.meganz_file_storage import MegaNzFileStorage
-from models.asset import Asset
-from models.candle import Candle
-from settings import DATABASE_NAME
-from strategy.candlefetcher import CandleFetcher
-from test.tools.tools import compare_candles_list
+from trazy_analysis.common.constants import DATE_FORMAT
+from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.db_storage.mongodb_storage import MongoDbStorage
+from trazy_analysis.file_storage.common import DATASETS_DIR, DONE_DIR
+from trazy_analysis.file_storage.meganz_file_storage import MegaNzFileStorage
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.settings import DATABASE_NAME
+from trazy_analysis.strategy.candlefetcher import CandleFetcher
+from trazy_analysis.test.tools.tools import compare_candles_list
 
 SYMBOL = "IVV"
 EXCHANGE = "IEX"
@@ -160,7 +160,9 @@ def test_fetch_candle_db_data():
     DB_STORAGE.clean_all_candles()
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content")
+@patch(
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content"
+)
 def test_fetch_historical_data(get_file_content_mocked):
     get_file_content_mocked.side_effect = [
         (
@@ -229,7 +231,9 @@ def test_fetch_historical_data(get_file_content_mocked):
     get_file_content_mocked.assert_has_calls(get_file_content_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content")
+@patch(
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content"
+)
 def test_fetch_no_historical_data(get_file_content_mocked):
     DB_STORAGE.clean_all_candles()
     for candle in CANDLES:
@@ -343,7 +347,9 @@ def test_fetch_no_historical_data(get_file_content_mocked):
     DB_STORAGE.clean_all_candles()
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content")
+@patch(
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content"
+)
 def test_fetch_no_db_data(get_file_content_mocked):
     DB_STORAGE.clean_all_candles()
 
@@ -408,7 +414,9 @@ def test_fetch_no_db_data(get_file_content_mocked):
     get_file_content_mocked.assert_has_calls(get_file_content_mocked_calls)
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content")
+@patch(
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content"
+)
 def test_fetch(get_file_content_mocked):
     DB_STORAGE.clean_all_candles()
     for candle in CANDLES:
@@ -532,7 +540,9 @@ def test_fetch(get_file_content_mocked):
     DB_STORAGE.clean_all_candles()
 
 
-@patch("file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content")
+@patch(
+    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content"
+)
 def test_fetch_1_day_offset(get_file_content_mocked):
     DB_STORAGE.clean_all_candles()
     for candle in CANDLES:

@@ -6,21 +6,26 @@ from typing import List, Union
 
 import numpy as np
 
-import settings
-from broker.fee_model import FeeModel
-from broker.fixed_fee_model import FixedFeeModel
-from common.clock import Clock
-from common.helper import get_or_create_nested_dict
-from logger import logger
-from models.asset import Asset
-from models.candle import Candle
-from models.enums import Action, Direction, OrderStatus, OrderType
-from models.multiple_order import MultipleOrder, OcoOrder, SequentialOrder
-from models.order import Order
-from portfolio.portfolio import Portfolio
+import trazy_analysis.settings
+from trazy_analysis.broker.ccxt_parser import DummyParser
+from trazy_analysis.broker.fee_model import FeeModel
+from trazy_analysis.broker.fixed_fee_model import FixedFeeModel
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.common.helper import get_or_create_nested_dict
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import Action, Direction, OrderStatus, OrderType
+from trazy_analysis.models.multiple_order import (
+    MultipleOrder,
+    OcoOrder,
+    SequentialOrder,
+)
+from trazy_analysis.models.order import Order
+from trazy_analysis.portfolio.portfolio import Portfolio
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -48,11 +53,13 @@ class Broker:
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
         fee_model: FeeModel = FixedFeeModel(),
+        parser=DummyParser,
         execute_at_end_of_day=True,
         exchange="universal",
     ):
         self.supported_currencies = supported_currencies
         self.fee_model = fee_model
+        self.parser = parser
         self.execute_at_end_of_day = execute_at_end_of_day
         self.exchange = exchange
         self.base_currency = self._set_base_currency(base_currency)
@@ -325,7 +332,7 @@ class Broker:
             cash=cash, price=self.current_price(asset)
         )
 
-    def position_size(self, asset: str, direction: Direction) -> int:
+    def position_size(self, asset: Asset, direction: Direction) -> int:
         return self.portfolio.pos_handler.position_size(asset, direction)
 
     @abstractmethod

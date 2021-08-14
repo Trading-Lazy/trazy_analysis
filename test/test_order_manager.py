@@ -2,20 +2,20 @@ from collections import deque
 from datetime import datetime
 from unittest.mock import patch
 
-from broker.broker_manager import BrokerManager
-from broker.simulated_broker import SimulatedBroker
-from common.clock import SimulatedClock
-from models.asset import Asset
-from models.enums import Action, Direction
-from models.signal import Signal
-from order_manager.order_creator import OrderCreator
-from order_manager.order_manager import OrderManager
-from order_manager.position_sizer import PositionSizer
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.broker.simulated_broker import SimulatedBroker
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.signal import Signal
+from trazy_analysis.order_manager.order_creator import OrderCreator
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.order_manager.position_sizer import PositionSizer
 
 
-@patch("broker.simulated_broker.SimulatedBroker.max_entry_order_size")
-@patch("order_manager.order_creator.OrderCreator.create_order")
-@patch("broker.simulated_broker.SimulatedBroker.submit_order")
+@patch("trazy_analysis.broker.simulated_broker.SimulatedBroker.max_entry_order_size")
+@patch("trazy_analysis.order_manager.order_creator.OrderCreator.create_order")
+@patch("trazy_analysis.broker.simulated_broker.SimulatedBroker.submit_order")
 def test_process_check_signals(
     submit_order_mocked, create_order_mocked, max_entry_order_size_mocked
 ):

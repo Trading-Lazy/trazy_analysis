@@ -1,19 +1,20 @@
 import io
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import List
 
 import pandas as pd
+import pytz
 from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
-from common.constants import DATE_DIR_FORMAT
-from common.helper import resample_candle_data
-from common.types import CandleDataFrame
-from db_storage.db_storage import DbStorage
-from file_storage.common import DATASETS_DIR, DONE_DIR
-from file_storage.file_storage import FileStorage
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.common.constants import DATE_DIR_FORMAT
+from trazy_analysis.common.helper import resample_candle_data
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.db_storage.db_storage import DbStorage
+from trazy_analysis.file_storage.common import DATASETS_DIR, DONE_DIR
+from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 
 class CandleFetcher:
@@ -31,7 +32,7 @@ class CandleFetcher:
         self,
         asset: Asset,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
     ) -> List[Candle]:
         candles = self.db_storage.get_candles_in_range(
             asset=asset, start=start, end=end
@@ -42,7 +43,7 @@ class CandleFetcher:
         self,
         asset: Asset,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
     ) -> CandleDataFrame:
         if self.db_storage is None:
             return CandleDataFrame(asset=asset)
@@ -55,7 +56,7 @@ class CandleFetcher:
         self,
         asset: Asset,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
     ) -> CandleDataFrame:
         if self.file_storage is None:
             return CandleDataFrame(asset=asset)
@@ -102,7 +103,7 @@ class CandleFetcher:
         symbol: str,
         time_unit: timedelta,
         start: datetime,
-        end: datetime = datetime.now(timezone.utc),
+        end: datetime = datetime.now(pytz.UTC),
     ) -> CandleDataFrame:
         df = self.fetch_candle_db_data(symbol, start, end)
         if df.empty or start <= df.iloc[0].name:

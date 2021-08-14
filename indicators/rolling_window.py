@@ -6,14 +6,16 @@ import pandas as pd
 from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
-from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
-from common.helper import get_or_create_nested_dict, round_time
-from common.types import CandleDataFrame
-from common.utils import timestamp_to_utc
-from indicators.common import PriceType
-from indicators.indicator import Indicator
-from models.asset import Asset
-from models.candle import Candle
+from trazy_analysis.common.american_stock_exchange_calendar import (
+    AmericanStockExchangeCalendar,
+)
+from trazy_analysis.common.helper import get_or_create_nested_dict, round_time
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.common.utils import timestamp_to_utc
+from trazy_analysis.indicators.common import PriceType
+from trazy_analysis.indicators.indicator import Indicator
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 
 
 def get_price_selector_function(price_type: PriceType) -> Callable[[Candle], float]:

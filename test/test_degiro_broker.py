@@ -5,15 +5,15 @@ from unittest.mock import call, patch
 import pytest
 from pytz import timezone
 
-from broker import degiroapi
-from broker.degiro_broker import DegiroBroker
-from common.clock import LiveClock
-from models.asset import Asset
-from models.candle import Candle
-from models.enums import Action, Direction, OrderType
-from models.order import Order
-from portfolio.portfolio_event import PortfolioEvent
-from position.position import Position
+from trazy_analysis.broker import degiroapi
+from trazy_analysis.broker.degiro_broker import DegiroBroker
+from trazy_analysis.common.clock import LiveClock
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.order import Order
+from trazy_analysis.portfolio.portfolio_event import PortfolioEvent
+from trazy_analysis.position.position import Position
 
 INITIAL_CASH = "125.08"
 
@@ -318,11 +318,11 @@ SEARCH_PRODUCTS_MOCKED_RETURN_VALUE = [
 TIMESTAMP = datetime.strptime("2021-02-08 16:01:14+0000", "%Y-%m-%d %H:%M:%S%z")
 
 
-@patch("broker.degiro_broker.DegiroBroker.update_cash_balances")
-@patch("broker.degiro_broker.DegiroBroker.update_open_positions")
-@patch("broker.degiro_broker.DegiroBroker.update_transactions")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_cash_balances")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_open_positions")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_update_product_info_cached_info(
     login_mocked,
     product_info_mocked,
@@ -339,11 +339,11 @@ def test_update_product_info_cached_info(
     product_info_mocked.assert_not_called()
 
 
-@patch("broker.degiro_broker.DegiroBroker.update_cash_balances")
-@patch("broker.degiro_broker.DegiroBroker.update_open_positions")
-@patch("broker.degiro_broker.DegiroBroker.update_transactions")
-@patch("broker.degiroapi.DeGiro.search_products")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_cash_balances")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_open_positions")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.search_products")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_update_symbol_cached_info(
     login_mocked,
     search_products_mocked,
@@ -360,10 +360,10 @@ def test_update_symbol_cached_info(
     search_products_mocked.assert_not_called()
 
 
-@patch("broker.degiro_broker.DegiroBroker.update_open_positions")
-@patch("broker.degiro_broker.DegiroBroker.update_transactions")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_open_positions")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_update_cash_balances(
     login_mocked,
     getdata_mocked,
@@ -399,11 +399,11 @@ def test_update_cash_balances(
     getdata_mocked.assert_has_calls(getdata_mocked_calls)
 
 
-@patch("broker.degiro_broker.DegiroBroker.update_cash_balances")
-@patch("broker.degiro_broker.DegiroBroker.update_transactions")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_cash_balances")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_update_open_positions(
     login_mocked,
     getdata_mocked,
@@ -478,11 +478,11 @@ def test_update_open_positions(
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
 
-@patch("broker.degiro_broker.DegiroBroker.update_cash_balances")
-@patch("broker.degiro_broker.DegiroBroker.update_transactions")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_cash_balances")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_has_opened_position(
     login_mocked,
     getdata_mocked,
@@ -510,13 +510,13 @@ def test_has_opened_position(
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
 
-@patch("common.clock.LiveClock.current_time")
-@patch("broker.degiro_broker.DegiroBroker.update_open_positions")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.transactions")
-@patch("broker.degiroapi.DeGiro.orders")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_open_positions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.orders")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_update_transactions(
     login_mocked,
     getdata_mocked,
@@ -593,15 +593,15 @@ def test_update_transactions(
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
 
-@patch("common.clock.LiveClock.current_time")
-@patch("broker.degiroapi.DeGiro.sellorder")
-@patch("broker.degiroapi.DeGiro.buyorder")
-@patch("broker.degiroapi.DeGiro.search_products")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.transactions")
-@patch("broker.degiroapi.DeGiro.orders")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.sellorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.buyorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.search_products")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.orders")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_execute_market_order(
     login_mocked,
     getdata_mocked,
@@ -702,15 +702,15 @@ def test_execute_market_order(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
-@patch("common.clock.LiveClock.current_time")
-@patch("broker.degiroapi.DeGiro.sellorder")
-@patch("broker.degiroapi.DeGiro.buyorder")
-@patch("broker.degiroapi.DeGiro.search_products")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.transactions")
-@patch("broker.degiroapi.DeGiro.orders")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.sellorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.buyorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.search_products")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.orders")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_execute_limit_order(
     login_mocked,
     getdata_mocked,
@@ -824,15 +824,15 @@ def test_execute_limit_order(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
-@patch("common.clock.LiveClock.current_time")
-@patch("broker.degiroapi.DeGiro.sellorder")
-@patch("broker.degiroapi.DeGiro.buyorder")
-@patch("broker.degiroapi.DeGiro.search_products")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.transactions")
-@patch("broker.degiroapi.DeGiro.orders")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.sellorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.buyorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.search_products")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.orders")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_execute_stop_order(
     login_mocked,
     getdata_mocked,
@@ -946,13 +946,13 @@ def test_execute_stop_order(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
-@patch("common.clock.LiveClock.current_time")
-@patch("broker.degiro_broker.DegiroBroker.execute_market_order")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.transactions")
-@patch("broker.degiroapi.DeGiro.orders")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.execute_market_order")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.orders")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_execute_target_order(
     login_mocked,
     getdata_mocked,
@@ -1083,14 +1083,14 @@ def test_execute_target_order(
     product_info_mocked.assert_has_calls(product_info_mocked_calls)
 
 
-@patch("common.clock.LiveClock.current_time")
-@patch("broker.degiroapi.DeGiro.sellorder")
-@patch("broker.degiroapi.DeGiro.search_products")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.transactions")
-@patch("broker.degiroapi.DeGiro.orders")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.sellorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.search_products")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.orders")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_execute_trailing_stop_order_sell(
     login_mocked,
     getdata_mocked,
@@ -1213,14 +1213,14 @@ def test_execute_trailing_stop_order_sell(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
-@patch("common.clock.LiveClock.current_time")
-@patch("broker.degiroapi.DeGiro.buyorder")
-@patch("broker.degiroapi.DeGiro.search_products")
-@patch("broker.degiroapi.DeGiro.product_info")
-@patch("broker.degiroapi.DeGiro.transactions")
-@patch("broker.degiroapi.DeGiro.orders")
-@patch("broker.degiroapi.DeGiro.getdata")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.common.clock.LiveClock.current_time")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.buyorder")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.search_products")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.product_info")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.orders")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.getdata")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_execute_trailing_stop_order_buy(
     login_mocked,
     getdata_mocked,
@@ -1341,10 +1341,10 @@ def test_execute_trailing_stop_order_buy(
     search_products_mocked.assert_has_calls(search_products_mocked_calls)
 
 
-@patch("broker.degiro_broker.DegiroBroker.update_cash_balances")
-@patch("broker.degiro_broker.DegiroBroker.update_open_positions")
-@patch("broker.degiro_broker.DegiroBroker.update_transactions")
-@patch("broker.degiroapi.DeGiro.login")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_cash_balances")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_open_positions")
+@patch("trazy_analysis.broker.degiro_broker.DegiroBroker.update_transactions")
+@patch("trazy_analysis.broker.degiroapi.DeGiro.login")
 def test_synchronize(
     login_mocked,
     update_transactions_mocked,

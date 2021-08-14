@@ -1,19 +1,27 @@
 import os
 from abc import ABC
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Callable, List, Tuple
 
-import settings
-from common.clock import Clock
-from common.helper import parse_timedelta_str
-from common.utils import generate_object_id
-from logger import logger
-from models.asset import Asset
-from models.enums import Action, Direction, OrderCondition, OrderStatus, OrderType
-from models.utils import is_closed_position
+import pytz
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+import trazy_analysis.settings
+from trazy_analysis.common.clock import Clock
+from trazy_analysis.common.helper import parse_timedelta_str
+from trazy_analysis.common.utils import generate_object_id
+from trazy_analysis.logger import logger
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import (
+    Action,
+    Direction,
+    OrderCondition,
+    OrderStatus,
+    OrderType,
+)
+from trazy_analysis.models.utils import is_closed_position
+
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
 
@@ -21,7 +29,7 @@ class OrderBase(ABC):
     def __init__(
         self,
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         time_in_force: timedelta = timedelta(minutes=5),
     ):
         self.status = status
@@ -37,7 +45,7 @@ class OrderBase(ABC):
     def add_on_cancel_callback(self, callback: Callable, *args):
         self.on_cancel_callbacks.append((callback, args))
 
-    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
+    def submit(self, submission_time: datetime = datetime.now(pytz.UTC)) -> None:
         self.submission_time = submission_time
         self.status = OrderStatus.SUBMITTED
 
@@ -78,7 +86,7 @@ class Order(OrderBase):
         clock: Clock = None,
         time_in_force: timedelta = timedelta(minutes=5),
         status: OrderStatus = OrderStatus.CREATED,
-        generation_time: datetime = datetime.now(timezone.utc),
+        generation_time: datetime = datetime.now(pytz.UTC),
         order_id: str = None,
     ):
         self.asset = asset
@@ -102,7 +110,7 @@ class Order(OrderBase):
             status=status, generation_time=generation_time, time_in_force=time_in_force
         )
 
-    def submit(self, submission_time: datetime = datetime.now(timezone.utc)) -> None:
+    def submit(self, submission_time: datetime = datetime.now(pytz.UTC)) -> None:
         if self.clock is not None:
             submission_time = self.clock.current_time()
         super().submit(submission_time)

@@ -1,16 +1,16 @@
 from collections import deque
 
-from bot.event_loop import EventLoop
-from broker.broker_manager import BrokerManager
-from broker.simulated_broker import SimulatedBroker
-from common.clock import SimulatedClock
-from feed.feed import CsvFeed, Feed
-from indicators.indicators_manager import IndicatorsManager
-from models.asset import Asset
-from order_manager.order_creator import OrderCreator
-from order_manager.order_manager import OrderManager
-from order_manager.position_sizer import PositionSizer
-from strategy.strategies.sma_crossover_strategy import (
+from trazy_analysis.bot.event_loop import EventLoop
+from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.broker.simulated_broker import SimulatedBroker
+from trazy_analysis.common.clock import SimulatedClock
+from trazy_analysis.feed.feed import CsvFeed, Feed
+from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.order_manager.order_creator import OrderCreator
+from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.order_manager.position_sizer import PositionSizer
+from trazy_analysis.strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
 

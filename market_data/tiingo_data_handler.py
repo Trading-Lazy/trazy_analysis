@@ -5,13 +5,15 @@ from typing import List
 
 import pandas as pd
 
-from common.american_stock_exchange_calendar import AmericanStockExchangeCalendar
-from common.helper import resample_candle_data
-from common.types import CandleDataFrame
-from common.utils import lists_equal
-from market_data.data_handler import DataHandler
-from models.asset import Asset
-from settings import TIINGO_API_TOKEN
+from trazy_analysis.common.american_stock_exchange_calendar import (
+    AmericanStockExchangeCalendar,
+)
+from trazy_analysis.common.helper import resample_candle_data
+from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.common.utils import lists_equal
+from trazy_analysis.market_data.data_handler import DataHandler
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.settings import TIINGO_API_TOKEN
 
 
 class TiingoDataHandler(DataHandler):

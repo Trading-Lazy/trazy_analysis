@@ -4,9 +4,9 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-import settings
-from common.constants import DATE_DIR_FORMAT
-from file_storage.common import (
+import trazy_analysis.settings
+from trazy_analysis.common.constants import DATE_DIR_FORMAT
+from trazy_analysis.file_storage.common import (
     DATASETS_DIR,
     DONE_DIR,
     ERROR_DIR,
@@ -14,14 +14,16 @@ from file_storage.common import (
     TICKERS_DIR,
     concat_path,
 )
-from file_storage.file_storage import FileStorage
-from logger import logger
-from market_data.common import get_periods
-from market_data.historical.historical_data_handler import HistoricalDataHandler
-from models.asset import Asset
+from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.logger import logger
+from trazy_analysis.market_data.common import get_periods
+from trazy_analysis.market_data.historical.historical_data_handler import (
+    HistoricalDataHandler,
+)
+from trazy_analysis.models.asset import Asset
 
-LOG = logger.get_root_logger(
-    __name__, filename=os.path.join(settings.ROOT_PATH, "output.log")
+LOG = trazy_analysis.logger.get_root_logger(
+    __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 NB_BUSINESS_DAYS = 5
 NB_WEEK_DAYS = 7
