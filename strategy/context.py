@@ -37,15 +37,17 @@ class Context:
     def update(self) -> None:
         self.last_candles = {}
         current_timestamp = self.current_timestamp
-        next_timestamp = MAX_TIMESTAMP
+        min_timestamp = MAX_TIMESTAMP
         assets = list(self.candles.keys())
         for asset in assets:
             if asset not in self.candles or len(self.candles[asset]) == 0:
                 continue
             first_candle = self.candles[asset].popleft()
-            if first_candle.timestamp == current_timestamp:
+            if first_candle.timestamp >= current_timestamp:
+                min_timestamp = min(min_timestamp, first_candle.timestamp)
                 self.last_candles[first_candle.asset] = first_candle
             if len(self.candles[asset]) != 0:
                 next_timestamp = min(next_timestamp, self.candles[asset][0])
                 del self.candles[asset]
-        self.current_timestamp = next_timestamp
+        if min_timestamp != MAX_TIMESTAMP:
+            self.current_timestamp = min_timestamp

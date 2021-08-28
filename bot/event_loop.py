@@ -4,14 +4,17 @@ from datetime import timedelta
 from threading import Thread
 from typing import Any, Dict, List
 
+import pandas as pd
+
 import trazy_analysis.logger
 import trazy_analysis.settings
 from trazy_analysis.common.constants import MAX_TIMESTAMP
+from trazy_analysis.common.helper import get_or_create_nested_dict
 from trazy_analysis.feed.feed import Feed
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import EventType
+from trazy_analysis.models.enums import Action, Direction, EventType
 from trazy_analysis.models.event import (
     AssetSpecificEvent,
     DataEvent,
@@ -95,24 +98,159 @@ class EventLoop:
     def run_strategy(self, strategy: Strategy):
         strategy.process_context(self.context, self.clock)
 
+    def update_equity_curves(self):
+        exchanges = {asset.exchange for asset in self.assets}
+        for strategy in self.strategy_instances:
+            for exchange in exchanges:
+                get_or_create_nested_dict(self.equity_curves, strategy.name)
+                if exchange not in self.equity_curves[strategy.name]:
+                    self.equity_curves[strategy.name][exchange] = []
+
+                if not self.clock.updated:
+                    return
+
+                current_time = self.clock.current_time()
+                if len(self.equity_curves[strategy.name][exchange]) != 0:
+                    most_recent_time = self.equity_curves[strategy.name][exchange][-1][
+                        0
+                    ]
+                    if most_recent_time >= current_time:
+                        return
+
+                self.equity_curves[strategy.name][exchange].append(
+                    (
+                        current_time,
+                        self.broker_manager.get_broker(
+                            exchange
+                        ).get_portfolio_total_equity(),
+                    )
+                )
+
+    def update_equity_dfs(self):
+        exchanges = {asset.exchange for asset in self.assets}
+        for strategy in self.strategy_instances:
+            for exchange in exchanges:
+                get_or_create_nested_dict(self.equity_dfs, strategy.name)
+                equity_df = pd.DataFrame(
+                    self.equity_curves[strategy.name][exchange],
+                    columns=["Date", "Equity"],
+                ).set_index("Date")
+                self.equity_dfs[strategy.name][exchange] = equity_df
+
+    def update_positions(self):
+        exchanges = {asset.exchange for asset in self.assets}
+        for exchange in exchanges:
+            if exchange not in self.positions:
+                self.positions[exchange] = []
+
+            if not self.clock.updated:
+                return
+
+            current_time = self.clock.current_time()
+            if len(self.positions[exchange]) != 0:
+                most_recent_time = self.positions[exchange][-1][0]
+                if most_recent_time >= current_time:
+                    return
+
+            portfolio_dict = self.broker_manager.get_broker(
+                exchange
+            ).get_portfolio_as_dict()
+
+            positions = []
+            new_pos = False
+            for asset in self.assets:
+                if asset.key() not in portfolio_dict:
+                    positions.append(0)
+                    continue
+                long_pos = (
+                    portfolio_dict[asset.key()][Direction.LONG]["market_value"]
+                    if Direction.LONG in portfolio_dict[asset.key()]
+                    else 0
+                )
+                short_pos = (
+                    portfolio_dict[asset.key()][Direction.SHORT]["market_value"]
+                    if Direction.SHORT in portfolio_dict[asset.key()]
+                    else 0
+                )
+                net_pos = long_pos + short_pos
+                if net_pos != 0:
+                    new_pos = True
+                positions.append(long_pos + short_pos)
+
+            if not new_pos:
+                continue
+
+            cash = self.broker_manager.get_broker(exchange).get_portfolio_cash_balance()
+            self.positions[exchange].append(
+                (
+                    current_time,
+                    *positions,
+                    cash,
+                )
+            )
+
+    def update_positions_dfs(self):
+        exchanges = {asset.exchange for asset in self.assets}
+        for exchange in exchanges:
+            positions_df = pd.DataFrame(
+                self.positions[exchange],
+                columns=["Date", *[asset.key() for asset in self.assets], "cash"],
+            ).set_index("Date")
+            self.positions_dfs[exchange] = positions_df
+
+    def update_transactions(self):
+        exchanges = {asset.exchange for asset in self.assets}
+        for exchange in exchanges:
+            if not self.clock.updated:
+                return
+
+            current_time = self.clock.current_time()
+            if exchange in self.transactions and len(self.transactions[exchange]) != 0:
+                most_recent_time = self.transactions[exchange][-1][0]
+                if most_recent_time >= current_time:
+                    return
+
+            portfolio = self.broker_manager.get_broker(exchange).portfolio
+            self.transactions[exchange] = [
+                (
+                    current_time,
+                    transaction.size
+                    if transaction.action == Action.BUY
+                    else -transaction.size,
+                    transaction.price,
+                    transaction.asset.key(),
+                )
+                for transaction in portfolio.transactions
+            ]
+
+    def update_transactions_dfs(self):
+        exchanges = {asset.exchange for asset in self.assets}
+        for exchange in exchanges:
+            transactions_df = pd.DataFrame(
+                self.transactions[exchange],
+                columns=["Date", "amount", "price", "symbol"],
+            ).set_index("Date")
+            self.transactions_dfs[exchange] = transactions_df
+
     def run_strategies(self):
         for strategy in self.strategy_instances:
             self.run_strategy(strategy)
-        exchanges = {asset.exchange for asset in self.context.candles}
-        for exchange in exchanges:
-            LOG.info(
-                "%s: Strategy results: cash = %s, portfolio = %s, total_equity = %s",
-                exchange,
-                strategy.order_manager.broker_manager.get_broker(
-                    exchange
-                ).get_portfolio_cash_balance(),
-                strategy.order_manager.broker_manager.get_broker(
-                    exchange
-                ).get_portfolio_as_dict(),
-                strategy.order_manager.broker_manager.get_broker(
-                    exchange
-                ).get_portfolio_total_equity(),
-            )
+            exchanges = {asset.exchange for asset in self.context.candles}
+            for exchange in exchanges:
+                LOG.info(
+                    "%s: Strategy %s results: cash = %s, portfolio = %s, total_equity = %s",
+                    exchange,
+                    strategy,
+                    self.broker_manager.get_broker(
+                        exchange
+                    ).get_portfolio_cash_balance(),
+                    strategy.order_manager.broker_manager.get_broker(
+                        exchange
+                    ).get_portfolio_as_dict(),
+                    strategy.order_manager.broker_manager.get_broker(
+                        exchange
+                    ).get_portfolio_total_equity(),
+                )
 
     def handle_asset_delayed_events(self, candle: Candle):
         asset_delayed_events = []
@@ -169,6 +307,12 @@ class EventLoop:
         self.last_update = None
         self.signals_and_orders_last_update = None
         self.current_timestamp = MAX_TIMESTAMP
+        self.equity_curves = {}
+        self.equity_dfs = {}
+        self.positions = {}
+        self.positions_dfs = {}
+        self.transactions = {}
+        self.transactions_dfs = {}
 
     def loop(self):
         data_to_process = True
@@ -245,12 +389,16 @@ class EventLoop:
                         if len(last_candles) == 0:
                             candles_are_processed = True
                             break
+                        self.update_equity_curves()
+                        self.update_positions()
+                        self.clock.update(
+                            self.context.current_timestamp + timedelta(minutes=1)
+                        )
                         for candle in last_candles:
                             LOG.info("Process new candle: %s", candle.to_json())
                             self.indicators_manager.RollingWindow(candle.asset).push(
                                 candle
                             )
-                            self.clock.update(candle.timestamp + timedelta(minutes=1))
                             self.broker_manager.get_broker(
                                 candle.asset.exchange
                             ).update_price(candle)
@@ -295,5 +443,11 @@ class EventLoop:
                             self.broker_manager.get_broker(
                                 asset.exchange
                             ).close_all_open_positions(asset=asset, end_of_day=False)
+                    self.update_equity_curves()
+                    self.update_positions()
+                    self.update_equity_dfs()
+                    self.update_positions_dfs()
+                    self.update_transactions()
+                    self.update_transactions_dfs()
                     data_to_process = False
                     break
