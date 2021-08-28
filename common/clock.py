@@ -15,6 +15,7 @@ class Clock:
         self, market_cal: MarketCalendar = AmericanStockExchangeCalendar()
     ) -> None:
         self.market_cal = market_cal
+        self.updated = False
 
     @abc.abstractmethod
     def current_time(self, tz=pytz.UTC) -> datetime:  # pragma: no cover
@@ -31,6 +32,7 @@ class Clock:
     def update(self, timestamp: datetime):
         self.update_bars()
         self.update_time(timestamp)
+        self.updated = True
 
     @abc.abstractmethod
     def current_bars(self) -> int:  # pragma: no cover

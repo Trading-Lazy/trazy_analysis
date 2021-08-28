@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from math import floor
 from typing import Any
 
 import pytz
@@ -366,7 +365,7 @@ class Position:
             )
 
         # Nothing to do if the transaction has no size
-        if int(floor(transaction.size)) == 0:
+        if transaction.size == 0:
             return
 
         # Depending upon the direction of the transaction

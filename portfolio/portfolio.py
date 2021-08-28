@@ -60,6 +60,7 @@ class Portfolio:
 
         self.pos_handler = PositionHandler()
         self.history = []
+        self.transactions = []
 
         self.logger = LOG
         self.logger.info('Portfolio "%s" instance initialised' % (self.portfolio_id,))
@@ -269,6 +270,7 @@ class Portfolio:
                 )
             )
         self.history.append(pe)
+        self.transactions.append(txn)
 
     def portfolio_to_dict(self) -> dict:
         """
