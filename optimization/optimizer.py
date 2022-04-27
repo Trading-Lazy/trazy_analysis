@@ -1,17 +1,16 @@
 from abc import ABC, abstractmethod
 from collections import Callable
-
 from typing import Any, Dict, List
 
 import GPyOpt
+import black_box as bb
 import numpy as np
 import optuna
 import sherpa
 from bayes_opt import BayesianOptimization
 from hyperopt import Trials, fmin, hp, tpe
-from ray import tune
+from skopt import gp_minimize
 from skopt.space import Categorical, Integer, Real
-
 from trazy_analysis.optimization.parameter import (
     Choice,
     Continuous,
@@ -19,9 +18,6 @@ from trazy_analysis.optimization.parameter import (
     Ordinal,
     Parameter,
 )
-
-import black_box as bb
-from skopt import gp_minimize
 
 
 class Optimizer(ABC):
@@ -462,7 +458,7 @@ class GPyOptimizer(Optimizer):
         best_params_list = bayesian_opt.x_opt
         for param_key, param_value in space.items():
             best_params_dict[param_key] = best_params_list[index]
-            index +=1
+            index += 1
         best_params_dict["best_result"] = -bayesian_opt.fx_opt
 
         return best_params_dict

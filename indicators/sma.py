@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from typing import Any
 
 from trazy_analysis.common.helper import get_or_create_nested_dict
 from trazy_analysis.indicators.common import PriceType
@@ -24,7 +25,7 @@ class Sma(RollingWindow):
         self.sum = ret[-1] - cum_sum_before
         ret[self.period :] = ret[self.period :] - ret[: -self.period]
         moving_averages = ret[self.period - 1 :] / self.period
-        super().prefill(moving_averages)
+        self.prefill(moving_averages)
         if self.rolling_window_stream.filled():
             self.oldest = self.rolling_window_stream[-self.period + 1]
 
@@ -40,7 +41,6 @@ class Sma(RollingWindow):
         self.sum: float = 0.0
         self.oldest: float = 0.0
         self.rolling_window_stream = None
-        self.dtype = dtype
         if issubclass(type(source_indicator), RollingWindow) and (
             not source_indicator.ready or source_indicator.size >= self.period
         ):
@@ -50,14 +50,14 @@ class Sma(RollingWindow):
             self.rolling_window_stream = RollingWindow(
                 size=self.period,
                 source_indicator=source_indicator,
-                dtype=self.dtype,
+                dtype=dtype,
                 preload=False,
             )
             size = self.period
         super().__init__(
             size=size,
             source_indicator=self.rolling_window_stream,
-            dtype=float,
+            dtype=dtype,
             preload=preload,
         )
         if self.rolling_window_stream.filled():
@@ -80,6 +80,63 @@ class Sma(RollingWindow):
                 self.index += 1
             else:
                 super().handle_new_data(new_data)
+
+    def push(self, new_data: Any = None):
+        self.rolling_window_stream.push(new_data)
+
+
+class Average(RollingWindow):
+    def initialize_average(self):
+        pass
+
+    def __init__(
+        self,
+        size: int,
+        source_indicator: Indicator = None,
+        dtype: type = None,
+        preload=False,
+    ):
+        self.size = size
+        self.sum: float = 0.0
+        self.count = 0
+        self.oldest: float = 0.0
+        self.rolling_window_stream = None
+        if issubclass(type(source_indicator), RollingWindow) and (
+            not source_indicator.ready
+        ):
+            self.rolling_window_stream = source_indicator
+        else:
+            self.rolling_window_stream = RollingWindow(
+                size=self.size,
+                source_indicator=source_indicator,
+                dtype=dtype,
+                preload=False,
+            )
+        super().__init__(
+            size=size,
+            source_indicator=self.rolling_window_stream,
+            dtype=dtype,
+            preload=preload,
+        )
+        if self.rolling_window_stream.filled():
+            self.initialize_average()
+
+    def handle_new_data(self, new_data: float) -> None:
+        if self.count < self.size:
+            self.count += 1
+        if not self.preload:
+            self.sum += new_data - self.oldest
+            self.data = self.sum / self.count
+            if self.rolling_window_stream.nb_elts >= self.size:
+                self.oldest = self.rolling_window_stream[-self.size + 1]
+                super().handle_new_data(self.data)
+                return
+            self.on_next(self.data)
+        else:
+            super().handle_new_data(new_data)
+
+    def push(self, new_data: Any = None):
+        self.rolling_window_stream.push(new_data)
 
 
 class SmaManager:
