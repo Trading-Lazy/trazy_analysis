@@ -64,7 +64,7 @@ class Peak(RollingWindow):
             order: int = 1,
             method: str = "fractal",
             size: int = 1,
-            dtype: int = None,
+            dtype: type = None,
             source_indicator: Indicator = None,
             preload=False,
     ):
@@ -194,7 +194,6 @@ class ResistanceLevels(Indicator):
                 Average(size=self.size, source_indicator=self.lows)
             )
         ).truediv(accuracy)
-        print(self.merge_dist)
         self.maximas = Peak(
             comparator=np.greater,
             order=self.order,
@@ -217,7 +216,6 @@ class ResistanceLevels(Indicator):
 
     def handle_new_data(self, new_data: Candle) -> None:
         self.candle_index += 1
-        print(f"merge_dist indicator: {self.merge_dist.data}")
         if self.maximas.data:
             last_peak = self.rolling_window_stream[-self.order]
             level = Level(
@@ -226,7 +224,6 @@ class ResistanceLevels(Indicator):
                 "resistance",
                 self.merge_dist.data,
             )
-            print(f"Take into account {str(level)}")
             level_info = self.levels.get(level, LevelInfo())
             min_value = level_info.min_value
             max_value = level_info.max_value
@@ -251,7 +248,6 @@ class ResistanceLevels(Indicator):
                 "support",
                 self.merge_dist.data,
             )
-            print(f"Take into account {str(level)}")
             level_info = self.levels.get(level, LevelInfo())
             min_value = level_info.min_value
             max_value = level_info.max_value
@@ -285,9 +281,6 @@ class ResistanceLevels(Indicator):
                 if level_info.power == 0:
                     self.supports.remove(interval)
                     del self.levels[level]
-        print(
-            {str(level): str(level_info) for level, level_info in self.levels.items()}
-        )
 
     def __hash__(self):
         return 0

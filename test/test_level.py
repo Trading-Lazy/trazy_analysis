@@ -7,7 +7,6 @@ from trazy_analysis.feed.feed import CsvFeed, Feed
 from trazy_analysis.indicators.indicator import Indicator
 from trazy_analysis.indicators.level import Peak, ResistanceLevels, TightTradingRange
 from trazy_analysis.indicators.rolling_window import RollingWindow
-from itertools import compress
 
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
