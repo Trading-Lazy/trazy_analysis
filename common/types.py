@@ -92,9 +92,9 @@ class CandleDataFrame(DataFrame):
             candles[index] = candle
         return candles
 
-    def append(self, *args, **kwargs) -> "CandleDataFrame":
+    def append(self, other, *args, **kwargs) -> "CandleDataFrame":
         kwargs.pop("verify_integrity", None)
-        candle_dataframe = super().append(*args, **kwargs, verify_integrity=True)
+        candle_dataframe = pd.concat([self, other], *args, **kwargs, verify_integrity=True)
         candle_dataframe.asset = self.asset
         candle_dataframe.sort_index(inplace=True)
         return candle_dataframe

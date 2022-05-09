@@ -138,38 +138,46 @@ def test_parse_ticker_data_tiingo():
     groups_df = TiingoHistoricalDataHandler.group_ticker_data_by_date(IVV_ASSET, data)
     expected_dates = ["20200617", "20200618"]
     expected_dfs = [
-        pd.DataFrame(
-            {
-                "timestamp": ["2020-06-17 19:59:00+00:00", "2020-06-17 20:00:00+00:00"],
-                "open": ["355.15", "354.28"],
-                "high": ["355.15", "354.96"],
-                "low": ["353.74", "353.96"],
-                "close": ["353.84", "354.78"],
-                "volume": [3254, 2324],
-            }
+        CandleDataFrame.from_dataframe(
+            pd.DataFrame(
+                {
+                    "timestamp": [
+                        "2020-06-17 19:59:00+00:00",
+                        "2020-06-17 20:00:00+00:00",
+                    ],
+                    "open": ["355.15", "354.28"],
+                    "high": ["355.15", "354.96"],
+                    "low": ["353.74", "353.96"],
+                    "close": ["353.84", "354.78"],
+                    "volume": [3254, 2324],
+                }
+            ),
+            IVV_ASSET,
         ),
-        pd.DataFrame(
-            {
-                "timestamp": [
-                    "2020-06-18 13:30:00+00:00",
-                    "2020-06-18 13:31:00+00:00",
-                    "2020-06-18 13:32:00+00:00",
-                ],
-                "open": ["354.92", "354.25", "354.22"],
-                "high": ["355.32", "354.59", "354.26"],
-                "low": ["354.09", "354.14", "353.95"],
-                "close": ["354.09", "354.59", "353.98"],
-                "volume": [1123, 2613, 1186],
-            }
+        CandleDataFrame.from_dataframe(
+            pd.DataFrame(
+                {
+                    "timestamp": [
+                        "2020-06-18 13:30:00+00:00",
+                        "2020-06-18 13:31:00+00:00",
+                        "2020-06-18 13:32:00+00:00",
+                    ],
+                    "open": ["354.92", "354.25", "354.22"],
+                    "high": ["355.32", "354.59", "354.26"],
+                    "low": ["354.09", "354.14", "353.95"],
+                    "close": ["354.09", "354.59", "353.98"],
+                    "volume": [1123, 2613, 1186],
+                }
+            ),
+            IVV_ASSET,
         ),
     ]
-    for expected_df in expected_dfs:
-        expected_df.index = pd.to_datetime(expected_df.timestamp)
-        expected_df.drop(["timestamp"], axis=1, inplace=True)
+
     idx = 0
     for date_str, group_df in groups_df:
         assert date_str == expected_dates[idx]
-        assert (group_df == expected_dfs[idx]).all(axis=None)
+        timestamps = [candle.timestamp for candle in expected_dfs[idx].to_candles()]
+        assert (expected_dfs[idx] == group_df.loc[timestamps]).all(axis=None)
         idx += 1
 
 
@@ -465,6 +473,9 @@ def test_request_ticker_data_for_period_tiingo(
         ],
         dtype=Candle,
     )
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(
+        asset=IVV_ASSET, candles=expected_candles
+    )
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
@@ -473,7 +484,10 @@ def test_request_ticker_data_for_period_tiingo(
         none_response_periods,
         error_response_periods,
     )
-    assert (expected_candles == candle_dataframe.to_candles()).all()
+    timestamps = [candle.timestamp for candle in expected_candles]
+    assert (expected_candle_dataframe == candle_dataframe.loc[timestamps]).all(
+        axis=None
+    )
     assert none_response_periods == set()
     assert error_response_periods == {}
 

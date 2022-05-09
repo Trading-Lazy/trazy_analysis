@@ -6,9 +6,7 @@ import pandas as pd
 from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
-from trazy_analysis.common.american_stock_exchange_calendar import (
-    AmericanStockExchangeCalendar,
-)
+from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 from trazy_analysis.common.helper import get_or_create_nested_dict, round_time
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.common.utils import timestamp_to_utc
@@ -245,7 +243,7 @@ class TimeFramedCandleRollingWindowManager:
     def __init__(
         self,
         rolling_window_manager: RollingWindowManager,
-        market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
+        market_cal: MarketCalendar = IEXExchangeCalendar(),
         preload=True,
     ):
         self.cache = {}
@@ -300,7 +298,7 @@ class PriceRollingWindowManager:
     def __init__(
         self,
         time_framed_candle_rolling_window_manager: TimeFramedCandleRollingWindowManager,
-        market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
+        market_cal: MarketCalendar = IEXExchangeCalendar(),
         preload=True,
     ):
         self.cache = {}

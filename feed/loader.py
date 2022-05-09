@@ -7,9 +7,7 @@ import pandas as pd
 import pytz
 from pandas_market_calendars import MarketCalendar
 
-from trazy_analysis.common.american_stock_exchange_calendar import (
-    AmericanStockExchangeCalendar,
-)
+from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.db_storage.db_storage import DbStorage
 from trazy_analysis.file_storage.file_storage import FileStorage
@@ -97,7 +95,7 @@ class ExternalStorageLoader:
         end: datetime = datetime.now(pytz.UTC),
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,
-        market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
+        market_cal: MarketCalendar = IEXExchangeCalendar(),
     ):
         self.assets = assets
         self.time_unit = time_unit

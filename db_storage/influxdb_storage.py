@@ -1,5 +1,5 @@
-import collections
 import os
+from collections.abc import MutableMapping
 from datetime import datetime
 from typing import Callable, List
 from urllib.parse import urlparse
@@ -200,7 +200,7 @@ class InfluxDbStorage(DbStorage):
         items = []
         for k, v in dict_to_flatten.items():
             new_key = parent_key + sep + k if parent_key else k
-            if isinstance(v, collections.MutableMapping):
+            if isinstance(v, MutableMapping):
                 items.extend(self.flatten(v, new_key, sep=sep).items())
             else:
                 items.append((new_key, v))

@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pytest
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 
 from trazy_analysis.common.constants import DATE_FORMAT
-from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
@@ -47,7 +47,7 @@ CANDLE4 = Candle(
     volume=300,
     timestamp=datetime.strptime("2020-05-07 14:31:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
-MARKET_CAL = EuronextExchangeCalendar()
+MARKET_CAL = EUREXExchangeCalendar()
 
 
 def test_candle_dataframe():

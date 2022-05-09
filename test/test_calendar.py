@@ -5,9 +5,9 @@ from pytz import timezone
 
 from trazy_analysis.common.calendar import is_business_day, is_business_hour
 from trazy_analysis.common.constants import DATE_FORMAT
-from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 
-euronext_cal = EuronextExchangeCalendar()
+euronext_cal = EUREXExchangeCalendar()
 
 
 def test_euronext_calendar_holiday_mayday():
@@ -38,7 +38,7 @@ def test_euronext_calendar_special_close():
     expected_df_business_cal = {
         "timestamp": ["2020-12-24"],
         "market_open": ["2020-12-24 08:00:00+00:00"],
-        "market_close": ["2020-12-24 13:05:00+00:00"],
+        "market_close": ["2020-12-24 11:30:00+00:00"],
     }
     expected_df = pd.DataFrame(
         expected_df_business_cal, columns=["timestamp", "market_open", "market_close"]

@@ -9,7 +9,7 @@ from pytz import timezone
 from requests import Response, Session
 
 from trazy_analysis.common.constants import DATE_FORMAT
-from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from trazy_analysis.common.helper import (
     TimeInterval,
     calc_required_history_start_timestamp,
@@ -26,7 +26,7 @@ from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.test.tools.tools import not_raises
 
 SYMBOL = "IVV"
-MARKET_CAL = EuronextExchangeCalendar()
+MARKET_CAL = EUREXExchangeCalendar()
 STATUS_CODE_OK = 200
 URL = "trazy.com"
 
@@ -147,7 +147,7 @@ def test_ceil_time(input, time_delta, expected_ceiled_input):
 
 
 def test_find_start_business_minute():
-    business_cal = EuronextExchangeCalendar()
+    business_cal = EUREXExchangeCalendar()
     input = datetime(2020, 5, 17, 23, 36, tzinfo=timezone("UTC"))
     x = find_start_interval_business_minute(
         input, business_cal, TimeInterval.process_interval("30 minute"), 2
@@ -156,7 +156,7 @@ def test_find_start_business_minute():
 
 
 def test_find_start_business_minute_unrecognized_interval():
-    business_cal = EuronextExchangeCalendar()
+    business_cal = EUREXExchangeCalendar()
     input = datetime(2020, 5, 17, 23, 36, tzinfo=timezone("UTC"))
     with pytest.raises(Exception):
         find_start_interval_business_minute(
@@ -165,7 +165,7 @@ def test_find_start_business_minute_unrecognized_interval():
 
 
 def test_find_start_business_minute_invalid_time_interval():
-    business_cal = EuronextExchangeCalendar()
+    business_cal = EUREXExchangeCalendar()
     input = datetime(2020, 5, 17, 23, 36, tzinfo=timezone("UTC"))
     with pytest.raises(Exception):
         find_start_interval_business_minute(
@@ -174,7 +174,7 @@ def test_find_start_business_minute_invalid_time_interval():
 
 
 def test_find_start_business_day_end_timestamp_in_business_day():
-    business_cal = EuronextExchangeCalendar()
+    business_cal = EUREXExchangeCalendar()
     input = datetime(2020, 5, 14, 23, 36, tzinfo=timezone("UTC"))
     x = find_start_interval_business_date(
         input, business_cal, TimeInterval.process_interval("1 day"), 2
@@ -183,7 +183,7 @@ def test_find_start_business_day_end_timestamp_in_business_day():
 
 
 def test_find_start_business_day_end_timestamp_in_non_business_day():
-    business_cal = EuronextExchangeCalendar()
+    business_cal = EUREXExchangeCalendar()
     input = datetime(2020, 5, 17, 23, 36, tzinfo=timezone("UTC"))
     x = find_start_interval_business_date(
         input, business_cal, TimeInterval.process_interval("1 day"), 2
@@ -192,7 +192,7 @@ def test_find_start_business_day_end_timestamp_in_non_business_day():
 
 
 def test_find_start_business_day_unrecognized_interval():
-    business_cal = EuronextExchangeCalendar()
+    business_cal = EUREXExchangeCalendar()
     input = datetime(2020, 5, 17, 23, 36, tzinfo=timezone("UTC"))
     with pytest.raises(Exception):
         find_start_interval_business_date(

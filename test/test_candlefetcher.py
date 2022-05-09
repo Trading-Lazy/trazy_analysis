@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from trazy_analysis.common.constants import DATE_FORMAT
-from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.db_storage.mongodb_storage import MongoDbStorage
 from trazy_analysis.file_storage.common import DATASETS_DIR, DONE_DIR
@@ -93,7 +93,7 @@ CANDLES = np.array(
 
 DB_STORAGE = MongoDbStorage(DATABASE_NAME)
 FILE_STORAGE = MegaNzFileStorage()
-MARKET_CAL = EuronextExchangeCalendar()
+MARKET_CAL = EUREXExchangeCalendar()
 CANDLE_FETCHER = CandleFetcher(DB_STORAGE, FILE_STORAGE, MARKET_CAL)
 
 

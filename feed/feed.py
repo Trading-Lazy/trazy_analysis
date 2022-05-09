@@ -6,9 +6,7 @@ import numpy as np
 import pytz
 from pandas_market_calendars import MarketCalendar
 
-from trazy_analysis.common.american_stock_exchange_calendar import (
-    AmericanStockExchangeCalendar,
-)
+from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 from trazy_analysis.common.constants import MAX_TIMESTAMP
 from trazy_analysis.db_storage.db_storage import DbStorage
 from trazy_analysis.feed.loader import (
@@ -127,7 +125,7 @@ class ExternalStorageFeed(Feed):
         end: datetime = datetime.now(pytz.UTC),
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,
-        market_cal: MarketCalendar = AmericanStockExchangeCalendar(),
+        market_cal: MarketCalendar = IEXExchangeCalendar(),
     ):
         external_storage_loader = ExternalStorageLoader(
             assets=assets,

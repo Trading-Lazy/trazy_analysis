@@ -6,7 +6,7 @@ from trazy_analysis.bot.event_loop import EventLoop
 from trazy_analysis.broker.broker_manager import BrokerManager
 from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
-from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from trazy_analysis.feed.feed import CsvFeed
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
@@ -37,7 +37,7 @@ CANDLE = Candle(
 CANDLE_JSON = CANDLE.to_json()
 FUND = 10000
 START_TIMESTAMP = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-MARKET_CAL = EuronextExchangeCalendar()
+MARKET_CAL = EUREXExchangeCalendar()
 CLOCK = SimulatedClock()
 EVENTS = deque()
 FEED = CsvFeed(

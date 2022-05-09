@@ -5,9 +5,7 @@ from typing import List
 
 import pandas as pd
 
-from trazy_analysis.common.american_stock_exchange_calendar import (
-    AmericanStockExchangeCalendar,
-)
+from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 from trazy_analysis.common.helper import resample_candle_data
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.common.utils import lists_equal
@@ -38,7 +36,7 @@ class TiingoDataHandler(DataHandler):
     MAX_CALLS = 500
     PERIOD = 3600
     TICKER_DATA_TIMEZONE = "UTC"
-    MARKET_CAL = AmericanStockExchangeCalendar()
+    MARKET_CAL = IEXExchangeCalendar()
 
     @classmethod
     def ticker_data_is_none(cls, data: str) -> bool:

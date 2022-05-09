@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from trazy_analysis.common.exchange_calendar_euronext import EuronextExchangeCalendar
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from trazy_analysis.indicators.common import PriceType
 from trazy_analysis.indicators.indicator import Indicator
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
@@ -76,7 +76,7 @@ CANDLE6 = Candle(
     timestamp=datetime.strptime("2020-05-08 14:36:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 )
 
-MARKET_CAL = EuronextExchangeCalendar()
+MARKET_CAL = EUREXExchangeCalendar()
 
 
 def test_get_price_selector_function():

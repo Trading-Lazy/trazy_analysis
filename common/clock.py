@@ -3,16 +3,13 @@ from datetime import datetime, timedelta
 
 import pytz
 from pandas_market_calendars import MarketCalendar
-
-from trazy_analysis.common.american_stock_exchange_calendar import (
-    AmericanStockExchangeCalendar,
-)
+from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 from trazy_analysis.common.utils import timestamp_to_utc
 
 
 class Clock:
     def __init__(
-        self, market_cal: MarketCalendar = AmericanStockExchangeCalendar()
+        self, market_cal: MarketCalendar = IEXExchangeCalendar()
     ) -> None:
         self.market_cal = market_cal
         self.updated = False
@@ -41,7 +38,7 @@ class Clock:
     def end_of_day(self, threshold: timedelta = timedelta(minutes=5)) -> bool:
         now = self.current_time()
         date = now.date()
-        time = self.market_cal.close_time_default
+        time = self.market_cal.regular_market_times["market_close"][0][1]
         end_of_day_datetime = datetime(
             year=date.year,
             month=date.month,
@@ -71,7 +68,7 @@ class LiveClock(Clock):
 
 class SimulatedClock(Clock):
     def __init__(
-        self, market_cal: MarketCalendar = AmericanStockExchangeCalendar()
+        self, market_cal: MarketCalendar = IEXExchangeCalendar()
     ) -> None:
         super().__init__(market_cal)
         self.timestamp: datetime = None
