@@ -13,14 +13,14 @@ SYMBOL1 = "IVV"
 SYMBOL2 = "AAPL"
 
 
-def test_sma_stream_handle_new_data_source_is_stream_data():
-    stream_data = RollingWindow(size=3, preload=False)
-    sma = Sma(period=3, source_indicator=stream_data, preload=False)
-    stream_data.push(7.2)
+def test_sma_stream_handle_new_data_source_is_indicator_data():
+    indicator_data = Indicator()
+    sma = Sma(period=3, source_indicator=indicator_data, preload=False)
+    indicator_data.push(7.2)
     assert sma.data is None
-    stream_data.push(6.7)
+    indicator_data.push(6.7)
     assert sma.data is None
-    stream_data.push(6.3)
+    indicator_data.push(6.3)
     assert sma.data == 6.733333333333333333333333333
 
 
@@ -36,25 +36,28 @@ def test_sma_stream_handle_new_data_source_is_rolling_window_stream():
 
 
 def test_sma_stream_handle_new_data_source_is_rolling_window_stream_with_lower_period():
-    stream_data = Indicator()
-    sma = Sma(period=3, source_indicator=stream_data, preload=False)
-    stream_data.on_next(7.2)
+    indicator_data = Indicator()
+    rolling_window_stream = RollingWindow(
+        size=2, source_indicator=indicator_data, preload=False
+    )
+    sma = Sma(period=3, source_indicator=rolling_window_stream, preload=False)
+    indicator_data.push(7.2)
     assert sma.data is None
-    stream_data.on_next(6.7)
+    indicator_data.push(6.7)
     assert sma.data is None
-    stream_data.on_next(6.3)
+    indicator_data.push(6.3)
     assert sma.data == 6.733333333333333333333333333
 
 
 def test_sma_stream_handle_new_data_source_is_filled_rolling_window_stream():
-    stream_data = Indicator()
+    indicator_data = Indicator()
     rolling_window_stream = RollingWindow(
-        size=3, source_indicator=stream_data, preload=False
+        size=3, source_indicator=indicator_data, preload=False
     )
     rolling_window_stream.prefill(filling_array=[7.2, 6.7, 6.3])
     sma = Sma(period=3, source_indicator=rolling_window_stream, preload=False)
     assert sma.data == pytest.approx(6.733, abs=0.01)
-    rolling_window_stream.push(7)
+    indicator_data.push(7)
     assert sma.data == 6.666666666666666666666666667
 
 

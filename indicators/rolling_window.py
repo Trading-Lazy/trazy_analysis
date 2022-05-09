@@ -52,6 +52,7 @@ class RollingWindow(Indicator):
         if self.size is not None:
             self.set_size(self.size)
         self.preload = preload
+        self.pushs = 0
 
     def set_size(self, period: int):
         self.size = period
@@ -97,6 +98,7 @@ class RollingWindow(Indicator):
                 self.nb_elts += 1
             self.data = self.window[self.index]
             self.on_next(self.data)
+        self.pushs += 1
 
     def push(self, new_data: Any = None):
         self.handle_new_data(new_data)
@@ -116,13 +118,21 @@ class RollingWindow(Indicator):
             size = self.index + 1
         if isinstance(key, slice):
             start = key.start
+            if start is None:
+                start = -self.size + 1
             stop = key.stop
+            if stop is None:
+                stop = 1
             step = key.step
-            if not (-size + 1 <= start <= 0) or not (-size + 1 <= stop <= 0):
+            if not (-size + 1 <= start <= 0) or not (-size + 1 <= stop <= 1):
                 raise IndexError("Index out of Data bound")
             real_start = self.get_real_key(start)
             real_stop = self.get_real_key(stop)
-            if real_start <= real_stop:
+            if start == -self.size + 1 and stop == 1:
+                return np.concatenate(
+                    [self.window[real_start::step], self.window[: real_stop : step]]
+                )
+            elif real_start <= real_stop:
                 return self.window[real_start:real_stop:step]
             else:
                 return np.concatenate(

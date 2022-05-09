@@ -209,7 +209,7 @@ def test_rolling_window_stream_get_item_live():
         rolling_window[-8:-1] == np.array([i for i in range(1, 8)], dtype=int)
     ).all()
     with pytest.raises(Exception):
-        rolling_window[-3:1]
+        rolling_window[-3:2]
     with pytest.raises(Exception):
         rolling_window[1:-5]
     assert (rolling_window[-9:-1:2] == np.array([0, 2, 4, 6], dtype=int)).all()
@@ -252,7 +252,7 @@ def test_rolling_window_stream_get_item_not_live():
         rolling_window[-8:-1] == np.array([i for i in range(1, 8)], dtype=int)
     ).all()
     with pytest.raises(Exception):
-        rolling_window[-3:1]
+        rolling_window[-3:2]
     with pytest.raises(Exception):
         rolling_window[1:-5]
     assert (rolling_window[-9:-1:2] == np.array([0, 2, 4, 6], dtype=int)).all()

@@ -1,4 +1,5 @@
 import operator
+import traceback
 from collections import deque
 from decimal import Decimal
 from typing import Any, Callable, List, Union
@@ -37,6 +38,9 @@ class Indicator:
         transformed_data = self.transform(new_data)
         self.data = transformed_data
         self.on_next(transformed_data)
+
+    def push(self, new_data: Any = None):
+        self.handle_new_data(new_data)
 
     def observe(self, indicator_data: "Indicator"):
         self.ignore()
@@ -83,7 +87,7 @@ class Indicator:
     def indicator_binary_operation_data(
         self, other, operation_function: Callable[[Any, Any], Any]
     ) -> "Indicator":
-        transform = lambda new_data: (operation_function(new_data, other))
+        transform = lambda new_data: (operation_function(new_data, other)) if new_data is not None else None
         indicator_data: Indicator = Indicator(
             source_indicator=self, transform=transform
         )
@@ -110,7 +114,7 @@ class Indicator:
         self,
         operation_function: Callable[[Any], Any],
         allowed_types: List[type],
-    ) -> "Indicator":
+    ) -> Union[int, bool, float, Decimal]:
         if self.data is None:
             return None
         check_type(self.data, allowed_types)

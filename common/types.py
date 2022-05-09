@@ -120,16 +120,19 @@ class CandleDataFrame(DataFrame):
         return concatenated_candle_dataframe
 
     def aggregate(
-        self, time_unit: timedelta, market_cal: MarketCalendar
+        self, time_unit: timedelta, market_cal: MarketCalendar = None
     ) -> "CandleDataFrame":
         if self.empty:
             return CandleDataFrame(asset=self.asset)
         start = self.index[0]
         end = self.index[-1]
-        market_cal_df = market_cal.schedule(
-            start_date=start.strftime("%Y-%m-%d"),
-            end_date=end.strftime("%Y-%m-%d"),
-        )
+
+        market_cal_df = None
+        if market_cal is not None:
+            market_cal_df = market_cal.schedule(
+                start_date=start.strftime("%Y-%m-%d"),
+                end_date=end.strftime("%Y-%m-%d"),
+            )
 
         from trazy_analysis.common.helper import resample_candle_data
 
