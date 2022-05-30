@@ -8,9 +8,7 @@ from trazy_analysis.common.utils import timestamp_to_utc
 
 
 class Clock:
-    def __init__(
-        self, market_cal: MarketCalendar = IEXExchangeCalendar()
-    ) -> None:
+    def __init__(self, market_cal: MarketCalendar = IEXExchangeCalendar()) -> None:
         self.market_cal = market_cal
         self.updated = False
 
@@ -67,9 +65,7 @@ class LiveClock(Clock):
 
 
 class SimulatedClock(Clock):
-    def __init__(
-        self, market_cal: MarketCalendar = IEXExchangeCalendar()
-    ) -> None:
+    def __init__(self, market_cal: MarketCalendar = IEXExchangeCalendar()) -> None:
         super().__init__(market_cal)
         self.timestamp: datetime = None
         self.bars: int = 0

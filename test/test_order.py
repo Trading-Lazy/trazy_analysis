@@ -171,7 +171,7 @@ def test_is_entry_or_exit_order():
 
 def test_from_serializable_dict():
     serializable_dict = {
-        "asset": {"symbol": "AAA", "exchange": "IEX"},
+        "asset": {"symbol": "AAA", "exchange": "IEX", "time_unit": "0:01:00"},
         "signal_id": "1",
         "action": "BUY",
         "direction": "LONG",

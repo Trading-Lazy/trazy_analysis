@@ -70,9 +70,7 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
         # First call without putting since
         exchange_to_lower = ticker.exchange.lower()
         exchange_instance = self.ccxt_connector.get_exchange_instance(exchange_to_lower)
-        empty_candle_dataframe = CandleDataFrame.from_candle_list(
-            asset=ticker, candles=np.array([], dtype=Candle)
-        )
+        empty_candle_dataframe = CandleDataFrame.from_candle_list(asset=ticker, candles=np.array([], dtype=Candle))
         try:
             raw_candles = exchange_instance.fetchOHLCV(symbol=ticker.symbol)
             # don't hit the rateLimit or you will be banned

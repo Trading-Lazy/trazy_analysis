@@ -48,7 +48,7 @@ class Peak(RollingWindow):
         else:
             raise Exception(f"method {self.method} is not among the supported method")
 
-    def initialize_peaks(self):
+    def initialize(self):
         data = self.rolling_window_stream
         len = data.nb_elts
         start = -len + self.order + 1
@@ -56,45 +56,35 @@ class Peak(RollingWindow):
         peaks = [False] * self.order * 2
         for index_to_check in range(start, end):
             peaks.append(self.is_peak(index_to_check))
-        self.prefill(np.array(peaks, dtype=self.dtype))
+        self.prefill(np.array(peaks, dtype=self.odtype))
 
     def __init__(
-            self,
-            comparator: Callable,
-            order: int = 1,
-            method: str = "fractal",
-            size: int = 1,
-            dtype: type = None,
-            source_indicator: Indicator = None,
-            preload=False,
+        self,
+        comparator: Callable,
+        order: int = 1,
+        method: str = "fractal",
+        size: int = 1,
+        source_indicator: Indicator = None,
+        preload=False,
     ):
         self.rolling_window_stream = None
-        self.dtype = dtype
         self.order = order
         self.method = method
         self.peak_size = 2 * order + 1
         if issubclass(type(source_indicator), RollingWindow) and (
-                not source_indicator.ready or source_indicator.size >= self.peak_size
+            not source_indicator.ready or source_indicator.size >= self.peak_size
         ):
             self.rolling_window_stream = source_indicator
         else:
-            self.rolling_window_stream = RollingWindow(
-                size=self.peak_size,
-                source_indicator=source_indicator,
-                dtype=self.dtype,
-                preload=False,
-            )
-        super().__init__(
-            size=size,
-            source_indicator=self.rolling_window_stream,
-            dtype=bool,
-            preload=preload,
-        )
-        self.prefill(np.zeros(self.size, dtype=bool))
+            self.rolling_window_stream = RollingWindow(size=self.peak_size, source_indicator=source_indicator,
+                                                       idtype=float, odtype=float, preload=False)
+        super().__init__(size=size, source_indicator=self.rolling_window_stream, idtype=float, odtype=bool,
+                         preload=preload)
+        # self.prefill(np.zeros(self.size, dtype=bool))
         self.comparator = comparator
 
         if self.rolling_window_stream.filled():
-            self.initialize_peaks()
+            self.initialize()
 
     def handle_new_data(self, new_data) -> None:
         if not self.preload:
@@ -127,8 +117,8 @@ class Level:
 
     def __eq__(self, other):
         return (
-                self.level_type == other.level_type
-                and abs(self.level - other.level) < self.merge_distance
+            self.level_type == other.level_type
+            and abs(self.level - other.level) < self.merge_distance
         )
 
     def __str__(self):
@@ -159,29 +149,25 @@ class LevelInfo:
 
 class ResistanceLevels(Indicator):
     def __init__(
-            self,
-            accuracy: int = 2,
-            order: int = 2,
-            size: int = None,
-            source_indicator: "Indicator" = None,
-            transform: Callable = lambda new_data: new_data,
+        self,
+        accuracy: int = 2,
+        order: int = 2,
+        size: int = None,
+        source_indicator: "Indicator" = None,
+        transform: Callable = lambda new_data: new_data,
     ):
         self.order = order
         self.peak_size = 2 * order + 1
         self.size = size
         if (
-                issubclass(type(source_indicator), RollingWindow)
-                and source_indicator.dtype == Candle
-                and (not source_indicator.ready or source_indicator.size >= self.peak_size)
+            issubclass(type(source_indicator), RollingWindow)
+            and source_indicator.idtype == Candle
+            and (not source_indicator.ready or source_indicator.size >= self.peak_size)
         ):
             self.rolling_window_stream = source_indicator
         else:
-            self.rolling_window_stream = RollingWindow(
-                size=self.peak_size,
-                source_indicator=source_indicator,
-                dtype=Candle,
-                preload=False,
-            )
+            self.rolling_window_stream = RollingWindow(size=self.peak_size, source_indicator=source_indicator,
+                                                       idtype=Candle, preload=False)
         self.highs = self.rolling_window_stream.map(
             get_price_selector_function(PriceType.HIGH)
         )
@@ -267,7 +253,7 @@ class ResistanceLevels(Indicator):
 
         previous_candle = self.rolling_window_stream[-1]
         if previous_candle is not None and previous_candle.high < new_data.high:
-            for interval in self.resistances[previous_candle.low: new_data.high]:
+            for interval in self.resistances[previous_candle.low : new_data.high]:
                 level, level_info = interval.data
                 level.level_type = "support"
                 level_info.power -= 1
@@ -275,7 +261,7 @@ class ResistanceLevels(Indicator):
                     self.resistances.remove(interval)
                     del self.levels[level]
         if previous_candle is not None and previous_candle.low > new_data.low:
-            for interval in self.supports[new_data.low: previous_candle.high]:
+            for interval in self.supports[new_data.low : previous_candle.high]:
                 level, level_info = interval.data
                 level_info.power -= 1
                 if level_info.power == 0:
@@ -306,27 +292,23 @@ class TradingRange:
 
 class TightTradingRange(Indicator):
     def __init__(
-            self,
-            size: int,
-            min_overlaps: int,
-            source_indicator: "Indicator" = None,
-            transform: Callable = lambda new_data: new_data,
+        self,
+        size: int,
+        min_overlaps: int,
+        source_indicator: "Indicator" = None,
+        transform: Callable = lambda new_data: new_data,
     ):
         self.size = size
         self.min_overlaps = min_overlaps
         if (
-                issubclass(type(source_indicator), RollingWindow)
-                and source_indicator.dtype == Candle
-                and (not source_indicator.ready or source_indicator.size >= self.size)
+            issubclass(type(source_indicator), RollingWindow)
+            and source_indicator.idtype == Candle
+            and (not source_indicator.ready or source_indicator.size >= self.size)
         ):
             self.rolling_window_stream = source_indicator
         else:
-            self.rolling_window_stream = RollingWindow(
-                size=self.size,
-                source_indicator=source_indicator,
-                dtype=Candle,
-                preload=False,
-            )
+            self.rolling_window_stream = RollingWindow(size=self.size, source_indicator=source_indicator, idtype=Candle,
+                                                       preload=False)
         self.candle_index = -1
         self.trading_ranges = IntervalTree()
         super().__init__(source_indicator, transform)
@@ -374,7 +356,7 @@ class TightTradingRange(Indicator):
 
     def handle_new_data(self, new_data: Candle) -> None:
         self.candle_index += 1
-        recent_candles = self.rolling_window_stream[-self.size + 1:]
+        recent_candles = self.rolling_window_stream[-self.size + 1 :]
         intervals = []
         min_low = float("inf")
         max_high = float("-inf")
@@ -382,10 +364,12 @@ class TightTradingRange(Indicator):
             if candle is not None:
                 min_low = min(min_low, candle.low)
                 max_high = max(max_high, candle.high)
-                intervals.append((min(candle.open, candle.close), max(candle.open, candle.close)))
+                intervals.append(
+                    (min(candle.open, candle.close), max(candle.open, candle.close))
+                )
         overlaps = self.overlap(intervals)
         if overlaps >= self.min_overlaps:
             start_index = self.candle_index + 1 - self.size
             end_index = self.candle_index
             trading_range = TradingRange(start_index, end_index, min_low, max_high)
-            self.trading_ranges[start_index: end_index + 1] = trading_range
+            self.trading_ranges[start_index : end_index + 1] = trading_range

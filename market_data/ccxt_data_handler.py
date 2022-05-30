@@ -53,15 +53,9 @@ class CcxtDataHandler:
     ) -> CandleDataFrame:
         candles = np.array(
             [
-                Candle(
-                    asset=asset,
-                    open=float(raw_candle[1]),
-                    high=float(raw_candle[2]),
-                    low=float(raw_candle[3]),
-                    close=float(raw_candle[4]),
-                    volume=float(raw_candle[5]),
-                    timestamp=datetime_from_epoch(raw_candle[0]),
-                )
+                Candle(asset=asset, open=float(raw_candle[1]), high=float(raw_candle[2]), low=float(raw_candle[3]),
+                       close=float(raw_candle[4]), volume=float(raw_candle[5]),
+                       timestamp=datetime_from_epoch(raw_candle[0]))
                 for raw_candle in raw_candles
             ]
         )

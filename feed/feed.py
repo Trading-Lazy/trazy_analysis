@@ -31,7 +31,7 @@ class Feed:
     def set_assets(self, assets: List[Asset]):
         self.assets = assets
 
-    def __init__(self, events: deque, candles: Dict[Asset, np.array] = {}):
+    def __init__(self, events: deque = deque(), candles: Dict[Asset, np.array] = {}):
         self.assets = None
         self.set_assets(candles.keys())
         self.events = events
@@ -53,9 +53,6 @@ class Feed:
         min_timestamp = MAX_TIMESTAMP
         completed = 0
         for asset in self.candles:
-            # print(f"asset = {asset}")
-            # indexes = {str(k): v for k, v in self.indexes.items()}
-            # print(f"indexes = {indexes}")
             if self.indexes[asset] < len(self.candles[asset]):
                 index = self.indexes[asset]
                 candle = self.candles[asset][index]
@@ -66,15 +63,12 @@ class Feed:
             else:
                 completed += 1
         if candles:
-            # print(f"candles = {[str(candle) for candle in candles]}")
             self.current_timestamp = min_timestamp
             assets = {}
             for candle in candles:
                 if candle.timestamp == self.current_timestamp:
                     self.indexes[candle.asset] += 1
                     assets[candle.asset] = np.array([candle], dtype=Candle)
-            str_assets = {str(k): v for k, v in assets.items()}
-            # print(f"{str_assets}")
             self.events.append(MarketDataEvent(assets, self.current_timestamp))
         elif completed == len(self.candles):
             self.events.append(
@@ -86,8 +80,8 @@ class LiveFeed(Feed):
     def __init__(
         self,
         assets: List[Asset],
-        events: deque,
         live_data_handler: LiveDataHandler,
+        events: deque = deque(),
         candles: Dict[str, np.array] = {},
     ):
         super().__init__(events=events, candles=candles)
@@ -119,17 +113,16 @@ class ExternalStorageFeed(Feed):
     def __init__(
         self,
         assets: List[Asset],
-        events: deque,
-        time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
+        time_unit=timedelta(minutes=1),
+        events: deque = deque(),
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,
         market_cal: MarketCalendar = IEXExchangeCalendar(),
     ):
         external_storage_loader = ExternalStorageLoader(
             assets=assets,
-            time_unit=time_unit,
             start=start,
             end=end,
             db_storage=db_storage,
@@ -146,14 +139,14 @@ class HistoricalFeed(Feed):
     def __init__(
         self,
         assets: List[Asset],
-        events: deque,
-        historical_data_handler: HistoricalDataHandler,
+        historical_data_handlers: Dict[str, HistoricalDataHandler],
         start: datetime,
         end: datetime,
+        events: deque = deque(),
     ):
         historical_data_loader = HistoricalDataLoader(
             assets=assets,
-            historical_data_handler=historical_data_handler,
+            historical_data_handlers=historical_data_handlers,
             start=start,
             end=end,
         )
@@ -165,7 +158,7 @@ class HistoricalFeed(Feed):
 
 
 class PandasFeed(Feed):
-    def __init__(self, candle_dataframes: np.array, events: deque):
+    def __init__(self, candle_dataframes: np.array, events: deque = deque()):
         candles = {}
         for candle_dataframe in candle_dataframes:
             candles[candle_dataframe.asset] = candle_dataframe.to_candles()
@@ -175,8 +168,8 @@ class PandasFeed(Feed):
 class CsvFeed(Feed):
     def __init__(
         self,
-        csv_filenames: Dict[str, str],
-        events: deque,
+        csv_filenames: Dict[Asset, str],
+        events: deque = deque(),
         sep: str = ",",
     ):
         csv_loader = CsvLoader(csv_filenames=csv_filenames, sep=sep)

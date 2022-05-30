@@ -51,6 +51,10 @@ class CryptoExchangeCalendar(MarketCalendar):
     """
 
     aliases = ["CryptoStock"]
+    regular_market_times = {
+        "market_open": ((None, time(0)),),
+        "market_close": ((None, time(23,59)),)
+    }
 
     def __init__(self, open_time=None, close_time=None):
         super().__init__(open_time, close_time)
@@ -72,31 +76,5 @@ class CryptoExchangeCalendar(MarketCalendar):
         return time(0, 0, tzinfo=self.tz)
 
     @property
-    def regular_holidays(self):
-        return AbstractHolidayCalendar(
-            rules=[
-                NewYearsDay,
-                USMartinLutherKingJr,
-                USPresidentsDay,
-                GoodFriday,
-                USMemorialDay,
-                IndependenceDay,
-                USLaborDay,
-                USThanksgivingDay,
-                ChristmasDay,
-            ]
-        )
-
-    @property
-    def special_closes(self):
-        return [
-            (
-                time(14, 5),
-                AbstractHolidayCalendar(
-                    rules=[
-                        ChristmasDay,
-                        NewYearsDay,
-                    ]
-                ),
-            )
-        ]
+    def weekmask(self):
+        return "Mon Tue Wed Thu Fri Sat Sun"

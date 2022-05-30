@@ -34,9 +34,7 @@ class CandleFetcher:
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
     ) -> List[Candle]:
-        candles = self.db_storage.get_candles_in_range(
-            asset=asset, start=start, end=end
-        )
+        candles = self.db_storage.get_candles_in_range(asset=asset, start=start, end=end)
         return candles
 
     def fetch_candle_db_data(
@@ -99,11 +97,7 @@ class CandleFetcher:
         return merged_df.loc[start_str:end_str]
 
     def fetch(
-        self,
-        symbol: str,
-        time_unit: timedelta,
-        start: datetime,
-        end: datetime = datetime.now(pytz.UTC),
+        self, symbol: str, start: datetime, end: datetime = datetime.now(pytz.UTC)
     ) -> CandleDataFrame:
         df = self.fetch_candle_db_data(symbol, start, end)
         if df.empty or start <= df.iloc[0].name:
@@ -116,17 +110,4 @@ class CandleFetcher:
             )
             if not historical_df.empty:
                 df = CandleDataFrame.concat([historical_df, df], symbol)
-
-        if not df.empty:
-            df_start = df.iloc[0].name
-            df_end = df.iloc[-1].name
-
-            if self.market_cal is not None:
-                market_cal_df = self.market_cal.schedule(
-                    start_date=df_start.strftime("%Y-%m-%d"),
-                    end_date=df_end.strftime("%Y-%m-%d"),
-                )
-            else:
-                market_cal_df = None
-            df = resample_candle_data(df, time_unit, market_cal_df)
         return df

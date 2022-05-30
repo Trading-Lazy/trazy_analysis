@@ -349,16 +349,8 @@ def ccxt_arbitrage_strategy(**kwargs):
     ]
     assets_dict = {asset.exchange: asset for asset in assets}
 
-    feed: Feed = ExternalStorageFeed(
-        assets=assets,
-        events=events,
-        time_unit=timedelta(minutes=1),
-        start=start,
-        end=end,
-        db_storage=external_db_storage,
-        file_storage=None,
-        market_cal=None,
-    )
+    feed: Feed = ExternalStorageFeed(assets=assets, start=start, end=end, events=events, db_storage=external_db_storage,
+                                     file_storage=None, market_cal=None)
 
     # Check whether data is empty or not
     exchange1_candle_dataframe = feed.candle_dataframes[assets_dict[exchange1]]
@@ -410,7 +402,7 @@ def ccxt_arbitrage_strategy(**kwargs):
 
     # Create brokers for exchanges, put a big amount of cash and a big amount of shares to allow all two
     # ways transactions
-    strategies = {ArbitrageStrategy: [{"margin_factor": 0.5}]}
+    strategies = {ArbitrageStrategy: {"margin_factor": 0.5}}
 
     clock = SimulatedClock()
     initial_funds = initial_budget / 2
@@ -479,9 +471,7 @@ def ccxt_arbitrage_strategy(**kwargs):
     initial_size = max_size_exchange2
 
     # exchange 2
-    candle = Candle(
-        asset=assets_dict[exchange2], open=0, high=0, low=0, close=0, volume=0
-    )
+    candle = Candle(asset=assets_dict[exchange2], open=0, high=0, low=0, close=0, volume=0)
     exchange2_broker.update_price(candle)
     order = Order(
         asset=assets_dict[exchange2],
@@ -516,16 +506,9 @@ def ccxt_arbitrage_strategy(**kwargs):
         order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        indicators_manager=indicators_manager,
-        close_at_end_of_day=False,
-        close_at_end_of_data=False,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           indicators_manager=indicators_manager, strategies_parameters=strategies,
+                           close_at_end_of_day=False, close_at_end_of_data=False)
 
     # get initial state of portfolio for stats computation total_market_value
     exchange1_broker.update_price(exchange1_first_candle)
@@ -795,7 +778,12 @@ with DAG(
         except Exception as e:
             historical_data_combinations = []
         if len(historical_data_combinations) == 0:
-            get_ccxt_exchanges_list >> ccxt_exchange_fees_tasks >> ccxt_build_exchange_pairs >> ccxt_build_common_pairs
+            (
+                get_ccxt_exchanges_list
+                >> ccxt_exchange_fees_tasks
+                >> ccxt_build_exchange_pairs
+                >> ccxt_build_common_pairs
+            )
         else:
             end = datetime(2021, 8, 8, 19, 7, 4, 190316, tzinfo=pytz.UTC)
             start = datetime(2021, 8, 7, 19, 7, 4, 190316, tzinfo=pytz.UTC)
@@ -829,7 +817,15 @@ with DAG(
             except Exception as e:
                 ccxt_arbitrage_strategy_combinations = []
             if len(ccxt_arbitrage_strategy_combinations) == 0:
-                get_ccxt_exchanges_list >> ccxt_exchange_fees_tasks >> ccxt_build_exchange_pairs >> ccxt_build_common_pairs >> ccxt_build_historical_data_combinations >> ccxt_download_historical_data_combinations_tasks >> ccxt_build_arbitrage_strategy_combinations
+                (
+                    get_ccxt_exchanges_list
+                    >> ccxt_exchange_fees_tasks
+                    >> ccxt_build_exchange_pairs
+                    >> ccxt_build_common_pairs
+                    >> ccxt_build_historical_data_combinations
+                    >> ccxt_download_historical_data_combinations_tasks
+                    >> ccxt_build_arbitrage_strategy_combinations
+                )
             else:
                 ccxt_arbitrage_strategy_tasks = [
                     PythonOperator(
@@ -858,4 +854,14 @@ with DAG(
                     op_kwargs={"db_storage": mongo_db_storage},
                 )
 
-                get_ccxt_exchanges_list >> ccxt_exchange_fees_tasks >> ccxt_build_exchange_pairs >> ccxt_build_common_pairs >> ccxt_build_historical_data_combinations >> ccxt_download_historical_data_combinations_tasks >> ccxt_build_arbitrage_strategy_combinations >> ccxt_arbitrage_strategy_tasks >> ccxt_rank_arbitrage_strategy_results
+                (
+                    get_ccxt_exchanges_list
+                    >> ccxt_exchange_fees_tasks
+                    >> ccxt_build_exchange_pairs
+                    >> ccxt_build_common_pairs
+                    >> ccxt_build_historical_data_combinations
+                    >> ccxt_download_historical_data_combinations_tasks
+                    >> ccxt_build_arbitrage_strategy_combinations
+                    >> ccxt_arbitrage_strategy_tasks
+                    >> ccxt_rank_arbitrage_strategy_results
+                )

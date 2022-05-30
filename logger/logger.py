@@ -4,10 +4,10 @@ import os
 
 
 def get_root_logger(logger_name, filename=None, stdout=True):
-    """ get the logger object """
+    """get the logger object"""
     logger = logging.getLogger(logger_name)
     debug = os.environ.get("ENV", "development") == "development"
-    logger.setLevel(logging.CRITICAL if debug else logging.CRITICAL)
+    logger.setLevel(logging.INFO if debug else logging.INFO)
 
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

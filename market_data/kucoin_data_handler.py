@@ -59,15 +59,9 @@ class KucoinDataHandler(DataHandler):
         raw_candles = raw_candles_dict["data"]
         candles = np.array(
             [
-                Candle(
-                    asset=asset,
-                    open=float(raw_candle[1]),
-                    high=float(raw_candle[3]),
-                    low=float(raw_candle[4]),
-                    close=float(raw_candle[2]),
-                    volume=float(raw_candle[6]),
-                    timestamp=datetime_from_epoch(int(raw_candle[0]) * 1000),
-                )
+                Candle(asset=asset, open=float(raw_candle[1]), high=float(raw_candle[3]), low=float(raw_candle[4]),
+                       close=float(raw_candle[2]), volume=float(raw_candle[6]),
+                       timestamp=datetime_from_epoch(int(raw_candle[0]) * 1000))
                 for raw_candle in raw_candles
             ]
         )

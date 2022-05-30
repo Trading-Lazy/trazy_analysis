@@ -234,7 +234,7 @@ def test_close_all_open_positions_at_end_of_day():
         events,
     )
 
-    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
+    strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
@@ -248,14 +248,8 @@ def test_close_all_open_positions_at_end_of_day():
         order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        indicators_manager=indicators_manager,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           indicators_manager=indicators_manager, strategies_parameters=strategies)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10016.415
@@ -273,7 +267,7 @@ def test_close_all_open_positions_at_end_of_feed_data():
         events,
     )
 
-    strategies = {SmaCrossoverStrategy: [SmaCrossoverStrategy.DEFAULT_PARAMETERS]}
+    strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
@@ -287,14 +281,8 @@ def test_close_all_open_positions_at_end_of_feed_data():
         order_creator=order_creator,
     )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        indicators_manager=indicators_manager,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           indicators_manager=indicators_manager, strategies_parameters=strategies)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10014.35

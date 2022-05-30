@@ -28,13 +28,13 @@ class Loader:
 class HistoricalDataLoader:
     def __init__(
         self,
-        assets: List[str],
-        historical_data_handler: HistoricalDataHandler,
+        assets: List[Asset],
+        historical_data_handlers: Dict[str, HistoricalDataHandler],
         start: datetime,
         end: datetime,
     ):
         self.assets = assets
-        self.historical_data_handler = historical_data_handler
+        self.historical_data_handlers = historical_data_handlers
         self.start = start
         self.end = end
         self.candles = {}
@@ -42,12 +42,11 @@ class HistoricalDataLoader:
 
     def load(self):
         for asset in self.assets:
-            self.historical_data_handler = self.historical_data_handler
             (
                 candle_dataframe,
                 _,
                 _,
-            ) = self.historical_data_handler.request_ticker_data_in_range(
+            ) = self.historical_data_handlers[asset.exchange.lower()].request_ticker_data_in_range(
                 asset, self.start, self.end
             )
             self.candle_dataframes[asset] = candle_dataframe
@@ -57,7 +56,7 @@ class HistoricalDataLoader:
 class CsvLoader:
     def __init__(
         self,
-        csv_filenames: Dict[str, str],
+        csv_filenames: Dict[Asset, str],
         sep: str = ",",
     ):
         self.csv_filenames = csv_filenames
@@ -77,9 +76,7 @@ class CsvLoader:
         for asset, csv_filename in self.csv_filenames.items():
             dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=self.sep)
             if dataframe.empty:
-                candle_dataframe = CandleDataFrame.from_candle_list(
-                    asset=asset, candles=np.array([], dtype=Candle)
-                )
+                candle_dataframe = CandleDataFrame.from_candle_list(asset=asset, candles=np.array([], dtype=Candle))
             else:
                 candle_dataframe = CandleDataFrame.from_dataframe(dataframe, asset)
             self.candle_dataframes[asset] = candle_dataframe
@@ -90,7 +87,6 @@ class ExternalStorageLoader:
     def __init__(
         self,
         assets: List[Asset],
-        time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
         db_storage: DbStorage = None,
@@ -98,7 +94,6 @@ class ExternalStorageLoader:
         market_cal: MarketCalendar = IEXExchangeCalendar(),
     ):
         self.assets = assets
-        self.time_unit = time_unit
         self.start = start
         self.end = end
         self.db_storage = db_storage
@@ -115,6 +110,6 @@ class ExternalStorageLoader:
     def load(self):
         for asset in self.assets:
             self.candle_dataframes[asset] = self.candle_fetcher.fetch(
-                asset, self.time_unit, self.start, self.end
+                asset, self.start, self.end
             )
             self.candles[asset] = self.candle_dataframes[asset].to_candles()

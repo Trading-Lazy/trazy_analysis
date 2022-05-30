@@ -88,9 +88,7 @@ AAPL_CANDLES2 = np.array(
     dtype=Candle,
 )
 AAPL_CANDLES = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2])
-AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
-    asset=AAPL_ASSET, candles=AAPL_CANDLES
-)
+AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=AAPL_CANDLES)
 
 GOOGL_SYMBOL = "GOOGL"
 GOOGL_ASSET = Asset(symbol=GOOGL_SYMBOL, exchange=EXCHANGE)
@@ -149,9 +147,7 @@ GOOGL_CANDLES2 = np.array(
     dtype=Candle,
 )
 GOOGL_CANDLES = np.concatenate([GOOGL_CANDLES1, GOOGL_CANDLES2])
-GOOGL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
-    asset=GOOGL_ASSET, candles=GOOGL_CANDLES
-)
+GOOGL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(asset=GOOGL_ASSET, candles=GOOGL_CANDLES)
 
 IVV_SYMBOL = "IVV"
 IVV_ASSET = Asset(symbol=IVV_SYMBOL, exchange=EXCHANGE)
@@ -269,7 +265,7 @@ def test_live_feed(request_ticker_lastest_candles_mocked):
     ]
     tiingo_live_data_handler = TiingoLiveDataHandler()
     events = deque()
-    live_feed = LiveFeed([AAPL_ASSET, GOOGL_ASSET], events, tiingo_live_data_handler)
+    live_feed = LiveFeed([AAPL_ASSET, GOOGL_ASSET], tiingo_live_data_handler, events)
 
     for i in range(0, 2):
         live_feed.update_latest_data()
@@ -318,11 +314,7 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
         ),
     ]
     historical_feed = HistoricalFeed(
-        [AAPL_ASSET, GOOGL_ASSET],
-        events,
-        tiingo_historical_data_handler,
-        start,
-        end,
+        [AAPL_ASSET, GOOGL_ASSET], {EXCHANGE: tiingo_historical_data_handler}, start, end, events
     )
 
     for i in range(0, 8):
@@ -454,10 +446,9 @@ def test_external_storage_feed(get_file_content_mocked):
     events = deque()
     external_storage_feed = ExternalStorageFeed(
         assets=[IVV_ASSET],
-        events=events,
-        time_unit=timedelta(minutes=1),
         start=datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         end=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+        events=events,
         db_storage=DB_STORAGE,
         file_storage=FILE_STORAGE,
     )
@@ -507,17 +498,6 @@ def test_external_storage_feed(get_file_content_mocked):
                     "2020-05-08 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
                 ),
             ),
-            Candle(
-                asset=Asset(symbol="IVV", exchange="IEX"),
-                open=93.98,
-                high=93.98,
-                low=93.98,
-                close=93.98,
-                volume=0,
-                timestamp=datetime.strptime(
-                    "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
         ],
         dtype=Candle,
     )
@@ -528,10 +508,8 @@ def test_external_storage_feed(get_file_content_mocked):
         external_storage_feed.update_latest_data()
 
     events_list = list(events)
-    assert len(events_list) == 7
+    assert len(events_list) == 6
 
-    events_list = list(events)
-    assert len(events_list) == 7
     assert isinstance(events_list[0], MarketDataEvent)
     assert events_list[0].candles[IVV_ASSET][0] == file_content_valid_candles[0]
     assert isinstance(events_list[1], MarketDataEvent)
@@ -541,9 +519,7 @@ def test_external_storage_feed(get_file_content_mocked):
     assert isinstance(events_list[3], MarketDataEvent)
     assert events_list[3].candles[IVV_ASSET][0] == file_content_valid_candles[3]
     assert isinstance(events_list[4], MarketDataEvent)
-    assert events_list[4].candles[IVV_ASSET][0] == file_content_valid_candles[4]
-    assert isinstance(events_list[5], MarketDataEvent)
-    assert events_list[5].candles[IVV_ASSET][0] == CANDLES[0]
+    assert events_list[4].candles[IVV_ASSET][0] == CANDLES[0]
 
-    assert isinstance(events_list[6], MarketDataEndEvent)
-    assert events_list[6].assets == [IVV_ASSET]
+    assert isinstance(events_list[5], MarketDataEndEvent)
+    assert events_list[5].assets == [IVV_ASSET]

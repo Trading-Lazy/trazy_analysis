@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 
 import numpy as np
@@ -168,9 +168,7 @@ class MongoDbStorage(DbStorage):
     def candle_with_identifier_exists(self, asset: Asset, timestamp: datetime) -> bool:
         return self.get_candle_by_identifier(asset, timestamp) is not None
 
-    def get_candles_in_range(
-        self, asset: Asset, start: datetime, end: datetime
-    ) -> np.array:  # [Candle]
+    def get_candles_in_range(self, asset: Asset, start: datetime, end: datetime) -> np.array:  # [Candle]
         query = {
             "asset": asset.to_dict(),
             "$and": [{"timestamp": {"$gte": start}}, {"timestamp": {"$lte": end}}],

@@ -94,7 +94,7 @@ if __name__ == "__main__":
     events = deque()
     live_data_handler = BinanceLiveDataHandler()
 
-    feed: Feed = LiveFeed(symbols, events, live_data_handler)
+    feed: Feed = LiveFeed(symbols, live_data_handler, events)
 
     strategies = [SmaCrossoverStrategy]
     clock = LiveClock()
@@ -102,7 +102,9 @@ if __name__ == "__main__":
     broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
-        broker_manager=broker_manager, with_cover=True, trailing_stop_order_pct=0.002
+        broker_manager=broker_manager,
+        trailing_stop_order_pct=0.002,
+        with_trailing_cover=True,
     )
     order_manager = OrderManager(
         events=events,
@@ -114,11 +116,11 @@ if __name__ == "__main__":
     indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,
-        symbols=symbols,
+        assets=[],
         feed=feed,
         order_manager=order_manager,
-        strategies_parameters=strategies,
         indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
         live=True,
         close_at_end_of_day=False,
     )

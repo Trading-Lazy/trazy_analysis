@@ -28,6 +28,7 @@ class CandleDataFrame(DataFrame):
             candles_data = kwargs.pop("candles_data")
             if isinstance(candles_data, DataFrame):
                 len_candles_data = len(candles_data.index)
+                kwargs.update({"columns": candles_data.columns})
             else:  # dict or list
                 len_candles_data = len(candles_data)
             if len_candles_data != 0:
@@ -94,17 +95,21 @@ class CandleDataFrame(DataFrame):
 
     def append(self, other, *args, **kwargs) -> "CandleDataFrame":
         kwargs.pop("verify_integrity", None)
-        candle_dataframe = pd.concat([self, other], *args, **kwargs, verify_integrity=True)
+        candle_dataframe = pd.concat(
+            [self, other], *args, **kwargs, verify_integrity=True
+        )
         candle_dataframe.asset = self.asset
         candle_dataframe.sort_index(inplace=True)
         return candle_dataframe
 
     @staticmethod
-    def from_candle_list(asset: Asset, candles: np.array):  # [Candle]
+    def from_candle_list(asset: Asset, candles: np.array):
         if candles.size == 0:
             return CandleDataFrame(asset=asset)
         candles_data = [candle.to_serializable_dict() for candle in candles]
-        return CandleDataFrame(asset=asset, candles_data=candles_data)
+        return CandleDataFrame(
+            asset=asset, candles_data=candles_data
+        )
 
     @staticmethod
     def from_dataframe(df: DataFrame, asset: Asset) -> "CandleDataFrame":
@@ -119,7 +124,7 @@ class CandleDataFrame(DataFrame):
         concatenated_candle_dataframe.sort_index(inplace=True)
         return concatenated_candle_dataframe
 
-    def aggregate(
+    def rescale(
         self, time_unit: timedelta, market_cal: MarketCalendar = None
     ) -> "CandleDataFrame":
         if self.empty:

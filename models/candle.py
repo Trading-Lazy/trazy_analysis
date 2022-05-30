@@ -1,9 +1,10 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
 
 from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import CandleDirection
 
 
 class Candle:
@@ -23,9 +24,19 @@ class Candle:
         self.low: float = low
         self.close: float = close
         self.volume: int = volume
+
         from trazy_analysis.common.utils import timestamp_to_utc
 
         self.timestamp = timestamp_to_utc(timestamp)
+
+    @property
+    def direction(self) -> CandleDirection:
+        if self.open < self.close:
+            return CandleDirection.BULLISH
+        elif self.open > self.close:
+            return CandleDirection.BEARISH
+        else:
+            return CandleDirection.DOJI
 
     @staticmethod
     def from_serializable_dict(candle_dict: dict) -> "Candle":

@@ -11,6 +11,13 @@ class Direction(Enum):
     SHORT = "SHORT"
 
 
+class CandleDirection(Enum):
+    BULLISH = "BULLISH"
+    BEARISH = "BEARISH"
+    DOJI = "DOJI"
+    NOT_COMPUTED = "NOT_COMPUTED"
+
+
 class OrderStatus(Enum):
     CANCELLED = "CANCELLED"
     CREATED = "CREATED"

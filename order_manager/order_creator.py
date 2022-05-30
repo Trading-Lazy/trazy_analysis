@@ -31,6 +31,8 @@ class OrderCreator:
         trailing_stop_order_pct=0.05,
         with_cover=False,
         with_bracket=False,
+        with_trailing_cover=False,
+        with_trailing_bracket=False,
     ):
         self.broker_manager = broker_manager
         self.fixed_order_type = fixed_order_type
@@ -40,6 +42,8 @@ class OrderCreator:
         self.trailing_stop_order_pct = trailing_stop_order_pct
         self.with_cover = with_cover
         self.with_bracket = with_bracket
+        self.with_trailing_cover = with_trailing_cover
+        self.with_trailing_bracket = with_trailing_bracket
 
     def find_best_limit(self, signal: Signal, action: Action) -> float:
         current_price = self.broker_manager.get_broker(
@@ -89,7 +93,12 @@ class OrderCreator:
 
     def create_order(self, signal: Signal, clock: Clock) -> Order:
         if isinstance(signal, Signal):
-            if (not self.with_cover and not self.with_bracket) or signal.is_exit_signal:
+            if (
+                not self.with_cover
+                and not self.with_bracket
+                and not self.with_trailing_cover
+                and not self.with_trailing_bracket
+            ) or signal.is_exit_signal:
                 limit = None
                 stop = None
                 target = None
@@ -122,6 +131,80 @@ class OrderCreator:
 
             action = Action.BUY if signal.action == Action.SELL else Action.SELL
             if self.with_cover:
+                stop = self.find_best_stop(signal, action)
+                initiation_order = Order(
+                    asset=signal.asset,
+                    action=signal.action,
+                    direction=signal.direction,
+                    size=0,
+                    signal_id=signal.signal_id,
+                    type=OrderType.MARKET,
+                    clock=clock,
+                    time_in_force=signal.time_in_force,
+                )
+                stop_order = Order(
+                    asset=signal.asset,
+                    action=action,
+                    direction=signal.direction,
+                    size=0,
+                    signal_id=signal.signal_id,
+                    stop=stop,
+                    type=OrderType.STOP,
+                    clock=clock,
+                    time_in_force=pd.offsets.Day(1),
+                )
+                cover_order = CoverOrder(
+                    asset=signal.asset,
+                    initiation_order=initiation_order,
+                    stop_order=stop_order,
+                    clock=clock,
+                )
+                return cover_order
+            elif self.with_bracket:
+                LOG.info("Ah ah ah bracket order")
+                target = self.find_best_target(signal, action)
+                stop = self.find_best_stop(signal, action)
+                initiation_order = Order(
+                    asset=signal.asset,
+                    action=signal.action,
+                    direction=signal.direction,
+                    size=0,
+                    signal_id=signal.signal_id,
+                    type=OrderType.MARKET,
+                    clock=clock,
+                    time_in_force=signal.time_in_force,
+                )
+                target_order = Order(
+                    asset=signal.asset,
+                    action=action,
+                    direction=signal.direction,
+                    size=0,
+                    signal_id=signal.signal_id,
+                    target=target,
+                    type=OrderType.TARGET,
+                    clock=clock,
+                    time_in_force=pd.offsets.Day(1),
+                )
+                stop_order = Order(
+                    asset=signal.asset,
+                    action=action,
+                    direction=signal.direction,
+                    size=0,
+                    signal_id=signal.signal_id,
+                    stop=stop,
+                    type=OrderType.STOP,
+                    clock=clock,
+                    time_in_force=pd.offsets.Day(1),
+                )
+                bracket_order = BracketOrder(
+                    asset=signal.asset,
+                    initiation_order=initiation_order,
+                    target_order=target_order,
+                    stop_order=stop_order,
+                    clock=clock,
+                )
+                return bracket_order
+            elif self.with_trailing_cover:
                 stop_pct = self.find_best_trailing_stop(signal, action)
                 initiation_order = Order(
                     asset=signal.asset,
@@ -151,7 +234,7 @@ class OrderCreator:
                     clock=clock,
                 )
                 return cover_order
-            elif self.with_bracket:
+            elif self.with_trailing_bracket:
                 target = self.find_best_target(signal, action)
                 stop_pct = self.find_best_trailing_stop(signal, action)
                 initiation_order = Order(

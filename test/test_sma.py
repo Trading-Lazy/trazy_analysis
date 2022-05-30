@@ -37,9 +37,7 @@ def test_sma_stream_handle_new_data_source_is_rolling_window_stream():
 
 def test_sma_stream_handle_new_data_source_is_rolling_window_stream_with_lower_period():
     indicator_data = Indicator()
-    rolling_window_stream = RollingWindow(
-        size=2, source_indicator=indicator_data, preload=False
-    )
+    rolling_window_stream = RollingWindow(size=2, source_indicator=indicator_data, preload=False)
     sma = Sma(period=3, source_indicator=rolling_window_stream, preload=False)
     indicator_data.push(7.2)
     assert sma.data is None
@@ -51,9 +49,7 @@ def test_sma_stream_handle_new_data_source_is_rolling_window_stream_with_lower_p
 
 def test_sma_stream_handle_new_data_source_is_filled_rolling_window_stream():
     indicator_data = Indicator()
-    rolling_window_stream = RollingWindow(
-        size=3, source_indicator=indicator_data, preload=False
-    )
+    rolling_window_stream = RollingWindow(size=3, source_indicator=indicator_data, preload=False)
     rolling_window_stream.prefill(filling_array=[7.2, 6.7, 6.3])
     sma = Sma(period=3, source_indicator=rolling_window_stream, preload=False)
     assert sma.data == pytest.approx(6.733, abs=0.01)

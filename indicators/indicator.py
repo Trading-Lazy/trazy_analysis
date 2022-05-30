@@ -17,10 +17,14 @@ class Indicator:
         self,
         source_indicator: "Indicator" = None,
         transform: Callable = lambda new_data: new_data,
+        idtype: type = None,
+        odtype: type = None,
     ):
         Indicator.instances += 1
-        self.transform = transform
         self.source_indicator = source_indicator
+        self.transform = transform
+        self.idtype = idtype
+        self.odtype = odtype
         self.data = None
         self.callback = lambda new_elt: self.handle_new_data(new_elt)
         self.callbacks = deque()
@@ -87,7 +91,11 @@ class Indicator:
     def indicator_binary_operation_data(
         self, other, operation_function: Callable[[Any, Any], Any]
     ) -> "Indicator":
-        transform = lambda new_data: (operation_function(new_data, other)) if new_data is not None else None
+        transform = (
+            lambda new_data: (operation_function(new_data, other))
+            if new_data is not None
+            else None
+        )
         indicator_data: Indicator = Indicator(
             source_indicator=self, transform=transform
         )

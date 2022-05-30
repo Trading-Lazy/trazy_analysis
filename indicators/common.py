@@ -6,6 +6,8 @@ class PriceType(Enum):
     HIGH = auto()
     LOW = auto()
     CLOSE = auto()
+    BODY_HIGH = auto()
+    BODY_LOW = auto()
     LAST = auto()
 
 

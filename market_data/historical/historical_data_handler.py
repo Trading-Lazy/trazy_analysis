@@ -122,14 +122,12 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
             error_response_periods[period_tuple] = "{}: {}".format(
                 response.status_code, data
             )
-        return CandleDataFrame.from_candle_list(
-            asset=ticker, candles=np.array([], dtype=Candle)
-        )
+        return CandleDataFrame.from_candle_list(asset=ticker, candles=np.array([], dtype=Candle))
 
     @classmethod
     def request_ticker_data_from_periods(
         cls, ticker: Asset, periods: List[Tuple[datetime, datetime]]
-    ) -> Tuple[CandleDataFrame, List[Tuple[date, date]], Dict[Tuple[date, date], str]]:
+    ) -> Tuple[CandleDataFrame, Set[Tuple[date, date]], Dict[Tuple[date, date], str]]:
         candle_dataframes: np.array = np.empty(
             shape=periods.shape[0], dtype=CandleDataFrame
         )  # np.array[CandleDataFrame]
@@ -179,7 +177,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
         ticker: Asset,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-    ) -> Tuple[CandleDataFrame, List[Tuple[date, date]], Dict[Tuple[date, date], str]]:
+    ) -> Tuple[CandleDataFrame, Set[Tuple[date, date]], Dict[Tuple[date, date], str]]:
         periods = get_periods(cls.MAX_DOWNLOAD_FRAME, start, end)
         (
             candle_dataframe,

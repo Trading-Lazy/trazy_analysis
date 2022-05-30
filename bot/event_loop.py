@@ -22,6 +22,8 @@ from trazy_analysis.models.event import (
     PendingSignalEvent,
 )
 from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.statistics.abstract_statistics import AbstractStatistics
+from trazy_analysis.statistics.statistics import Statistics
 from trazy_analysis.strategy.context import Context
 from trazy_analysis.strategy.strategy import Strategy
 
@@ -72,24 +74,23 @@ class ExpiringSet:
 
 class EventLoop:
     def _init_strategy_instance(
-        self, strategy_class: type, parameters_list: List[Dict[str, float]]
+        self, strategy_class: type, parameters: Dict[str, float]
     ):
         if issubclass(strategy_class, Strategy):
-            for parameters in parameters_list:
-                self.strategy_instances.append(
-                    strategy_class(
-                        self.context,
-                        self.order_manager,
-                        self.events,
-                        parameters,
-                        self.indicators_manager,
-                    )
+            self.strategy_instances.append(
+                strategy_class(
+                    self.context,
+                    self.order_manager,
+                    self.events,
+                    parameters,
+                    self.indicators_manager,
                 )
+            )
 
     def _init_strategy_instances(self):
         for strategy_class in self.strategies_parameters:
-            parameters_list = self.strategies_parameters[strategy_class]
-            self._init_strategy_instance(strategy_class, parameters_list)
+            parameters = self.strategies_parameters[strategy_class]
+            self._init_strategy_instance(strategy_class, parameters)
 
     def _init_seen_candles(self):
         for asset in self.assets:
@@ -100,42 +101,37 @@ class EventLoop:
 
     def update_equity_curves(self):
         exchanges = {asset.exchange for asset in self.assets}
-        for strategy in self.strategy_instances:
-            for exchange in exchanges:
-                get_or_create_nested_dict(self.equity_curves, strategy.name)
-                if exchange not in self.equity_curves[strategy.name]:
-                    self.equity_curves[strategy.name][exchange] = []
+        for exchange in exchanges:
+            if exchange not in self.equity_curves:
+                self.equity_curves[exchange] = []
 
-                if not self.clock.updated:
+            if not self.clock.updated:
+                return
+
+            current_time = self.clock.current_time()
+            if len(self.equity_curves[exchange]) != 0:
+                most_recent_time = self.equity_curves[exchange][-1][0]
+                if most_recent_time >= current_time:
                     return
 
-                current_time = self.clock.current_time()
-                if len(self.equity_curves[strategy.name][exchange]) != 0:
-                    most_recent_time = self.equity_curves[strategy.name][exchange][-1][
-                        0
-                    ]
-                    if most_recent_time >= current_time:
-                        return
-
-                self.equity_curves[strategy.name][exchange].append(
-                    (
-                        current_time,
-                        self.broker_manager.get_broker(
-                            exchange
-                        ).get_portfolio_total_equity(),
-                    )
+            self.equity_curves[exchange].append(
+                (
+                    current_time,
+                    self.broker_manager.get_broker(
+                        exchange
+                    ).get_portfolio_total_equity(),
                 )
+            )
 
     def update_equity_dfs(self):
         exchanges = {asset.exchange for asset in self.assets}
-        for strategy in self.strategy_instances:
-            for exchange in exchanges:
-                get_or_create_nested_dict(self.equity_dfs, strategy.name)
-                equity_df = pd.DataFrame(
-                    self.equity_curves[strategy.name][exchange],
-                    columns=["Date", "Equity"],
-                ).set_index("Date")
-                self.equity_dfs[strategy.name][exchange] = equity_df
+        LOG.info(f"exchanges = {exchanges}")
+        for exchange in exchanges:
+            equity_df = pd.DataFrame(
+                self.equity_curves[exchange],
+                columns=["Date", "Equity"],
+            ).set_index("Date")
+            self.equity_dfs[exchange] = equity_df
 
     def update_positions(self):
         exchanges = {asset.exchange for asset in self.assets}
@@ -226,11 +222,16 @@ class EventLoop:
     def update_transactions_dfs(self):
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
-            transactions_df = pd.DataFrame(
-                self.transactions[exchange],
-                columns=["Date", "amount", "price", "symbol"],
-            ).set_index("Date")
-            self.transactions_dfs[exchange] = transactions_df
+            if exchange in self.transactions:
+                transactions_df = pd.DataFrame(
+                    self.transactions[exchange],
+                    columns=["Date", "amount", "price", "symbol"],
+                ).set_index("Date")
+                self.transactions_dfs[exchange] = transactions_df
+            else:
+                self.transactions_dfs[exchange] = pd.DataFrame(
+                    columns=["Date", "amount", "price", "symbol"]
+                ).set_index("Date")
 
     def run_strategies(self):
         for strategy in self.strategy_instances:
@@ -280,10 +281,11 @@ class EventLoop:
         feed: Feed,
         order_manager: OrderManager,
         indicators_manager: IndicatorsManager,
-        strategies_parameters: Dict[type, List[Dict[str, float]]] = {},
+        strategies_parameters: Dict[type, Dict[str, Any]] = {},
         live=False,
         close_at_end_of_day=True,
         close_at_end_of_data=True,
+        statistics_class: type = None,
     ):
         self.events: deque = events
         self.asset_delayed_events = {}
@@ -308,11 +310,14 @@ class EventLoop:
         self.signals_and_orders_last_update = None
         self.current_timestamp = MAX_TIMESTAMP
         self.equity_curves = {}
+        self.update_equity_curves()
         self.equity_dfs = {}
         self.positions = {}
         self.positions_dfs = {}
         self.transactions = {}
         self.transactions_dfs = {}
+        self.statistics_class = statistics_class
+        self.statistics_df = None
 
     def loop(self):
         data_to_process = True
@@ -449,5 +454,17 @@ class EventLoop:
                     self.update_positions_dfs()
                     self.update_transactions()
                     self.update_transactions_dfs()
+
+                    exchanges = [asset.exchange for asset in self.assets]
+                    if self.statistics_class is not None:
+                        for exchange in exchanges:
+                            if self.equity_dfs[exchange].empty:
+                                self.statistics_df = pd.DataFrame()
+                                continue
+                            self.statistics_df = self.statistics_class(
+                                equity=self.equity_dfs[exchange],
+                                positions=self.positions_dfs[exchange],
+                                transactions=self.transactions_dfs[exchange],
+                            ).get_tearsheet()
                     data_to_process = False
                     break

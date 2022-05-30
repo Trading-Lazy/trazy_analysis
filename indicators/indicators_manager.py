@@ -2,6 +2,7 @@ from typing import Dict
 
 import numpy as np
 
+from trazy_analysis.indicators.bos import CandleBosManager, PoiTouchManager
 from trazy_analysis.indicators.rolling_window import (
     PriceRollingWindowManager,
     RollingWindowManager,
@@ -26,6 +27,12 @@ class IndicatorsManager:
         self.sma_manager = SmaManager(
             self.price_rolling_window_manager, preload=preload
         )
+        self.candle_bos_manager = CandleBosManager(
+            self.time_framed_candle_rolling_window_manager, preload=preload
+        )
+        self.poi_touch = PoiTouchManager(
+            self.candle_bos_manager, preload=preload
+        )
         self.warmedup = False
 
     @property
@@ -48,6 +55,14 @@ class IndicatorsManager:
     def Sma(self):  # pragma: no cover
         return self.sma_manager
 
+    @property
+    def CandleBos(self):  # pragma: no cover
+        return self.candle_bos_manager
+
+    @property
+    def PoiTouch(self):  # pragma: no cover
+        return self.poi_touch
+
     def warmup(self):
         if not self.warmedup:
             self.rolling_window_manager.warmup(
@@ -56,4 +71,6 @@ class IndicatorsManager:
             self.time_framed_candle_rolling_window_manager.warmup()
             self.price_rolling_window_manager.warmup()
             self.sma_manager.warmup()
+            self.candle_bos_manager.warmup()
+            self.poi_touch.warmup()
             self.warmedup = True

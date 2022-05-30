@@ -581,7 +581,7 @@ def test_update_transactions(
     assert kucoin_broker.portfolio.history[0] == PortfolioEvent(
         timestamp=datetime.strptime("2021-07-12 21:58:46+0000", "%Y-%m-%d %H:%M:%S%z"),
         type="symbol_transaction",
-        description="BUY LONG 0.45434801 KUCOIN-NANO/USDT 4.401912 12/07/2021",
+        description="BUY LONG 0.45434801 KUCOIN-NANO/USDT-0:01:00 4.401912 12/07/2021",
         debit=2.001999957352515,
         credit=0.0,
         balance=32.429,
@@ -589,7 +589,7 @@ def test_update_transactions(
     assert kucoin_broker.portfolio.history[1] == PortfolioEvent(
         timestamp=datetime.strptime("2021-07-12 21:41:56+0000", "%Y-%m-%d %H:%M:%S%z"),
         type="symbol_transaction",
-        description="BUY LONG 7.99948803 KUCOIN-XRP/USDT 0.62504 12/07/2021",
+        description="BUY LONG 7.99948803 KUCOIN-XRP/USDT-0:01:00 0.62504 12/07/2021",
         debit=5.004999998269472,
         credit=0.0,
         balance=32.429,
@@ -597,7 +597,7 @@ def test_update_transactions(
     assert kucoin_broker.portfolio.history[2] == PortfolioEvent(
         timestamp=datetime.strptime("2021-07-12 22:16:59+0000", "%Y-%m-%d %H:%M:%S%z"),
         type="symbol_transaction",
-        description="SELL LONG 0.01 KUCOIN-NANO/USDT 4.417691 12/07/2021",
+        description="SELL LONG 0.01 KUCOIN-NANO/USDT-0:01:00 4.417691 12/07/2021",
         debit=0.0,
         credit=0.04,
         balance=32.43,

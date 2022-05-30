@@ -1,3 +1,4 @@
+from collections import deque
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict
 
@@ -6,7 +7,7 @@ import pandas as pd
 from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
-from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
+from trazy_analysis.common.crypto_exchange_calendar import CryptoExchangeCalendar
 from trazy_analysis.common.helper import get_or_create_nested_dict, round_time
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.common.utils import timestamp_to_utc
@@ -25,6 +26,10 @@ def get_price_selector_function(price_type: PriceType) -> Callable[[Candle], flo
         return lambda candle: candle.low
     elif price_type == PriceType.CLOSE:
         return lambda candle: candle.close
+    elif price_type == PriceType.BODY_HIGH:
+        return lambda candle: max(candle.open, candle.close)
+    elif price_type == PriceType.BODY_LOW:
+        return lambda candle: min(candle.open, candle.close)
     else:
         raise Exception("Invalid price_type {}".format(price_type.name))
 
@@ -32,34 +37,40 @@ def get_price_selector_function(price_type: PriceType) -> Callable[[Candle], flo
 class RollingWindow(Indicator):
     count = 0
     instances = 0
+    instances_dict = {}
 
     def __init__(
         self,
         size: int = None,
-        dtype: type = None,
         source_indicator: Indicator = None,
         transform: Callable = lambda new_data: new_data,
+        idtype: type = None,
+        odtype=None,
+        initializable=False,
         preload=False,
     ):
         RollingWindow.instances += 1
-        super().__init__(source_indicator, transform)
-        self.dtype = dtype
+        super().__init__(source_indicator, transform, idtype, odtype)
         self.nb_elts = 0
         self.insert = 0
         self.window = None
         self.ready = False
         self.size = size
+        self.size_callbacks = deque()
         if self.size is not None:
             self.set_size(self.size)
         self.preload = preload
-        self.pushs = 0
+        if initializable:
+            self.initialise()
 
     def set_size(self, period: int):
         self.size = period
-        self.window: np.array = np.empty(shape=self.size, dtype=self.dtype)
+        self.window: np.array = np.empty(shape=self.size, dtype=self.idtype)
         self.nb_elts = 0
         self.insert = 0
         self.ready = True
+        for callback in self.size_callbacks:
+            callback(self.size)
 
     def prefill(self, filling_array: np.array):
         nb_elts_list = len(filling_array)
@@ -74,11 +85,14 @@ class RollingWindow(Indicator):
         else:
             self.window = np.array(
                 [self.transform(elt) for elt in filling_array[-self.size :]],
-                dtype=self.dtype,
+                dtype=self.idtype,
             )
         self.insert = 0
         self.index = -1
         self.data = None if nb_elts_list == 0 else self.window[-1]
+
+    def initialize(self):
+        pass
 
     def handle_new_data(self, new_data) -> None:
         RollingWindow.count += 1
@@ -98,7 +112,6 @@ class RollingWindow(Indicator):
                 self.nb_elts += 1
             self.data = self.window[self.index]
             self.on_next(self.data)
-        self.pushs += 1
 
     def push(self, new_data: Any = None):
         self.handle_new_data(new_data)
@@ -130,7 +143,7 @@ class RollingWindow(Indicator):
             real_stop = self.get_real_key(stop)
             if start == -self.size + 1 and stop == 1:
                 return np.concatenate(
-                    [self.window[real_start::step], self.window[: real_stop : step]]
+                    [self.window[real_start::step], self.window[:real_stop:step]]
                 )
             elif real_start <= real_stop:
                 return self.window[real_start:real_stop:step]
@@ -151,11 +164,12 @@ class RollingWindow(Indicator):
             size=self.size,
             source_indicator=self,
             transform=func,
-            dtype=self.dtype,
+            idtype=self.idtype,
             preload=self.preload,
         )
         if self.filled():
             rolling_window_stream.prefill(self.window.tolist())
+        self.size_callbacks.append(lambda size: rolling_window_stream.set_size(size))
         return rolling_window_stream
 
 
@@ -165,7 +179,7 @@ class TimeFramedCandleRollingWindow(RollingWindow):
 
     def __init__(
         self,
-        time_unit: pd.offsets.DateOffset,
+        time_unit: timedelta,
         market_cal: MarketCalendar,
         size: int = None,
         source_indicator: Indicator = None,
@@ -173,10 +187,7 @@ class TimeFramedCandleRollingWindow(RollingWindow):
     ):
         TimeFramedCandleRollingWindow.instances += 1
         super().__init__(
-            size=size,
-            source_indicator=source_indicator,
-            dtype=Candle,
-            preload=preload,
+            size=size, source_indicator=source_indicator, idtype=Candle, preload=preload
         )
         self.time_unit = time_unit
         self.market_cal = market_cal
@@ -188,7 +199,7 @@ class TimeFramedCandleRollingWindow(RollingWindow):
     def handle_new_data(self, new_data: Candle) -> None:
         TimeFramedCandleRollingWindow.count += 1
         if not self.preload:
-            if self.time_unit == timedelta(minutes=1):
+            if self.time_unit == new_data.asset.time_unit:
                 super().handle_new_data(new_data)
                 return
 
@@ -196,14 +207,17 @@ class TimeFramedCandleRollingWindow(RollingWindow):
                 self.aggregated_df.add_candle(new_data)
             else:
                 if self.aggregated_df is not None:
-                    self.aggregated_df = self.aggregated_df.aggregate(
+                    self.aggregated_df = self.aggregated_df.rescale(
                         self.time_unit, self.market_cal
                     )
+                    if self.aggregated_df.empty:
+                        raise Exception(
+                            "Aggregated df is empty, this should not be possible, check your market calendar"
+                        )
                     self.aggregated_candle = self.aggregated_df.get_candle(0)
                     super().handle_new_data(self.aggregated_candle)
-                self.aggregated_df = CandleDataFrame.from_candle_list(
-                    asset=new_data.asset, candles=np.array([new_data], dtype=Candle)
-                )
+                self.aggregated_df = CandleDataFrame.from_candle_list(asset=new_data.asset,
+                                                                      candles=np.array([new_data], dtype=Candle))
                 self.aggregate_oldest_timestamp = round_time(
                     new_data.timestamp, self.time_unit
                 )
@@ -224,7 +238,7 @@ class RollingWindowManager:
     def __call__(self, asset: Asset, period: int = 5) -> RollingWindow:
         if asset not in self.cache:
             self.max_periods[asset] = period
-            self.cache[asset] = RollingWindow(dtype=Candle, preload=self.preload)
+            self.cache[asset] = RollingWindow(idtype=Candle, preload=self.preload)
         elif period > self.max_periods[asset]:
             self.max_periods[asset] = period
         return self.cache[asset]
@@ -253,7 +267,7 @@ class TimeFramedCandleRollingWindowManager:
     def __init__(
         self,
         rolling_window_manager: RollingWindowManager,
-        market_cal: MarketCalendar = IEXExchangeCalendar(),
+        market_cal: MarketCalendar = CryptoExchangeCalendar(),
         preload=True,
     ):
         self.cache = {}
@@ -264,7 +278,7 @@ class TimeFramedCandleRollingWindowManager:
 
     @cached(max_size=128, algorithm=CachingAlgorithmFlag.LFU)
     def __call__(
-        self, asset: Asset, period: int, time_unit: pd.offsets.DateOffset
+        self, asset: Asset, period: int, time_unit: timedelta
     ) -> TimeFramedCandleRollingWindow:
         get_or_create_nested_dict(self.cache, asset)
         get_or_create_nested_dict(self.max_periods, asset)
@@ -282,7 +296,6 @@ class TimeFramedCandleRollingWindowManager:
         return self.cache[asset][time_unit]
 
     def warmup(self):
-
         for asset in self.max_periods:
             for time_unit in self.max_periods[asset]:
                 max_period = self.max_periods[asset][time_unit]
@@ -296,9 +309,8 @@ class TimeFramedCandleRollingWindowManager:
                     if time_unit == timedelta(minutes=1):
                         self.cache[asset][time_unit].prefill(preload_data_arr)
                     else:
-                        aggregated_df = CandleDataFrame.from_candle_list(
-                            asset=asset, candles=preload_data_arr
-                        ).aggregate(time_unit, self.market_cal)
+                        aggregated_df = CandleDataFrame.from_candle_list(asset=asset,
+                                                                         candles=preload_data_arr).rescale(time_unit, self.market_cal)
                         self.cache[asset][time_unit].prefill(aggregated_df.to_candles())
                 else:
                     self.cache[asset][time_unit].set_size(max_period)
@@ -308,7 +320,7 @@ class PriceRollingWindowManager:
     def __init__(
         self,
         time_framed_candle_rolling_window_manager: TimeFramedCandleRollingWindowManager,
-        market_cal: MarketCalendar = IEXExchangeCalendar(),
+        market_cal: MarketCalendar = CryptoExchangeCalendar(),
         preload=True,
     ):
         self.cache = {}
@@ -324,7 +336,7 @@ class PriceRollingWindowManager:
         self,
         asset: Asset,
         period: int,
-        time_unit: pd.offsets.DateOffset,
+        time_unit: timedelta,
         price_type: PriceType,
     ) -> TimeFramedCandleRollingWindow:
         get_or_create_nested_dict(self.cache, asset, time_unit)

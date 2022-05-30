@@ -274,7 +274,6 @@ class OptunaOptimizer(Optimizer):
                     kwargs[param_key] = trial.suggest_categorical(
                         param_key, param_value.range
                     )
-                print(kwargs)
             return -func(**kwargs)
 
         study = optuna.create_study()

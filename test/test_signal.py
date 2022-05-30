@@ -25,7 +25,7 @@ SIGNAL1 = Signal(
     clock=clock,
 )
 SIGNAL1_DICT = {
-    "asset": {"symbol": "IVV", "exchange": "IEX"},
+    "asset": {"symbol": "IVV", "exchange": "IEX", "time_unit": "0:01:00"},
     "action": "BUY",
     "direction": "LONG",
     "confidence_level": "0.05",

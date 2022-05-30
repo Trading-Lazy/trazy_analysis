@@ -214,7 +214,6 @@ def fill_missing_datetimes(
         resample_label = "left"
     if df.empty:
         return df
-    # print(df.resample(time_unit, label=resample_label, closed="right"))
     df = df.resample(time_unit, label=resample_label, closed="right").agg(
         {
             "open": "first",

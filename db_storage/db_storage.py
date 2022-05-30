@@ -1,5 +1,5 @@
 import abc
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from trazy_analysis.common.types import CandleDataFrame
@@ -50,7 +50,7 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_candle_by_identifier(
-        self, symbol: str, timestamp: datetime
+        self, asset: str, timestamp: datetime
     ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 
@@ -73,7 +73,7 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_signal_by_identifier(
-        self, symbol: str, strategy: str, candle_timestamp: datetime
+        self, asset: str, strategy: str, root_candle_timestamp: datetime
     ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 

@@ -1,6 +1,6 @@
 import os
 from collections.abc import MutableMapping
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Callable, List
 from urllib.parse import urlparse
 
@@ -74,6 +74,7 @@ class InfluxDbStorage(DbStorage):
         candle_dict["asset"] = {
             "symbol": candle_dict["symbol"],
             "exchange": candle_dict["exchange"],
+            "time_unit": str(candle_dict["time_unit"])
         }
 
     def format_signal_dict(self, signal_dict: dict):
@@ -90,6 +91,7 @@ class InfluxDbStorage(DbStorage):
         signal_dict["asset"] = {
             "symbol": signal_dict["symbol"],
             "exchange": signal_dict["exchange"],
+            "time_unit": signal_dict["time_unit"]
         }
         parameters_dict = {}
         for key in signal_dict.keys():
@@ -105,6 +107,7 @@ class InfluxDbStorage(DbStorage):
         order_dict["asset"] = {
             "symbol": order_dict["symbol"],
             "exchange": order_dict["exchange"],
+            "time_unit": order_dict["time_unit"]
         }
 
     def execute_query(
@@ -153,6 +156,7 @@ class InfluxDbStorage(DbStorage):
                 "tags": {
                     "symbol": candle.asset.symbol,
                     "exchange": candle.asset.exchange,
+                    "time_unit": str(candle.asset.time_unit),
                 },
                 "fields": {
                     "open": str(candle.open),
@@ -168,7 +172,7 @@ class InfluxDbStorage(DbStorage):
     def get_candle_by_identifier(self, asset: Asset, timestamp: datetime) -> Candle:
         query = (
             f"select * from {CANDLES_COLLECTION_NAME} where time={int(timestamp.timestamp()) * 1000000000} and "
-            f"symbol='{asset.symbol}' and exchange='{asset.exchange}'"
+            f"symbol='{asset.symbol}' and exchange='{asset.exchange}' and time_unit='{asset.time_unit}'"
         )
         candles = self.execute_candle_query(query)
         if len(candles) == 0:
@@ -178,13 +182,11 @@ class InfluxDbStorage(DbStorage):
     def candle_with_identifier_exists(self, asset: Asset, timestamp: datetime) -> bool:
         return self.get_candle_by_identifier(asset, timestamp) is not None
 
-    def get_candles_in_range(
-        self, asset: Asset, start: datetime, end: datetime
-    ) -> np.array:  # [Candle]
+    def get_candles_in_range(self, asset: Asset, start: datetime, end: datetime) -> np.array:  # [Candle]
         query = (
             f"select * from {CANDLES_COLLECTION_NAME} where time >= {datetime_to_epoch(start, 1000000000)} "
             f"and time <= {datetime_to_epoch(end, 1000000000)} and "
-            f"symbol='{asset.symbol}' and exchange='{asset.exchange}'"
+            f"symbol='{asset.symbol}' and exchange='{asset.exchange}' and time_unit='{asset.time_unit}'"
         )
         return self.execute_candle_query(query)
 
@@ -219,6 +221,7 @@ class InfluxDbStorage(DbStorage):
                     "root_candle_timestamp": signal.root_candle_timestamp,
                 },
                 "fields": {
+                    "time_unit": str(signal.asset.time_unit),
                     "action": signal.action.name,
                     "direction": signal.direction.name,
                     "confidence_level": signal.confidence_level,
@@ -245,9 +248,7 @@ class InfluxDbStorage(DbStorage):
             parameters[nested_keys[-1]] = parameters_dict[flattened_parameter]
         return parameters
 
-    def get_signal_by_identifier(
-        self, asset: Asset, strategy: str, root_candle_timestamp: datetime
-    ) -> Signal:
+    def get_signal_by_identifier(self, asset: Asset, strategy: str, root_candle_timestamp: datetime) -> Signal:
         query = (
             f"select * from {SIGNALS_COLLECTION_NAME} "
             f"where root_candle_timestamp='{str(root_candle_timestamp)}' and "
@@ -277,6 +278,7 @@ class InfluxDbStorage(DbStorage):
                 "fields": {
                     "symbol": order.asset.symbol,
                     "exchange": order.asset.exchange,
+                    "time_unit": str(order.asset.time_unit),
                     "action": order.action.name,
                     "direction": order.direction.name,
                     "size": order.size,
@@ -313,10 +315,11 @@ class InfluxDbStorage(DbStorage):
     def add_candle_dataframe(self, candle_dataframe: CandleDataFrame) -> None:
         candle_dataframe["symbol"] = candle_dataframe.asset.symbol
         candle_dataframe["exchange"] = candle_dataframe.asset.exchange
+        candle_dataframe["time_unit"] = str(candle_dataframe.asset.time_unit)
         self.df_client.write_points(
             candle_dataframe,
             CANDLES_COLLECTION_NAME,
-            tag_columns=["symbol", "exchange"],
+            tag_columns=["symbol", "exchange", "time_unit"],
             field_columns=["open", "high", "low", "close", "volume"],
             database=DATABASE_NAME,
             protocol="line",
