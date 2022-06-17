@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Dict
 
 
 class Asset:
@@ -8,7 +9,7 @@ class Asset:
         self.time_unit = time_unit
 
     def __hash__(self):
-        return hash((self.symbol, self.exchange))
+        return hash((self.symbol, self.exchange, self.time_unit))
 
     def __eq__(self, other: "Asset"):
         if isinstance(other, Asset):
@@ -61,7 +62,7 @@ class Asset:
             time_unit=parse_timedelta_str(asset_dict["time_unit"]),
         )
 
-    def to_dict(self) -> "Asset":
+    def to_dict(self) -> Dict[str, str]:
         return {
             "symbol": self.symbol,
             "exchange": self.exchange,

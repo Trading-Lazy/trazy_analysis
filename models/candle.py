@@ -95,6 +95,19 @@ class Candle:
     def copy(self) -> "Candle":
         return Candle.from_dict(self.__dict__)
 
+    def __hash__(self):
+        return hash(
+            (
+                self.asset.__hash__(),
+                self.open,
+                self.high,
+                self.low,
+                self.close,
+                self.volume,
+                self.timestamp,
+            )
+        )
+
     def __eq__(self, other):
         if isinstance(other, Candle):
             return self.to_serializable_dict() == other.to_serializable_dict()

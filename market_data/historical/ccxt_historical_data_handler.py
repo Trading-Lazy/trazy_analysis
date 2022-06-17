@@ -135,7 +135,7 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
                 time.sleep(exchange_instance.rateLimit / 1000)
             except Exception as e:
                 error_message = f"There was an error while pulling OHLCV data from {ticker.key()}, Exception is: {e}"
-                LOG.error(error_message)
+                LOG.exception(error_message)
                 return empty_candle_dataframe, set(), [error_message]
 
             raw_candles = [

@@ -1,9 +1,8 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Callable
 
 import numpy as np
-import pandas as pd
 import pytz
 from intervaltree import IntervalTree
 from pandas_market_calendars import MarketCalendar
@@ -388,7 +387,6 @@ class CandleBosManager:
     def __call__(
         self,
         asset: Asset,
-        time_unit: timedelta,
         comparator: Callable = np.greater,
         order: int = 2,
         method: str = "fractal",
@@ -396,18 +394,17 @@ class CandleBosManager:
         breakout_base: str = "body",
     ) -> CandleBOS:
         get_or_create_nested_dict(
-            self.cache, asset, time_unit, comparator, order, method, extrema_base
+            self.cache, asset, comparator, order, method, extrema_base
         )
         if (
             breakout_base
-            not in self.cache[asset][time_unit][comparator][order][method][extrema_base]
+            not in self.cache[asset][comparator][order][method][extrema_base]
         ):
             candle_rolling_window = self.time_framed_candle_rolling_window_manager(
                 asset=asset,
-                time_unit=time_unit,
                 period=order * 2 + 1,
             )
-            self.cache[asset][time_unit][comparator][order][method][extrema_base][
+            self.cache[asset][comparator][order][method][extrema_base][
                 breakout_base
             ] = CandleBOS(
                 comparator=comparator,
@@ -418,32 +415,29 @@ class CandleBosManager:
                 source_indicator=candle_rolling_window,
                 preload=self.preload,
             )
-        return self.cache[asset][time_unit][comparator][order][method][extrema_base][
-            breakout_base
-        ]
+        return self.cache[asset][comparator][order][method][extrema_base][breakout_base]
 
     def warmup(self):
         for asset in self.cache:
-            for time_unit in self.cache[asset]:
-                for comparator in self.cache[asset][time_unit]:
-                    for order in self.cache[asset][time_unit][comparator]:
-                        for method in self.cache[asset][time_unit][comparator][order]:
-                            for extrema_base in self.cache[asset][time_unit][
-                                comparator
-                            ][order][method]:
-                                for breakout_base in self.cache[asset][time_unit][
-                                    comparator
-                                ][order][method][extrema_base]:
-                                    candle_bos = self.cache[asset][time_unit][
-                                        comparator
-                                    ][order][method][extrema_base][breakout_base]
-                                    candle_bos.set_size(
-                                        candle_bos.rolling_window_stream.size
-                                    )
-                                    if self.preload:
-                                        self.cache[asset][time_unit][comparator][order][
-                                            method
-                                        ][breakout_base].initialize()
+            for comparator in self.cache[asset]:
+                for order in self.cache[asset][comparator]:
+                    for method in self.cache[asset][comparator][order]:
+                        for extrema_base in self.cache[asset][comparator][order][
+                            method
+                        ]:
+                            for breakout_base in self.cache[asset][comparator][order][
+                                method
+                            ][extrema_base]:
+                                candle_bos = self.cache[asset][comparator][order][
+                                    method
+                                ][extrema_base][breakout_base]
+                                candle_bos.set_size(
+                                    candle_bos.rolling_window_stream.size
+                                )
+                                if self.preload:
+                                    self.cache[asset][comparator][order][method][
+                                        extrema_base
+                                    ][breakout_base].initialize()
 
 
 class ImbalanceInfo:
@@ -613,9 +607,9 @@ class PoiTouch(Indicator):
 
         time_to_buy = False
         for interval in self.poi_touchs[low:high]:
-            LOG.info("we reached and interesting poi")
+            LOG.info("we reached and interesting poi %s", new_data.asset.time_unit)
             begin, end, data = interval
-            if (high - end) / (end - begin) >= 0.3:
+            if (end - low) / (end - begin) >= 0.3:
                 time_to_buy = True
                 break
 
@@ -663,7 +657,7 @@ class PoiTouch(Indicator):
                     )
                     for poi in self.pois:
                         LOG.info("Adding a new poi touch")
-                        self.poi_touchs[poi.low: poi.high] = 1
+                        self.poi_touchs[poi.low : poi.high] = 1
 
                     self.pending_bos = False
                     self.pois = []
@@ -679,7 +673,7 @@ class PoiTouch(Indicator):
             self.candle_bos.previous_extrema.data is not None
             and self.candle_bos.reverse_extrema_change.data
         ):
-            LOG.info("Waiting for BOS")
+            LOG.info(f"Waiting for BOS {new_data.asset.time_unit}")
             self.pending_bos = True
             self.bos_happened = False
             min_value = self.candle_bos.reverse_extrema_change.previous_extrema.data
@@ -711,7 +705,6 @@ class PoiTouchManager:
     def __call__(
         self,
         asset: Asset,
-        time_unit: timedelta,
         comparator: Callable = np.greater,
         order: int = 2,
         method: str = "fractal",
@@ -719,22 +712,21 @@ class PoiTouchManager:
         breakout_base: str = "body",
     ) -> CandleBOS:
         get_or_create_nested_dict(
-            self.cache, asset, time_unit, comparator, order, method, extrema_base
+            self.cache, asset, comparator, order, method, extrema_base
         )
         if (
             breakout_base
-            not in self.cache[asset][time_unit][comparator][order][method][extrema_base]
+            not in self.cache[asset][comparator][order][method][extrema_base]
         ):
             candle_bos = self.candle_bos_manager(
                 asset,
-                time_unit=time_unit,
                 comparator=comparator,
                 order=order,
                 method=method,
                 extrema_base=extrema_base,
                 breakout_base=breakout_base,
             )
-            self.cache[asset][time_unit][comparator][order][method][extrema_base][
+            self.cache[asset][comparator][order][method][extrema_base][
                 breakout_base
             ] = PoiTouch(
                 comparator=comparator,
@@ -746,29 +738,26 @@ class PoiTouchManager:
                 source_indicator=candle_bos.rolling_window_stream,
                 preload=self.preload,
             )
-        return self.cache[asset][time_unit][comparator][order][method][extrema_base][
-            breakout_base
-        ]
+        return self.cache[asset][comparator][order][method][extrema_base][breakout_base]
 
     def warmup(self):
         for asset in self.cache:
-            for time_unit in self.cache[asset]:
-                for comparator in self.cache[asset][time_unit]:
-                    for order in self.cache[asset][time_unit][comparator]:
-                        for method in self.cache[asset][time_unit][comparator][order]:
-                            for extrema_base in self.cache[asset][time_unit][
-                                comparator
-                            ][order][method]:
-                                for breakout_base in self.cache[asset][time_unit][
-                                    comparator
-                                ][order][method][extrema_base]:
-                                    poi_touch = self.cache[asset][time_unit][
-                                        comparator
-                                    ][order][method][extrema_base][breakout_base]
-                                    poi_touch.candle_bos.set_size(
-                                        poi_touch.rolling_window_stream.size
-                                    )
-                                    if self.preload:
-                                        self.cache[asset][time_unit][comparator][order][
-                                            method
-                                        ][breakout_base].initialize()
+            for comparator in self.cache[asset]:
+                for order in self.cache[asset][comparator]:
+                    for method in self.cache[asset][comparator][order]:
+                        for extrema_base in self.cache[asset][comparator][order][
+                            method
+                        ]:
+                            for breakout_base in self.cache[asset][comparator][order][
+                                method
+                            ][extrema_base]:
+                                poi_touch = self.cache[asset][comparator][order][
+                                    method
+                                ][extrema_base][breakout_base]
+                                poi_touch.candle_bos.set_size(
+                                    poi_touch.rolling_window_stream.size
+                                )
+                                if self.preload:
+                                    self.cache[asset][comparator][order][method][
+                                        extrema_base
+                                    ][breakout_base].initialize()

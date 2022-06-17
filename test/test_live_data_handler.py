@@ -5,6 +5,7 @@ import numpy as np
 from freezegun import freeze_time
 from requests import Response
 
+from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
 from trazy_analysis.market_data.live.tiingo_live_data_handler import (
     TiingoLiveDataHandler,
@@ -59,18 +60,39 @@ def test_request_ticker_lastest_candles_tiingo(
 
     expected_candles = np.array(
         [
-            Candle(asset=ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
-                   timestamp=datetime.strptime(
-                       "2020-06-18 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
-                   timestamp=datetime.strptime(
-                       "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
-                   timestamp=datetime.strptime(
-                       "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=ASSET,
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )
@@ -99,31 +121,73 @@ def test_request_ticker_lastest_candles_not_enough_available_data_tiingo(
 
     expected_candles = np.array(
         [
-            Candle(asset=ASSET, open=355.15, high=355.15, low=353.74, close=353.84, volume=3254,
-                   timestamp=datetime.strptime(
-                       "2020-06-17 19:59:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.28, high=354.96, low=353.96, close=354.78, volume=2324,
-                   timestamp=datetime.strptime(
-                       "2020-06-17 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
-                   timestamp=datetime.strptime(
-                       "2020-06-18 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
-                   timestamp=datetime.strptime(
-                       "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
-                   timestamp=datetime.strptime(
-                       "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=ASSET,
+                open=355.15,
+                high=355.15,
+                low=353.74,
+                close=353.84,
+                volume=3254,
+                timestamp=datetime.strptime(
+                    "2020-06-17 19:59:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.28,
+                high=354.96,
+                low=353.96,
+                close=354.78,
+                volume=2324,
+                timestamp=datetime.strptime(
+                    "2020-06-17 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )
-    candles = TiingoLiveDataHandler.request_ticker_lastest_candles(ASSET, nb_candles=7)
-    assert (expected_candles == candles).all()
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(ASSET, expected_candles)
+
+    candles = TiingoLiveDataHandler.request_ticker_lastest_candles(ASSET, nb_candles=1054)
+    candle_dataframe = CandleDataFrame.from_candle_list(ASSET, candles)
+
+    timestamps = [candle.timestamp for candle in expected_candle_dataframe.to_candles()]
+    assert (expected_candle_dataframe == candle_dataframe.loc[timestamps]).all(
+        axis=None
+    )
 
 
 @patch(
@@ -166,24 +230,52 @@ def test_request_ticker_lastest_candles_error_tiingo(
 def test_request_ticker_lastest_candle(request_ticker_lastest_candles_mocked):
     request_ticker_lastest_candles_mocked.return_value = np.array(
         [
-            Candle(asset=ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
-                   timestamp=datetime.strptime(
-                       "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
-                   timestamp=datetime.strptime(
-                       "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
-                   timestamp=datetime.strptime(
-                       "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=ASSET,
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=ASSET,
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )
 
-    expected_candle = Candle(asset=ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
-                             timestamp=datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+    expected_candle = Candle(
+        asset=ASSET,
+        open=354.22,
+        high=354.26,
+        low=353.95,
+        close=353.98,
+        volume=1186,
+        timestamp=datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    )
     assert expected_candle == LiveDataHandler.request_ticker_lastest_candle(SYMBOL)
 
     request_ticker_lastest_candles_mocked_calls = [call(SYMBOL)]

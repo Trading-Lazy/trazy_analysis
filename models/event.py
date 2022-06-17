@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Dict, List
+from typing import List, Dict
 
 import numpy as np
+from sortedcontainers import SortedSet
 
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.enums import EventType
@@ -29,19 +30,20 @@ class DataEvent(Event):
         bars_delay: int = 0,
     ):
         super().__init__(type)
-        self.assets = assets
+        self.assets = set(assets)
         self.timestamp = timestamp
         self.bars_delay = bars_delay
 
 
 class MarketDataEvent(DataEvent):
-    def __init__(
-        self, candles: Dict[Asset, np.array], timestamp: datetime, bars_delay: int = 0
-    ):
+    def __init__(self, candles: Dict[Asset, SortedSet], timestamp: datetime, bars_delay: int = 0):
         super().__init__(
-            EventType.MARKET_DATA, list(candles.keys()), timestamp, bars_delay
+            EventType.MARKET_DATA,
+            list(candles.keys()),
+            timestamp,
+            bars_delay,
         )
-        self.candles: Dict[str, np.array] = candles
+        self.candles: np.array = candles
 
 
 class MarketEodDataEvent(DataEvent):

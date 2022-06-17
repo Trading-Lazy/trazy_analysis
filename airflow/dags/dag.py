@@ -490,21 +490,14 @@ def ccxt_arbitrage_strategy(**kwargs):
     exchange2_broker.execute_market_order(order)
 
     # prepare event loop parameters
-    broker_manager = BrokerManager(
-        brokers={
-            exchange1: exchange1_broker,
-            exchange2: exchange2_broker,
-        },
-        clock=clock,
-    )
+    broker_manager = BrokerManager(brokers_per_exchange={
+        exchange1: exchange1_broker,
+        exchange2: exchange2_broker,
+    })
     position_sizer = PositionSizer(broker_manager=broker_manager, integer_size=False)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(
-        events=events,
-        broker_manager=broker_manager,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-    )
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator, clock=clock)
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
                            indicators_manager=indicators_manager, strategies_parameters=strategies,
@@ -647,7 +640,6 @@ def ccxt_arbitrage_strategy(**kwargs):
 
 
 def ccxt_arbitrage_strategy_results(**kwargs):
-    ti = kwargs["ti"]
     db_storage = kwargs["db_storage"]
 
     arbitrage_strategy_combinations = Variable.get(

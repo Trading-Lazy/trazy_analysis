@@ -24,7 +24,12 @@ class Strategy(Indicator):
     @classmethod
     @abc.abstractmethod
     def DEFAULT_PARAMETERS(cls) -> Dict[str, float]:  # pragma: no cover
-        pass
+        return {}
+
+    @classmethod
+    @abc.abstractmethod
+    def DEFAULT_PARAMETERS_SPACE(cls) -> Dict[str, float]:  # pragma: no cover
+        return {}
 
     def __init__(
         self,

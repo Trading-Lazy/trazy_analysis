@@ -25,8 +25,8 @@ class Sma(RollingWindow):
         else:
             cum_sum_before = ret[-1 - self.period]
         self.sum = ret[-1] - cum_sum_before
-        ret[self.period:] = ret[self.period:] - ret[: -self.period]
-        moving_averages = ret[self.period - 1:] / self.period
+        ret[self.period :] = ret[self.period :] - ret[: -self.period]
+        moving_averages = ret[self.period - 1 :] / self.period
         self.prefill(moving_averages)
         if self.rolling_window_stream.filled():
             self.oldest = self.rolling_window_stream[-self.period + 1]
@@ -38,15 +38,24 @@ class Sma(RollingWindow):
         self.oldest: float = 0.0
         self.rolling_window_stream = None
         if issubclass(type(source_indicator), RollingWindow) and (
-                not source_indicator.ready or source_indicator.size >= self.period
+            not source_indicator.ready or source_indicator.size >= self.period
         ):
             self.rolling_window_stream = source_indicator
             size = self.rolling_window_stream.size
         else:
-            self.rolling_window_stream = RollingWindow(size=self.period, source_indicator=source_indicator,
-                                                       idtype=float, preload=False)
+            self.rolling_window_stream = RollingWindow(
+                size=self.period,
+                source_indicator=source_indicator,
+                idtype=float,
+                preload=False,
+            )
             size = self.period
-        super().__init__(size=size, source_indicator=self.rolling_window_stream, idtype=float, preload=preload)
+        super().__init__(
+            size=size,
+            source_indicator=self.rolling_window_stream,
+            idtype=float,
+            preload=preload,
+        )
         if self.rolling_window_stream.filled():
             self.initialize()
 
@@ -77,11 +86,11 @@ class Average(RollingWindow):
         pass
 
     def __init__(
-            self,
-            size: int,
-            source_indicator: Indicator = None,
-            idtype: type = None,
-            preload=False,
+        self,
+        size: int,
+        source_indicator: Indicator = None,
+        idtype: type = None,
+        preload=False,
     ):
         self.size = size
         self.sum: float = 0.0
@@ -89,13 +98,22 @@ class Average(RollingWindow):
         self.oldest: float = 0.0
         self.rolling_window_stream = None
         if issubclass(type(source_indicator), RollingWindow) and (
-                not source_indicator.ready
+            not source_indicator.ready
         ):
             self.rolling_window_stream = source_indicator
         else:
-            self.rolling_window_stream = RollingWindow(size=self.size, source_indicator=source_indicator, idtype=idtype,
-                                                       preload=False)
-        super().__init__(size=size, source_indicator=self.rolling_window_stream, idtype=idtype, preload=preload)
+            self.rolling_window_stream = RollingWindow(
+                size=self.size,
+                source_indicator=source_indicator,
+                idtype=idtype,
+                preload=False,
+            )
+        super().__init__(
+            size=size,
+            source_indicator=self.rolling_window_stream,
+            idtype=idtype,
+            preload=preload,
+        )
         if self.rolling_window_stream.filled():
             self.initialize()
 
@@ -119,38 +137,31 @@ class Average(RollingWindow):
 
 class SmaManager:
     def __init__(
-            self, price_rolling_window_manager: PriceRollingWindowManager, preload=True
+        self, price_rolling_window_manager: PriceRollingWindowManager, preload=True
     ):
         self.cache = {}
         self.price_rolling_window_manager = price_rolling_window_manager
         self.preload = preload
 
     def __call__(
-            self,
-            asset: Asset,
-            period: int,
-            time_unit: timedelta,
-            price_type: PriceType = PriceType.CLOSE,
+        self, asset: Asset, period: int, price_type: PriceType = PriceType.CLOSE
     ) -> Sma:
-        get_or_create_nested_dict(self.cache, asset, period, time_unit)
+        get_or_create_nested_dict(self.cache, asset, period)
 
-        if price_type not in self.cache[asset][period][time_unit]:
+        if price_type not in self.cache[asset][period]:
             price_rolling_window = self.price_rolling_window_manager(
-                asset, period, time_unit, price_type
+                asset, period, price_type
             )
-            self.cache[asset][period][time_unit][price_type] = Sma(
+            self.cache[asset][period][price_type] = Sma(
                 period, price_rolling_window, preload=self.preload
             )
-        return self.cache[asset][period][time_unit][price_type]
+        return self.cache[asset][period][price_type]
 
     def warmup(self):
         for asset in self.cache:
             for period in self.cache[asset]:
-                for time_unit in self.cache[asset][period]:
-                    for price_type in self.cache[asset][period][time_unit]:
-                        sma_stream = self.cache[asset][period][time_unit][price_type]
-                        sma_stream.set_size(sma_stream.rolling_window_stream.size)
-                        if self.preload:
-                            self.cache[asset][period][time_unit][
-                                price_type
-                            ].initialize()
+                for price_type in self.cache[asset][period]:
+                    sma_stream = self.cache[asset][period][price_type]
+                    sma_stream.set_size(sma_stream.rolling_window_stream.size)
+                    if self.preload:
+                        self.cache[asset][period][price_type].initialize()

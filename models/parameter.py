@@ -46,6 +46,8 @@ class Parameter(object):
             return Choice(range=parameter_dict.get("range"))
         elif parameter_dict.get("type") == "ordinal":
             return Ordinal(range=parameter_dict.get("range"))
+        elif parameter_dict.get("type") == "static":
+            return Static(value=parameter_dict.get("range")[0])
         else:
             raise ValueError(
                 "Got unexpected value for type: {}".format(parameter_dict.get("type"))
@@ -96,4 +98,13 @@ class Ordinal(Parameter):
 
     def __init__(self, range: list) -> None:
         super().__init__(range)
+        self.type = type(self.range[0])
+
+class Static(Parameter):
+    """
+    Static parameter class. A fixed parameter.
+    """
+
+    def __init__(self, value: Any) -> None:
+        super().__init__([value])
         self.type = type(self.range[0])

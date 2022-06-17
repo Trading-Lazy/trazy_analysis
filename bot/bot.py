@@ -55,40 +55,6 @@ def get_strategies_classes(
                 strategies_classes.add(strategy_class)
     return list(strategies_classes)
 
-
-# if __name__ == "__main__":
-#     symbols = ["XRPUSDT"]
-#     events = deque()
-#     live_data_handler = BinanceLiveDataHandler()
-#
-#     feed: Feed = LiveFeed(symbols, events, live_data_handler)
-#
-#     strategies = [SmaCrossoverStrategy]
-#     clock = LiveClock()
-#     broker = BinanceBroker(clock, events)
-#     position_sizer = PositionSizer(broker)
-#     order_creator = OrderCreator(
-#         broker=broker, with_cover=True, trailing_stop_order_pct=0.002
-#     )
-#     order_manager = OrderManager(
-#         events=events,
-#         broker=broker,
-#         position_sizer=position_sizer,
-#         order_creator=order_creator,
-#     )
-#     indicators_manager = IndicatorsManager(preload=False)
-#     event_loop = EventLoop(
-#         events=events,
-#         symbols=symbols,
-#         feed=feed,
-#         order_manager=order_manager,
-#         strategies_classes=strategies,
-#         indicators_manager=indicators_manager,
-#         live=True,
-#         close_at_end_of_day=False
-#     )
-#     event_loop.loop()
-
 if __name__ == "__main__":
     symbols = ["XRPUSDT"]
     events = deque()
@@ -99,29 +65,17 @@ if __name__ == "__main__":
     strategies = [SmaCrossoverStrategy]
     clock = LiveClock()
     broker = BinanceBroker(clock, events)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers_per_exchange={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
         broker_manager=broker_manager,
         trailing_stop_order_pct=0.002,
         with_trailing_cover=True,
     )
-    order_manager = OrderManager(
-        events=events,
-        broker_manager=broker_manager,
-        position_sizer=position_sizer,
-        order_creator=order_creator,
-        filter_at_end_of_day=False,
-    )
+    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
+                                 order_creator=order_creator, clock=clock, filter_at_end_of_day=False)
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(
-        events=events,
-        assets=[],
-        feed=feed,
-        order_manager=order_manager,
-        indicators_manager=indicators_manager,
-        strategies_parameters=strategies,
-        live=True,
-        close_at_end_of_day=False,
-    )
+    event_loop = EventLoop(events=events, assets=[], feed=feed, order_manager=order_manager,
+                           indicators_manager=indicators_manager, strategies_parameters=strategies, live=True,
+                           close_at_end_of_day=False)
     event_loop.loop()

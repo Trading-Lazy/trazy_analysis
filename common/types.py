@@ -107,9 +107,7 @@ class CandleDataFrame(DataFrame):
         if candles.size == 0:
             return CandleDataFrame(asset=asset)
         candles_data = [candle.to_serializable_dict() for candle in candles]
-        return CandleDataFrame(
-            asset=asset, candles_data=candles_data
-        )
+        return CandleDataFrame(asset=asset, candles_data=candles_data)
 
     @staticmethod
     def from_dataframe(df: DataFrame, asset: Asset) -> "CandleDataFrame":
@@ -125,7 +123,10 @@ class CandleDataFrame(DataFrame):
         return concatenated_candle_dataframe
 
     def rescale(
-        self, time_unit: timedelta, market_cal: MarketCalendar = None
+        self,
+        time_unit: timedelta,
+        market_cal: MarketCalendar = None,
+        remove_incomplete_head=True,
     ) -> "CandleDataFrame":
         if self.empty:
             return CandleDataFrame(asset=self.asset)
@@ -142,6 +143,6 @@ class CandleDataFrame(DataFrame):
         from trazy_analysis.common.helper import resample_candle_data
 
         aggregated_candle_dataframe = resample_candle_data(
-            self, time_unit, market_cal_df
+            self, time_unit, market_cal_df, remove_incomplete_head
         )
         return aggregated_candle_dataframe

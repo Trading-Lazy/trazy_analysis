@@ -3,8 +3,9 @@ import pandas as pd
 from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
+from trazy_analysis.models.asset import Asset
 
-SYMBOL = "IVV"
+ASSET = Asset(exchange="IEX", symbol="IVV")
 
 
 def test_parse_get_tickers_response():
@@ -87,7 +88,7 @@ def test_ticker_data_to_dataframe():
         "2020-06-17 09:33:00-04:00,354.25,354.59,354.14,354.59,2613\n"
         "2020-06-17 09:34:00-04:00,354.22,354.26,353.95,353.98,1186\n"
     )
-    df = TiingoHistoricalDataHandler.ticker_data_to_dataframe(SYMBOL, data)
+    df = TiingoHistoricalDataHandler.ticker_data_to_dataframe(ASSET, data)
 
     expected_df_columns_values = {
         "date": [

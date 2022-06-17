@@ -7,6 +7,8 @@ import pytz
 from pandas_market_calendars import MarketCalendar
 
 from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
+from sortedcontainers import SortedSet
+
 from trazy_analysis.common.constants import MAX_TIMESTAMP
 from trazy_analysis.db_storage.db_storage import DbStorage
 from trazy_analysis.feed.loader import (
@@ -32,8 +34,8 @@ class Feed:
         self.assets = assets
 
     def __init__(self, events: deque = deque(), candles: Dict[Asset, np.array] = {}):
-        self.assets = None
-        self.set_assets(candles.keys())
+        self.assets: List[Asset] = None
+        self.set_assets(list(candles.keys()))
         self.events = events
         self.candles = candles
         self.indexes = {}
@@ -46,7 +48,12 @@ class Feed:
             first_candle = self.candles[asset][0]
             min_timestamp = first_candle.timestamp
             current_timestamp = min(current_timestamp, min_timestamp)
-        self.current_timestamp = current_timestamp
+        self.min_timestamp = self.current_timestamp = current_timestamp
+
+    def reset(self):
+        self.indexes = {asset: 0 for asset in self.assets}
+        self.completed = False
+        self.current_timestamp = self.min_timestamp
 
     def update_latest_data(self):
         candles = []
@@ -72,36 +79,40 @@ class Feed:
             self.events.append(MarketDataEvent(assets, self.current_timestamp))
         elif completed == len(self.candles):
             self.events.append(
-                MarketDataEndEvent(list(self.candles.keys()), self.current_timestamp)
+                MarketDataEndEvent(set(self.candles.keys()), self.current_timestamp)
             )
+            self.completed = True
 
 
 class LiveFeed(Feed):
     def __init__(
         self,
         assets: List[Asset],
-        live_data_handler: LiveDataHandler,
+        live_data_handlers: Dict[str, LiveDataHandler],
         events: deque = deque(),
-        candles: Dict[str, np.array] = {},
+        candles: Dict[Asset, np.array] = {},
     ):
         super().__init__(events=events, candles=candles)
         self.set_assets(assets)
-        self.live_data_handler = live_data_handler
+        self.live_data_handlers = live_data_handlers
 
     def update_latest_data(self):
         now = datetime.now(pytz.UTC)
         candles_dict = {}
         min_timestamp = MAX_TIMESTAMP
         for asset in self.assets:
-            candles = self.live_data_handler.request_ticker_lastest_candles(
-                asset, nb_candles=10
-            )
+            candles = self.live_data_handlers[
+                asset.exchange.lower()
+            ].request_ticker_lastest_candles(asset, nb_candles=10)
             if len(candles) > 0:
-                candles_dict[asset] = [
-                    candle
-                    for candle in candles
-                    if candle.timestamp + timedelta(minutes=1) < now
-                ]
+                candles_dict[asset] = SortedSet(
+                    [
+                        candle
+                        for candle in candles
+                        if candle.timestamp + timedelta(minutes=1) < now
+                    ],
+                    key=lambda candle: candle.timestamp,
+                )
                 min_timestamp = min(min_timestamp, candles[0].timestamp)
         if candles_dict:
             self.events.append(
@@ -115,7 +126,6 @@ class ExternalStorageFeed(Feed):
         assets: List[Asset],
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-        time_unit=timedelta(minutes=1),
         events: deque = deque(),
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,

@@ -6,6 +6,7 @@ from trazy_analysis.common.clock import Clock
 from trazy_analysis.indicators.crossover import Crossover
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.parameter import Discrete, Continuous
 from trazy_analysis.models.signal import Signal
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.strategy.context import Context
@@ -14,6 +15,12 @@ from trazy_analysis.strategy.strategy import LOG, Strategy
 
 class SmaCrossoverStrategy(Strategy):
     DEFAULT_PARAMETERS = {"short_sma": 9, "long_sma": 65}
+
+    DEFAULT_PARAMETERS_SPACE = {
+        "short_sma": Discrete([5, 75]),
+        "long_sma": Discrete([100, 200]),
+        "trailing_stop_order_pct": Continuous([0.1, 0.5]),
+    }
 
     def __init__(
         self,
@@ -28,7 +35,6 @@ class SmaCrossoverStrategy(Strategy):
             asset: self.indicators_manager.Sma(
                 asset,
                 period=self.parameters["short_sma"],
-                time_unit=timedelta(minutes=1),
             )
             for asset in context.candles
         }
@@ -36,7 +42,6 @@ class SmaCrossoverStrategy(Strategy):
             asset: self.indicators_manager.Sma(
                 asset,
                 period=self.parameters["long_sma"],
-                time_unit=timedelta(minutes=1),
             )
             for asset in context.candles
         }

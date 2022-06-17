@@ -23,9 +23,10 @@ from trazy_analysis.common.helper import (
     round_time,
 )
 from trazy_analysis.common.types import CandleDataFrame
+from trazy_analysis.models.asset import Asset
 from trazy_analysis.test.tools.tools import not_raises
 
-SYMBOL = "IVV"
+ASSET = Asset(exchange="IEX", symbol="IVV")
 MARKET_CAL = EUREXExchangeCalendar()
 STATUS_CODE_OK = 200
 URL = "trazy.com"
@@ -231,7 +232,7 @@ def test_resample_candle_data_interval_5_minute():
     )
     df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
     df = df.drop(["timestamp"], axis=1)
-    df = CandleDataFrame.from_dataframe(df, SYMBOL)
+    df = CandleDataFrame.from_dataframe(df, ASSET)
     df = resample_candle_data(df, timedelta(minutes=5), business_cal)
 
     expected_df_candles = {
@@ -241,13 +242,12 @@ def test_resample_candle_data_interval_5_minute():
             "2020-05-08 14:30:00+00:00",
             "2020-05-08 14:35:00+00:00",
             "2020-05-08 14:40:00+00:00",
-            "2020-05-08 14:45:00+00:00",
         ],
-        "open": ["94.12", "94.07", "94.08", "94.17", "94.18", "94.19"],
-        "high": ["94.15", "94.10", "94.08", "94.18", "94.18", "94.22"],
-        "low": ["94.00", "93.95", "94.08", "94.05", "94.18", "94.07"],
-        "close": ["94.13", "94.08", "94.08", "94.18", "94.18", "94.20"],
-        "volume": [7, 121, 0, 23, 0, 28],
+        "open": ["94.07", "94.08", "94.08", "94.17", "94.19"],
+        "high": ["94.10", "94.08", "94.08", "94.18", "94.22"],
+        "low": ["93.95", "94.08", "94.08", "94.05", "94.07"],
+        "close": ["94.08", "94.08", "94.08", "94.18", "94.20"],
+        "volume": [121, 0, 0, 23, 28],
     }
     expected_df = pd.DataFrame(
         expected_df_candles,
@@ -262,35 +262,36 @@ def test_resample_candle_data_interval_5_minute():
 def test_simple_resample_candle_data_interval_1_day():
     candles = {
         "timestamp": [
-            "2020-05-08 14:17:00+00:00",
-            "2020-05-08 14:24:00+00:00",
-            "2020-05-08 14:24:56+00:00",
-            "2020-05-08 14:35:00+00:00",
-            "2020-05-08 14:41:00+00:00",
-            "2020-05-08 14:41:58+00:00",
+            "2020-05-06 14:17:00+00:00",
+            "2020-05-07 14:24:00+00:00",
+            "2020-05-07 14:24:56+00:00",
+            "2020-05-07 14:35:00+00:00",
+            "2020-05-07 14:41:00+00:00",
+            "2020-05-07 14:41:58+00:00",
+            "2020-05-08 16:51:00+00:00",
         ],
-        "open": ["94.12", "94.07", "94.07", "94.17", "94.19", "94.19"],
-        "high": ["94.15", "94.10", "94.10", "94.18", "94.22", "94.22"],
-        "low": ["94.00", "93.95", "93.95", "94.05", "94.07", "94.07"],
-        "close": ["94.13", "94.08", "94.08", "94.18", "94.20", "94.20"],
-        "volume": [7, 91, 30, 23, 21, 7],
+        "open": ["94.12", "94.07", "94.07", "94.17", "94.19", "94.19", "94.5"],
+        "high": ["94.15", "94.10", "94.10", "94.18", "94.22", "94.22", "94.9"],
+        "low": ["94.00", "93.95", "93.95", "94.05", "94.07", "94.07", "94.2"],
+        "close": ["94.13", "94.08", "94.08", "94.18", "94.20", "94.20", "94.7"],
+        "volume": [7, 91, 30, 23, 21, 7, 13],
     }
-    business_cal = MARKET_CAL.schedule(start_date="2020-05-08", end_date="2020-05-08")
+    business_cal = MARKET_CAL.schedule(start_date="2020-05-06", end_date="2020-05-08")
     df = pd.DataFrame(
         candles, columns=["timestamp", "open", "high", "low", "close", "volume"]
     )
     df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
     df = df.drop(["timestamp"], axis=1)
-    df = CandleDataFrame.from_dataframe(df, SYMBOL)
+    df = CandleDataFrame.from_dataframe(df, ASSET)
     df = resample_candle_data(df, pd.offsets.Day(1), business_cal)
 
     expected_df_candles = {
-        "timestamp": ["2020-05-08 00:00:00+00:00"],
-        "open": ["94.12"],
-        "high": ["94.22"],
-        "low": ["93.95"],
-        "close": ["94.20"],
-        "volume": [179],
+        "timestamp": ["2020-05-07 00:00:00+00:00", "2020-05-08 00:00:00+00:00"],
+        "open": ["94.07", "94.5"],
+        "high": ["94.22", "94.9"],
+        "low": ["93.95", "94.2"],
+        "close": ["94.20", "94.7"],
+        "volume": [172, 13],
     }
     expected_df = pd.DataFrame(
         expected_df_candles,
@@ -305,7 +306,7 @@ def test_simple_resample_candle_data_interval_1_day():
 def test_simple_resample_candle_data_interval_1_day_data_spread_over_2_days():
     candles = {
         "timestamp": [
-            "2020-05-08 14:17:00+00:00",
+            "2020-05-07 14:17:00+00:00",
             "2020-05-08 14:24:00+00:00",
             "2020-05-08 14:24:56+00:00",
             "2020-05-08 14:35:00+00:00",
@@ -318,22 +319,22 @@ def test_simple_resample_candle_data_interval_1_day_data_spread_over_2_days():
         "close": ["94.13", "94.08", "94.08", "94.18", "94.20", "94.20"],
         "volume": [7, 91, 30, 23, 1, 1],
     }
-    business_cal = MARKET_CAL.schedule(start_date="2020-05-08", end_date="2020-05-11")
+    business_cal = MARKET_CAL.schedule(start_date="2020-05-07", end_date="2020-05-11")
     df = pd.DataFrame(
         candles, columns=["timestamp", "open", "high", "low", "close", "volume"]
     )
     df.index = pd.to_datetime(df.timestamp, format=DATE_FORMAT)
     df = df.drop(["timestamp"], axis=1)
-    df = CandleDataFrame.from_dataframe(df, SYMBOL)
+    df = CandleDataFrame.from_dataframe(df, ASSET)
     df = resample_candle_data(df, pd.offsets.Day(1), business_cal)
 
     expected_df_candles = {
         "timestamp": ["2020-05-08 00:00:00+00:00", "2020-05-11 00:00:00+00:00"],
-        "open": ["94.12", "94.19"],
+        "open": ["94.07", "94.19"],
         "high": ["94.18", "94.22"],
         "low": ["93.95", "94.07"],
         "close": ["94.18", "94.20"],
-        "volume": [151, 2],
+        "volume": [144, 2],
     }
     expected_df = pd.DataFrame(
         expected_df_candles,

@@ -28,10 +28,12 @@ def test_process_check_signals(
     clock.update(timestamp)
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
-    broker_manager = BrokerManager(brokers={exchange: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={exchange: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(events, broker_manager, position_sizer, order_creator)
+    order_manager = OrderManager(
+        events, broker_manager, position_sizer, order_creator, clock
+    )
     signal = Signal(
         asset=asset,
         action=Action.BUY,

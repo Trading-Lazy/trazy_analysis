@@ -97,17 +97,17 @@ class CandleFetcher:
         return merged_df.loc[start_str:end_str]
 
     def fetch(
-        self, symbol: str, start: datetime, end: datetime = datetime.now(pytz.UTC)
+        self, asset: Asset, start: datetime, end: datetime = datetime.now(pytz.UTC)
     ) -> CandleDataFrame:
-        df = self.fetch_candle_db_data(symbol, start, end)
+        df = self.fetch_candle_db_data(asset, start, end)
         if df.empty or start <= df.iloc[0].name:
             if df.empty:
                 historical_df_end = end
             else:
                 historical_df_end = df.iloc[0].name - timedelta(minutes=1)
             historical_df = self.fetch_candle_historical_data(
-                symbol, start, historical_df_end
+                asset, start, historical_df_end
             )
             if not historical_df.empty:
-                df = CandleDataFrame.concat([historical_df, df], symbol)
+                df = CandleDataFrame.concat([historical_df, df], asset)
         return df

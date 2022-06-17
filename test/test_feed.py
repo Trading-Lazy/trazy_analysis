@@ -88,7 +88,9 @@ AAPL_CANDLES2 = np.array(
     dtype=Candle,
 )
 AAPL_CANDLES = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2])
-AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=AAPL_CANDLES)
+AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
+    asset=AAPL_ASSET, candles=AAPL_CANDLES
+)
 
 GOOGL_SYMBOL = "GOOGL"
 GOOGL_ASSET = Asset(symbol=GOOGL_SYMBOL, exchange=EXCHANGE)
@@ -147,7 +149,9 @@ GOOGL_CANDLES2 = np.array(
     dtype=Candle,
 )
 GOOGL_CANDLES = np.concatenate([GOOGL_CANDLES1, GOOGL_CANDLES2])
-GOOGL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(asset=GOOGL_ASSET, candles=GOOGL_CANDLES)
+GOOGL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
+    asset=GOOGL_ASSET, candles=GOOGL_CANDLES
+)
 
 IVV_SYMBOL = "IVV"
 IVV_ASSET = Asset(symbol=IVV_SYMBOL, exchange=EXCHANGE)
@@ -249,7 +253,7 @@ def test_feed():
     assert events_list[3].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[1]
     assert isinstance(events_list[3], MarketDataEvent)
 
-    assert events_list[4].assets == [AAPL_ASSET, GOOGL_ASSET]
+    assert events_list[4].assets == set([GOOGL_ASSET, AAPL_ASSET])
     assert isinstance(events_list[4], MarketDataEndEvent)
 
 
@@ -265,7 +269,11 @@ def test_live_feed(request_ticker_lastest_candles_mocked):
     ]
     tiingo_live_data_handler = TiingoLiveDataHandler()
     events = deque()
-    live_feed = LiveFeed([AAPL_ASSET, GOOGL_ASSET], tiingo_live_data_handler, events)
+    live_feed = LiveFeed(
+        assets=[AAPL_ASSET, GOOGL_ASSET],
+        live_data_handlers={"iex": tiingo_live_data_handler},
+        events=events,
+    )
 
     for i in range(0, 2):
         live_feed.update_latest_data()
@@ -314,7 +322,11 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
         ),
     ]
     historical_feed = HistoricalFeed(
-        [AAPL_ASSET, GOOGL_ASSET], {EXCHANGE: tiingo_historical_data_handler}, start, end, events
+        [AAPL_ASSET, GOOGL_ASSET],
+        {EXCHANGE.lower(): tiingo_historical_data_handler},
+        start,
+        end,
+        events,
     )
 
     for i in range(0, 8):
@@ -343,7 +355,7 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
     assert isinstance(events_list[5], MarketDataEvent)
     assert events_list[5].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[1]
 
-    assert events_list[7].assets == [AAPL_ASSET, GOOGL_ASSET]
+    assert events_list[7].assets == set([AAPL_ASSET, GOOGL_ASSET])
     assert isinstance(events_list[7], MarketDataEndEvent)
 
 
@@ -381,7 +393,7 @@ def test_pandas_feed():
     assert isinstance(events_list[5], MarketDataEvent)
     assert events_list[5].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[1]
 
-    assert events_list[7].assets == [AAPL_ASSET, GOOGL_ASSET]
+    assert events_list[7].assets == set([AAPL_ASSET, GOOGL_ASSET])
     assert isinstance(events_list[7], MarketDataEndEvent)
 
 
@@ -421,7 +433,7 @@ def test_csv_feed():
     assert isinstance(events_list[5], MarketDataEvent)
     assert events_list[5].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[1]
 
-    assert events_list[7].assets == [AAPL_ASSET, GOOGL_ASSET]
+    assert events_list[7].assets == set([AAPL_ASSET, GOOGL_ASSET])
     assert isinstance(events_list[7], MarketDataEndEvent)
 
 
@@ -503,12 +515,12 @@ def test_external_storage_feed(get_file_content_mocked):
     )
     candles_valid_candles_count = 1
     for i in range(
-        0, candles_valid_candles_count + len(file_content_valid_candles) + 1
+        0, candles_valid_candles_count + len(file_content_valid_candles) + 2
     ):
         external_storage_feed.update_latest_data()
 
     events_list = list(events)
-    assert len(events_list) == 6
+    assert len(events_list) == 7
 
     assert isinstance(events_list[0], MarketDataEvent)
     assert events_list[0].candles[IVV_ASSET][0] == file_content_valid_candles[0]
@@ -519,7 +531,16 @@ def test_external_storage_feed(get_file_content_mocked):
     assert isinstance(events_list[3], MarketDataEvent)
     assert events_list[3].candles[IVV_ASSET][0] == file_content_valid_candles[3]
     assert isinstance(events_list[4], MarketDataEvent)
-    assert events_list[4].candles[IVV_ASSET][0] == CANDLES[0]
-
-    assert isinstance(events_list[5], MarketDataEndEvent)
-    assert events_list[5].assets == [IVV_ASSET]
+    assert events_list[4].candles[IVV_ASSET][0] == Candle(
+        asset=IVV_ASSET,
+        open=93.98,
+        high=93.98,
+        low=93.98,
+        close=93.98,
+        volume=0,
+        timestamp=datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    )
+    assert isinstance(events_list[5], MarketDataEvent)
+    assert events_list[5].candles[IVV_ASSET][0] == CANDLES[0]
+    assert isinstance(events_list[6], MarketDataEndEvent)
+    assert events_list[6].assets == set([IVV_ASSET])

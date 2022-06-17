@@ -20,6 +20,7 @@ from trazy_analysis.common.calendar import is_business_day, is_business_hour
 from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.common.utils import timestamp_to_utc
+from trazy_analysis.models.asset import Asset
 
 MINUTE_IN_ONE_HOUR = 60
 MAP_TICKER_KUCOIN_SYMBOL_LAST_UPDATE = None
@@ -209,12 +210,12 @@ def fill_missing_datetimes(
     time_unit: timedelta,
 ) -> CandleDataFrame:
     asset = df.asset
-    resample_label = "right"
+    resample_label = "left"
     if time_unit >= timedelta(days=1):
         resample_label = "left"
     if df.empty:
         return df
-    df = df.resample(time_unit, label=resample_label, closed="right").agg(
+    df = df.resample(time_unit, label=resample_label, closed="left").agg(
         {
             "open": "first",
             "high": np.max,
@@ -239,12 +240,18 @@ def resample_candle_data(
     candle_dataframe: CandleDataFrame,
     time_unit: timedelta,
     market_cal_df: DataFrame = None,
+    remove_incomplete_head=True,
 ) -> CandleDataFrame:
     asset = candle_dataframe.asset
+    if not candle_dataframe.empty:
+        first_timestamp = candle_dataframe.get_candle(0).timestamp
     candle_dataframe = fill_missing_datetimes(df=candle_dataframe, time_unit=time_unit)
-    candle_dataframe = CandleDataFrame.from_dataframe(candle_dataframe, asset)
+    candle_dataframe = CandleDataFrame.from_dataframe(
+        candle_dataframe,
+        Asset(exchange=asset.exchange, symbol=asset.symbol, time_unit=time_unit),
+    )
 
-    if market_cal_df is None:
+    if market_cal_df is None or asset.time_unit == time_unit:
         return candle_dataframe
 
     if time_unit >= timedelta(days=1):
@@ -260,7 +267,17 @@ def resample_candle_data(
                 b.market_close)
         """
         df_resampled = sqldf(s, locals())
-        df_resampled = CandleDataFrame.from_dataframe(df_resampled, asset)
+        df_resampled = CandleDataFrame.from_dataframe(
+            df_resampled,
+            Asset(exchange=asset.exchange, symbol=asset.symbol, time_unit=time_unit),
+        )
+    if (
+        remove_incomplete_head
+        and not candle_dataframe.empty
+        and not df_resampled.empty
+        and df_resampled.get_candle(0).timestamp != first_timestamp
+    ):
+        df_resampled.drop(df_resampled.head(1).index, inplace=True)
     return df_resampled
 
 

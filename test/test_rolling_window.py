@@ -21,18 +21,69 @@ from trazy_analysis.models.candle import Candle
 
 SYMBOL1 = "IVV"
 SYMBOL2 = "AAPL"
-CANDLE1 = Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=323.69, high=323.81, low=323.67, close=323.81,
-                 volume=500, timestamp=datetime.strptime("2020-05-07 14:24:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-CANDLE2 = Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=323.81, high=324.21, low=323.81, close=324.10,
-                 volume=700, timestamp=datetime.strptime("2020-05-07 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-CANDLE3 = Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=324.10, high=324.10, low=323.97, close=324.03,
-                 volume=400, timestamp=datetime.strptime("2020-05-07 14:26:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-CANDLE4 = Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=323.93, high=323.95, low=323.83, close=323.88,
-                 volume=300, timestamp=datetime.strptime("2020-05-07 14:31:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-CANDLE5 = Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=323.88, high=323.90, low=323.75, close=323.79,
-                 volume=200, timestamp=datetime.strptime("2020-05-07 14:36:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-CANDLE6 = Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=324.88, high=324.90, low=324.75, close=324.79,
-                 volume=400, timestamp=datetime.strptime("2020-05-08 14:36:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE1 = Candle(
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
+    open=323.69,
+    high=323.81,
+    low=323.67,
+    close=323.81,
+    volume=500,
+    timestamp=datetime.strptime("2020-05-06 14:24:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
+CANDLE2 = Candle(
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
+    open=323.81,
+    high=324.21,
+    low=323.81,
+    close=324.10,
+    volume=700,
+    timestamp=datetime.strptime("2020-05-07 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
+CANDLE3 = Candle(
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
+    open=324.10,
+    high=324.10,
+    low=323.97,
+    close=324.03,
+    volume=400,
+    timestamp=datetime.strptime("2020-05-07 14:26:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
+CANDLE4 = Candle(
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
+    open=324.04,
+    high=324.09,
+    low=323.96,
+    close=323.94,
+    volume=250,
+    timestamp=datetime.strptime("2020-05-07 14:29:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
+CANDLE5 = Candle(
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
+    open=323.93,
+    high=323.95,
+    low=323.83,
+    close=323.88,
+    volume=300,
+    timestamp=datetime.strptime("2020-05-07 14:31:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
+CANDLE6 = Candle(
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
+    open=323.88,
+    high=323.90,
+    low=323.75,
+    close=323.79,
+    volume=200,
+    timestamp=datetime.strptime("2020-05-07 14:36:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
+CANDLE7 = Candle(
+    asset=Asset(symbol=SYMBOL1, exchange="IEX"),
+    open=324.88,
+    high=324.90,
+    low=324.75,
+    close=324.79,
+    volume=400,
+    timestamp=datetime.strptime("2020-05-08 14:36:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 
 MARKET_CAL = EUREXExchangeCalendar()
 
@@ -110,7 +161,9 @@ def test_rolling_window_stream_filled():
 
 def test_rolling_window_stream_map():
     stream_data = Indicator()
-    rolling_window = RollingWindow(size=5, source_indicator=stream_data, idtype=int, preload=False)
+    rolling_window = RollingWindow(
+        size=5, source_indicator=stream_data, idtype=int, preload=False
+    )
     rolling_window.prefill(filling_array=[1, 2, 3, 4, 5])
     assert rolling_window.nb_elts == 5
     assert rolling_window.insert == 0
@@ -127,8 +180,13 @@ def test_rolling_window_stream_map():
         mapped_rolling_window.window == np.array([22, 4, 6, 8, 10], dtype=int)
     ).all()
 
-    rolling_window = RollingWindow(size=5, source_indicator=stream_data, transform=lambda x: 2 * x + 1, idtype=int,
-                                   preload=False)
+    rolling_window = RollingWindow(
+        size=5,
+        source_indicator=stream_data,
+        transform=lambda x: 2 * x + 1,
+        idtype=int,
+        preload=False,
+    )
     rolling_window.prefill(filling_array=[1, 2, 3, 4, 5])
     assert rolling_window.nb_elts == 5
     assert rolling_window.insert == 0
@@ -234,17 +292,30 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_5_minute_data(
     rolling_window.push(CANDLE2)
     assert rolling_window.data is None
     rolling_window.push(CANDLE3)
-    assert rolling_window.data == Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=323.69, high=324.21,
-                                         low=323.67, close=324.10, volume=1200,
-                                         timestamp=datetime.strptime("2020-05-07 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+    assert rolling_window.data is None
     rolling_window.push(CANDLE4)
-    assert rolling_window.data == Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=324.10, high=324.10,
-                                         low=323.97, close=324.03, volume=400,
-                                         timestamp=datetime.strptime("2020-05-07 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+    expected_candle1 = Candle(
+        asset=Asset(symbol="IVV", exchange="IEX", time_unit="0:05:00"),
+        open=323.81,
+        high=324.21,
+        low=323.81,
+        close=323.94,
+        volume=1350,
+        timestamp=datetime.strptime("2020-05-07 14:25:00+00:00", "%Y-%m-%d %H:%M:%S%z"),
+    )
+    assert rolling_window.data == expected_candle1
     rolling_window.push(CANDLE5)
-    assert rolling_window.data == Candle(asset=Asset(symbol=SYMBOL1, exchange="IEX"), open=323.93, high=323.95,
-                                         low=323.83, close=323.88, volume=300,
-                                         timestamp=datetime.strptime("2020-05-07 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+    assert rolling_window.data == expected_candle1
+    rolling_window.push(CANDLE6)
+    assert rolling_window.data == Candle(
+        asset=Asset(symbol="IVV", exchange="IEX", time_unit="0:05:00"),
+        open=323.93,
+        high=323.95,
+        low=323.83,
+        close=323.88,
+        volume=300,
+        timestamp=datetime.strptime("2020-05-07 14:30:00+00:00", "%Y-%m-%d %H:%M:%S%z"),
+    )
 
 
 def test_time_framed_candle_rolling_window_stream_handle_new_data_1_day_data():
@@ -262,9 +333,17 @@ def test_time_framed_candle_rolling_window_stream_handle_new_data_1_day_data():
     rolling_window.push(CANDLE5)
     assert rolling_window.data is None
     rolling_window.push(CANDLE6)
-    assert rolling_window.data == Candle(asset=Asset(symbol="IVV", exchange="IEX"), open="323.69", high="324.21",
-                                         low="323.67", close="323.79", volume=2100,
-                                         timestamp=datetime.strptime("2020-05-07 00:00:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+    assert rolling_window.data is None
+    rolling_window.push(CANDLE7)
+    assert rolling_window.data == Candle(
+        asset=Asset(symbol="IVV", exchange="IEX", time_unit="1 day, 0:00:00"),
+        open=323.81,
+        high=324.21,
+        low=323.75,
+        close=323.79,
+        volume=1850,
+        timestamp=datetime.strptime("2020-05-07 00:00:00+00:00", "%Y-%m-%d %H:%M:%S%z"),
+    )
 
 
 def test_rolling_window_factory():
@@ -277,25 +356,25 @@ def test_rolling_window_factory():
     assert id(rolling_window1) != id(rolling_window4)
 
 
-def test_time_framed_rolling_window_factory():
+def test_time_framed_rolling_window_manager():
     indicators_manager = IndicatorsManager()
     time_framed_rolling_window_factory = TimeFramedCandleRollingWindowManager(
         indicators_manager.rolling_window_manager
     )
     time_framed_rolling_window1 = time_framed_rolling_window_factory(
-        SYMBOL1, period=3, time_unit=timedelta(minutes=5)
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)), period=3
     )
     time_framed_rolling_window2 = time_framed_rolling_window_factory(
-        SYMBOL1, period=3, time_unit=timedelta(minutes=5)
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)), period=3
     )
     time_framed_rolling_window3 = time_framed_rolling_window_factory(
-        SYMBOL1, period=3, time_unit=pd.offsets.Hour(4)
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(hours=4)), period=3
     )
     time_framed_rolling_window4 = time_framed_rolling_window_factory(
-        SYMBOL1, period=5, time_unit=timedelta(minutes=5)
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)), period=5
     )
     time_framed_rolling_window5 = time_framed_rolling_window_factory(
-        SYMBOL2, period=3, time_unit=timedelta(minutes=5)
+        Asset(exchange="IEX", symbol=SYMBOL2, time_unit=timedelta(minutes=5)), period=3
     )
     assert id(time_framed_rolling_window1) == id(time_framed_rolling_window2)
     assert id(time_framed_rolling_window1) != id(time_framed_rolling_window3)
@@ -303,29 +382,41 @@ def test_time_framed_rolling_window_factory():
     assert id(time_framed_rolling_window1) != id(time_framed_rolling_window5)
 
 
-def test_price_rolling_window_factory():
+def test_price_rolling_window_manager():
     indicators_manager = IndicatorsManager()
 
-    price_rolling_window_factory = PriceRollingWindowManager(
+    price_rolling_window_manager = PriceRollingWindowManager(
         indicators_manager.time_framed_candle_rolling_window_manager
     )
-    price_rolling_window1 = price_rolling_window_factory(
-        SYMBOL1, period=3, time_unit=timedelta(minutes=5), price_type=PriceType.CLOSE
+    price_rolling_window1 = price_rolling_window_manager(
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+        period=3,
+        price_type=PriceType.CLOSE,
     )
-    price_rolling_window2 = price_rolling_window_factory(
-        SYMBOL1, period=3, time_unit=timedelta(minutes=5), price_type=PriceType.CLOSE
+    price_rolling_window2 = price_rolling_window_manager(
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+        period=3,
+        price_type=PriceType.CLOSE,
     )
-    price_rolling_window3 = price_rolling_window_factory(
-        SYMBOL1, period=3, time_unit=timedelta(minutes=5), price_type=PriceType.LOW
+    price_rolling_window3 = price_rolling_window_manager(
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+        period=3,
+        price_type=PriceType.LOW,
     )
-    price_rolling_window4 = price_rolling_window_factory(
-        SYMBOL1, period=3, time_unit=pd.offsets.Minute(10), price_type=PriceType.CLOSE
+    price_rolling_window4 = price_rolling_window_manager(
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=10)),
+        period=3,
+        price_type=PriceType.CLOSE,
     )
-    price_rolling_window5 = price_rolling_window_factory(
-        SYMBOL1, period=5, time_unit=timedelta(minutes=5), price_type=PriceType.CLOSE
+    price_rolling_window5 = price_rolling_window_manager(
+        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+        period=5,
+        price_type=PriceType.CLOSE,
     )
-    price_rolling_window6 = price_rolling_window_factory(
-        SYMBOL2, period=3, time_unit=timedelta(minutes=5), price_type=PriceType.CLOSE
+    price_rolling_window6 = price_rolling_window_manager(
+        Asset(exchange="IEX", symbol=SYMBOL2, time_unit=timedelta(minutes=5)),
+        period=3,
+        price_type=PriceType.CLOSE,
     )
     assert id(price_rolling_window1) == id(price_rolling_window2)
     assert id(price_rolling_window1) != id(price_rolling_window3)

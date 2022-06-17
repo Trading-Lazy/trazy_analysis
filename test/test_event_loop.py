@@ -25,8 +25,15 @@ AAPL_SYMBOL = "AAPL"
 AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 GOOGL_SYMBOL = "GOOGL"
 GOOGL_ASSET = Asset(symbol=GOOGL_SYMBOL, exchange=EXCHANGE)
-CANDLE = Candle(asset=AAPL_ASSET, open=355.15, high=355.15, low=353.74, close=353.84, volume=3254,
-                timestamp=datetime.strptime("2020-06-11 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE = Candle(
+    asset=AAPL_ASSET,
+    open=355.15,
+    high=355.15,
+    low=353.74,
+    close=353.84,
+    volume=3254,
+    timestamp=datetime.strptime("2020-06-11 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 CANDLE_JSON = CANDLE.to_json()
 FUND = 10000
 START_TIMESTAMP = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
@@ -45,13 +52,22 @@ def test_init_live():
         IdleStrategy: IdleStrategy.DEFAULT_PARAMETERS,
     }
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
+    order_manager = OrderManager(
+        EVENTS, broker_manager, position_sizer, order_creator, CLOCK
+    )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies_classes, live=True)
+    event_loop = EventLoop(
+        events=EVENTS,
+        assets=assets,
+        feed=FEED,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies_classes,
+        live=True,
+    )
 
     assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
     assert event_loop.strategies_parameters == strategies_classes
@@ -73,13 +89,21 @@ def test_init_backtest():
         IdleStrategy: IdleStrategy.DEFAULT_PARAMETERS,
     }
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
+    order_manager = OrderManager(
+        EVENTS, broker_manager, position_sizer, order_creator, CLOCK
+    )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies_classes)
+    event_loop = EventLoop(
+        events=EVENTS,
+        assets=assets,
+        feed=FEED,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies_classes,
+    )
 
     assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
     assert event_loop.strategies_parameters == strategies_classes
@@ -99,16 +123,20 @@ def test_init_backtest():
 )
 def test_run_strategy(process_context):
     assets = [AAPL_ASSET, GOOGL_ASSET]
-    strategies_classes = {
-        SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS
-    }
+    strategies_classes = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker_manager=broker)
-    order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator)
+    order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator, CLOCK)
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies_classes)
+    event_loop = EventLoop(
+        events=EVENTS,
+        assets=assets,
+        feed=FEED,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies_classes,
+    )
     strategy_object = event_loop.strategy_instances[0]
     event_loop.run_strategy(strategy_object)
 
@@ -124,13 +152,21 @@ def test_run_strategies(run_strategy_mocked):
         IdleStrategy: IdleStrategy.DEFAULT_PARAMETERS,
     }
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
+    order_manager = OrderManager(
+        EVENTS, broker_manager, position_sizer, order_creator, CLOCK
+    )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies_classes)
+    event_loop = EventLoop(
+        events=EVENTS,
+        assets=assets,
+        feed=FEED,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies_classes,
+    )
 
     event_loop.run_strategies()
 
@@ -149,11 +185,19 @@ def test_run_backtest():
     }
 
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=CLOCK)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(EVENTS, broker_manager, position_sizer, order_creator)
+    order_manager = OrderManager(
+        EVENTS, broker_manager, position_sizer, order_creator, CLOCK
+    )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies_classes)
+    event_loop = EventLoop(
+        events=EVENTS,
+        assets=assets,
+        feed=FEED,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies_classes,
+    )
     event_loop.loop()

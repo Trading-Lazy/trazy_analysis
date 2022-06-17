@@ -21,24 +21,72 @@ EXCHANGE = "IEX"
 IVV_ASSET = Asset(symbol=SYMBOL, exchange=EXCHANGE)
 CANDLES = np.array(
     [
-        Candle(asset=IVV_ASSET, open=94.12, high=94.15, low=94.00, close=94.13, volume=7, timestamp=datetime.strptime(
-            "2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"
-        )),
-        Candle(asset=IVV_ASSET, open=94.07, high=94.10, low=93.95, close=94.08, volume=91, timestamp=datetime.strptime(
-            "2020-05-08 14:24:00+0000", "%Y-%m-%d %H:%M:%S%z"
-        )),
-        Candle(asset=IVV_ASSET, open=94.07, high=94.10, low=93.95, close=94.08, volume=30, timestamp=datetime.strptime(
-            "2020-05-08 14:24:56+0000", "%Y-%m-%d %H:%M:%S%z"
-        )),
-        Candle(asset=IVV_ASSET, open=94.17, high=94.18, low=94.05, close=94.18, volume=23, timestamp=datetime.strptime(
-            "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
-        )),
-        Candle(asset=IVV_ASSET, open=94.19, high=94.22, low=94.07, close=94.20, volume=21, timestamp=datetime.strptime(
-            "2020-05-08 14:41:00+0000", "%Y-%m-%d %H:%M:%S%z"
-        )),
-        Candle(asset=IVV_ASSET, open=94.19, high=94.22, low=94.07, close=94.20, volume=7, timestamp=datetime.strptime(
-            "2020-05-08 14:41:58+0000", "%Y-%m-%d %H:%M:%S%z"
-        )),
+        Candle(
+            asset=IVV_ASSET,
+            open=94.12,
+            high=94.15,
+            low=94.00,
+            close=94.13,
+            volume=7,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=IVV_ASSET,
+            open=94.07,
+            high=94.10,
+            low=93.95,
+            close=94.08,
+            volume=91,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:24:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=IVV_ASSET,
+            open=94.07,
+            high=94.10,
+            low=93.95,
+            close=94.08,
+            volume=30,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:24:56+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=IVV_ASSET,
+            open=94.17,
+            high=94.18,
+            low=94.05,
+            close=94.18,
+            volume=23,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=IVV_ASSET,
+            open=94.19,
+            high=94.22,
+            low=94.07,
+            close=94.20,
+            volume=21,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:41:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=IVV_ASSET,
+            open=94.19,
+            high=94.22,
+            low=94.07,
+            close=94.20,
+            volume=7,
+            timestamp=datetime.strptime(
+                "2020-05-08 14:41:58+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
     ],
     dtype=Candle,
 )
@@ -201,34 +249,67 @@ def test_fetch_no_historical_data(get_file_content_mocked):
 
     expected_df_candles = np.array(
         [
-            Candle(asset=IVV_ASSET, open=94.12, high=94.15, low=94.00, close=94.13, volume=7,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.07, high=94.10, low=93.95, close=94.08, volume=121,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.08, high=94.08, low=94.08, close=94.08, volume=0,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.17, high=94.18, low=94.05, close=94.18, volume=23,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.18, high=94.18, low=94.18, close=94.18, volume=0,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:40:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.19, high=94.22, low=94.07, close=94.20, volume=28,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:45:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.07,
+                high=94.10,
+                low=93.95,
+                close=94.08,
+                volume=121,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.08,
+                high=94.08,
+                low=94.08,
+                close=94.08,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.08,
+                high=94.08,
+                low=94.08,
+                close=94.08,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.17,
+                high=94.18,
+                low=94.05,
+                close=94.18,
+                volume=23,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.19,
+                high=94.22,
+                low=94.07,
+                close=94.20,
+                volume=28,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:40:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )
-    expected_df = CandleDataFrame.from_candle_list(asset=IVV_ASSET, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(
+        asset=IVV_ASSET, candles=expected_df_candles
+    )
     assert (df == expected_df).all(axis=None)
 
     date_strs = ["20200506", "20200507", "20200508"]
@@ -279,18 +360,23 @@ def test_fetch_no_db_data(get_file_content_mocked):
 
     expected_df_candles = np.array(
         [
-            Candle(asset=IVV_ASSET, open=94.28, high=95.32, low=93.96, close=94.59, volume=60,
-                   timestamp=datetime.strptime(
-                       "2020-06-11 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.22, high=94.26, low=93.95, close=93.98, volume=11,
-                   timestamp=datetime.strptime(
-                       "2020-06-11 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.22,
+                high=94.26,
+                low=93.95,
+                close=93.98,
+                volume=11,
+                timestamp=datetime.strptime(
+                    "2020-06-11 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )
-    expected_df = CandleDataFrame.from_candle_list(IVV_ASSET, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(
+        IVV_ASSET, candles=expected_df_candles
+    )
     assert (df == expected_df).all(axis=None)
 
     date_str = "20200611"
@@ -331,38 +417,78 @@ def test_fetch(get_file_content_mocked):
 
     expected_df_candles = np.array(
         [
-            Candle(asset=IVV_ASSET, open=94.28, high=95.32, low=93.95, close=93.98, volume=71,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.12, high=94.15, low=94.00, close=94.13, volume=7,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.07, high=94.10, low=93.95, close=94.08, volume=121,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.08, high=94.08, low=94.08, close=94.08, volume=0,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.17, high=94.18, low=94.05, close=94.18, volume=23,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.18, high=94.18, low=94.18, close=94.18, volume=0,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:40:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.19, high=94.22, low=94.07, close=94.20, volume=28,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 14:45:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.22,
+                high=94.26,
+                low=93.95,
+                close=94.13,
+                volume=18,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.07,
+                high=94.10,
+                low=93.95,
+                close=94.08,
+                volume=121,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:20:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.08,
+                high=94.08,
+                low=94.08,
+                close=94.08,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:25:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.08,
+                high=94.08,
+                low=94.08,
+                close=94.08,
+                volume=0,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.17,
+                high=94.18,
+                low=94.05,
+                close=94.18,
+                volume=23,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.19,
+                high=94.22,
+                low=94.07,
+                close=94.20,
+                volume=28,
+                timestamp=datetime.strptime(
+                    "2020-05-08 14:40:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )
-    expected_df = CandleDataFrame.from_candle_list(IVV_ASSET, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(
+        IVV_ASSET, candles=expected_df_candles
+    )
     assert (df == expected_df).all(axis=None)
 
     date_str = "20200508"
@@ -408,18 +534,23 @@ def test_fetch_1_day_offset(get_file_content_mocked):
 
     expected_df_candles = np.array(
         [
-            Candle(asset=IVV_ASSET, open=94.28, high=95.32, low=93.96, close=94.59, volume=60,
-                   timestamp=datetime.strptime(
-                       "2020-05-07 00:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=IVV_ASSET, open=94.22, high=94.26, low=93.95, close=94.20, volume=190,
-                   timestamp=datetime.strptime(
-                       "2020-05-08 00:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=IVV_ASSET,
+                open=94.22,
+                high=94.26,
+                low=93.95,
+                close=94.20,
+                volume=190,
+                timestamp=datetime.strptime(
+                    "2020-05-08 00:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )
-    expected_df = CandleDataFrame.from_candle_list(asset=IVV_ASSET, candles=expected_df_candles)
+    expected_df = CandleDataFrame.from_candle_list(
+        asset=IVV_ASSET, candles=expected_df_candles
+    )
     assert (df == expected_df).all(axis=None)
 
     date_str = "20200507"
@@ -446,5 +577,7 @@ def test_fetch_none_db_storage_none_file_storage():
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     ).rescale(time_unit=timedelta(minutes=5), market_cal=MARKET_CAL)
 
-    expected_df = CandleDataFrame.from_candle_list(asset=IVV_ASSET, candles=np.array([], dtype=Candle))
+    expected_df = CandleDataFrame.from_candle_list(
+        asset=IVV_ASSET, candles=np.array([], dtype=Candle)
+    )
     assert (df == expected_df).all(axis=None)

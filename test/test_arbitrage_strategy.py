@@ -113,8 +113,7 @@ def test_arbitrage_strategy():
         brokers={
             BINANCE_EXCHANGE: binance_broker,
             KUCOIN_EXCHANGE: kucoin_broker,
-        },
-        clock=clock,
+        }
     )
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
@@ -123,14 +122,22 @@ def test_arbitrage_strategy():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
 
     strategies_parameters = {ArbitrageStrategy: {"margin_factor": 1}}
     assets = [BINANCE_ASSET, KUCOIN_ASSET]
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies_parameters,
-                           close_at_end_of_day=False, close_at_end_of_data=False)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies_parameters,
+        close_at_end_of_day=False,
+        close_at_end_of_data=False,
+    )
     event_loop.loop()
 
     assert binance_broker.get_portfolio_total_equity() == pytest.approx(

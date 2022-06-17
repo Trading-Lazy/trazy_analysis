@@ -26,26 +26,61 @@ def test_parse_ticker_latest_data_points():
     )
     expected_candles = np.array(
         [
-            Candle(asset=AAPL_ASSET, open=355.15, high=355.15, low=353.74, close=353.84, volume=3254,
-                   timestamp=datetime.strptime(
-                       "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=AAPL_ASSET, open=354.28, high=354.96, low=353.96, close=354.78, volume=2324,
-                   timestamp=datetime.strptime(
-                       "2020-06-17 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=AAPL_ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
-                   timestamp=datetime.strptime(
-                       "2020-06-17 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=AAPL_ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
-                   timestamp=datetime.strptime(
-                       "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=AAPL_ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
-                   timestamp=datetime.strptime(
-                       "2020-06-17 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
+            Candle(
+                asset=AAPL_ASSET,
+                open=355.15,
+                high=355.15,
+                low=353.74,
+                close=353.84,
+                volume=3254,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=AAPL_ASSET,
+                open=354.28,
+                high=354.96,
+                low=353.96,
+                close=354.78,
+                volume=2324,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=AAPL_ASSET,
+                open=354.92,
+                high=355.32,
+                low=354.09,
+                close=354.09,
+                volume=1123,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=AAPL_ASSET,
+                open=354.25,
+                high=354.59,
+                low=354.14,
+                close=354.59,
+                volume=2613,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
+            Candle(
+                asset=AAPL_ASSET,
+                open=354.22,
+                high=354.26,
+                low=353.95,
+                close=353.98,
+                volume=1186,
+                timestamp=datetime.strptime(
+                    "2020-06-17 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                ),
+            ),
         ],
         dtype=Candle,
     )

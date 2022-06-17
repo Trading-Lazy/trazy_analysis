@@ -9,10 +9,11 @@ from trazy_analysis.indicators.rolling_window import (
     TimeFramedCandleRollingWindowManager,
 )
 from trazy_analysis.indicators.sma import SmaManager
+from trazy_analysis.models.asset import Asset
 
 
 class IndicatorsManager:
-    def __init__(self, initial_data: Dict[str, np.array] = {}, preload: bool = True):
+    def __init__(self, initial_data: Dict[Asset, np.array] = {}, preload: bool = True):
         self.initial_data = initial_data
         self.preload = preload
         self.rolling_window_manager = RollingWindowManager(preload=preload)

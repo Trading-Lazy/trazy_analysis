@@ -8,6 +8,9 @@ import pytz
 from pandas_market_calendars import MarketCalendar
 
 from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
+
+from trazy_analysis.common.constants import MARKET_CAL
+from trazy_analysis.common.helper import get_or_create_nested_dict
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.db_storage.db_storage import DbStorage
 from trazy_analysis.file_storage.file_storage import FileStorage
@@ -41,16 +44,29 @@ class HistoricalDataLoader:
         self.candle_dataframes = {}
 
     def load(self):
+        # group assets by time_unit
+        assets_map = {}
         for asset in self.assets:
-            (
-                candle_dataframe,
-                _,
-                _,
-            ) = self.historical_data_handlers[asset.exchange.lower()].request_ticker_data_in_range(
-                asset, self.start, self.end
-            )
-            self.candle_dataframes[asset] = candle_dataframe
-            self.candles[asset] = self.candle_dataframes[asset].to_candles()
+            get_or_create_nested_dict(assets_map, asset.exchange)
+            if asset.symbol not in assets_map[asset.exchange]:
+                assets_map[asset.exchange][asset.symbol] = []
+            assets_map[asset.exchange][asset.symbol].append(asset.time_unit)
+        for exchange in assets_map:
+            for symbol in assets_map[exchange]:
+                (candle_dataframe, _, _,) = self.historical_data_handlers[
+                    exchange.lower()
+                ].request_ticker_data_in_range(
+                    Asset(
+                        exchange=exchange, symbol=symbol, time_unit=timedelta(minutes=1)
+                    ),
+                    self.start,
+                    self.end,
+                )
+
+                for time_unit in assets_map[exchange][symbol]:
+                    asset = Asset(exchange=exchange, symbol=symbol, time_unit=time_unit)
+                    self.candle_dataframes[asset] = candle_dataframe.rescale(time_unit, MARKET_CAL[exchange.lower()])
+                    self.candles[asset] = self.candle_dataframes[asset].to_candles()
 
 
 class CsvLoader:
@@ -76,7 +92,9 @@ class CsvLoader:
         for asset, csv_filename in self.csv_filenames.items():
             dataframe = pd.read_csv(csv_filename, dtype=dtype, sep=self.sep)
             if dataframe.empty:
-                candle_dataframe = CandleDataFrame.from_candle_list(asset=asset, candles=np.array([], dtype=Candle))
+                candle_dataframe = CandleDataFrame.from_candle_list(
+                    asset=asset, candles=np.array([], dtype=Candle)
+                )
             else:
                 candle_dataframe = CandleDataFrame.from_dataframe(dataframe, asset)
             self.candle_dataframes[asset] = candle_dataframe
@@ -108,8 +126,22 @@ class ExternalStorageLoader:
         self.candle_dataframes = {}
 
     def load(self):
+        assets_map = {}
         for asset in self.assets:
-            self.candle_dataframes[asset] = self.candle_fetcher.fetch(
-                asset, self.start, self.end
-            )
-            self.candles[asset] = self.candle_dataframes[asset].to_candles()
+            get_or_create_nested_dict(assets_map, asset.exchange)
+            if asset.symbol not in assets_map[asset.exchange]:
+                assets_map[asset.exchange][asset.symbol] = []
+            assets_map[asset.exchange][asset.symbol].append(asset.time_unit)
+        for exchange in assets_map:
+            for symbol in assets_map[exchange]:
+                candle_dataframe = self.candle_fetcher.fetch(
+                    Asset(
+                        exchange=exchange, symbol=symbol, time_unit=timedelta(minutes=1)
+                    ),
+                    self.start,
+                    self.end,
+                )
+                for time_unit in assets_map[exchange][symbol]:
+                    asset = Asset(exchange=exchange, symbol=symbol, time_unit=time_unit)
+                    self.candle_dataframes[asset] = candle_dataframe.rescale(time_unit, MARKET_CAL[exchange.lower()])
+                    self.candles[asset] = self.candle_dataframes[asset].to_candles()

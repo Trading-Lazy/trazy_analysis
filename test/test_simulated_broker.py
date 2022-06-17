@@ -220,7 +220,15 @@ def test_get_account_total_market_value():
         signal_id="1",
         clock=clock,
     )
-    candle1 = Candle(asset=asset1, open=567.0, high=567.0, low=567.0, close=567.0, volume=100, timestamp=timestamp)
+    candle1 = Candle(
+        asset=asset1,
+        open=567.0,
+        high=567.0,
+        low=567.0,
+        close=567.0,
+        volume=100,
+        timestamp=timestamp,
+    )
     sb.submit_order(order1)
     sb.submit_order(order1)
     sb.update_price(candle1)
@@ -237,7 +245,9 @@ def test_get_account_total_market_value():
         signal_id="1",
         clock=clock,
     )
-    candle2 = Candle(asset=asset2, open=123.0, high=123.0, low=123.0, close=123.0, volume=100)
+    candle2 = Candle(
+        asset=asset2, open=123.0, high=123.0, low=123.0, close=123.0, volume=100
+    )
     sb.submit_order(order2)
     sb.submit_order(order2)
     sb.update_price(candle2)
@@ -342,7 +352,15 @@ def test_submit_order():
     symbol = "EQ:RDSB"
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    candle = Candle(asset=asset, open=53.47, high=53.47, low=53.47, close=53.47, volume=1, timestamp=timestamp)
+    candle = Candle(
+        asset=asset,
+        open=53.47,
+        high=53.47,
+        low=53.47,
+        close=53.47,
+        volume=1,
+        timestamp=timestamp,
+    )
 
     clock = SimulatedClock()
     clock.update_time(timestamp)
@@ -418,7 +436,15 @@ def test_execute_market_order():
         signal_id="1",
         clock=clock,
     )
-    candle = Candle(asset=asset, open=567.0, high=567.0, low=567.0, close=567.0, volume=100, timestamp=timestamp)
+    candle = Candle(
+        asset=asset,
+        open=567.0,
+        high=567.0,
+        low=567.0,
+        close=567.0,
+        volume=100,
+        timestamp=timestamp,
+    )
     sb.update_price(candle)
     sb.execute_market_order(order)
 
@@ -444,7 +470,7 @@ def test_execute_limit_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
         broker_manager=broker_manager,
@@ -456,10 +482,17 @@ def test_execute_limit_order():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
+    )
 
     event_loop.loop()
 
@@ -478,7 +511,7 @@ def test_execute_stop_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
         broker_manager=broker_manager,
@@ -490,10 +523,17 @@ def test_execute_stop_order():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
+    )
 
     event_loop.loop()
 
@@ -512,7 +552,7 @@ def test_execute_target_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
         broker_manager=broker_manager,
@@ -524,10 +564,17 @@ def test_execute_target_order():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
+    )
 
     event_loop.loop()
 
@@ -547,7 +594,7 @@ def test_execute_trailing_stop_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
         broker_manager=broker_manager,
@@ -559,10 +606,17 @@ def test_execute_trailing_stop_order():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
+    )
 
     event_loop.loop()
 
@@ -581,7 +635,7 @@ def test_execute_cover_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
         broker_manager=broker_manager,
@@ -593,10 +647,17 @@ def test_execute_cover_order():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
+    )
 
     event_loop.loop()
 
@@ -615,7 +676,7 @@ def test_execute_bracket_order():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000)
     broker.subscribe_funds_to_portfolio(10000)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(
         broker_manager=broker_manager, with_trailing_bracket=True
@@ -625,10 +686,17 @@ def test_execute_bracket_order():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
+    )
 
     event_loop.loop()
 

@@ -3,6 +3,7 @@ from collections import deque
 
 import trazy_analysis.settings
 from trazy_analysis.broker.broker_manager import BrokerManager
+from trazy_analysis.common.clock import Clock
 from trazy_analysis.logger import logger
 from trazy_analysis.models.event import PendingSignalEvent
 from trazy_analysis.models.multiple_order import (
@@ -27,6 +28,7 @@ class OrderManager:
         broker_manager: BrokerManager,
         position_sizer: PositionSizer,
         order_creator: OrderCreator,
+        clock: Clock,
         filter_at_end_of_day=True,
     ) -> None:
         self.events = events
@@ -34,7 +36,7 @@ class OrderManager:
         self.position_sizer: PositionSizer = position_sizer
         self.order_creator = order_creator
         self.pending_signals = deque()
-        self.clock = self.broker_manager.clock
+        self.clock = clock
         self.filter_at_end_of_day = filter_at_end_of_day
 
     def process_pending_signal(self, signal: Signal) -> None:

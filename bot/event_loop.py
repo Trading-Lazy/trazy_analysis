@@ -9,12 +9,11 @@ import pandas as pd
 import trazy_analysis.logger
 import trazy_analysis.settings
 from trazy_analysis.common.constants import MAX_TIMESTAMP
-from trazy_analysis.common.helper import get_or_create_nested_dict
 from trazy_analysis.feed.feed import Feed
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import Action, Direction, EventType
+from trazy_analysis.models.enums import Action, Direction, EventType, Isolation
 from trazy_analysis.models.event import (
     AssetSpecificEvent,
     DataEvent,
@@ -22,8 +21,7 @@ from trazy_analysis.models.event import (
     PendingSignalEvent,
 )
 from trazy_analysis.order_manager.order_manager import OrderManager
-from trazy_analysis.statistics.abstract_statistics import AbstractStatistics
-from trazy_analysis.statistics.statistics import Statistics
+from trazy_analysis.statistics.statistics_manager import StatisticsManager
 from trazy_analysis.strategy.context import Context
 from trazy_analysis.strategy.strategy import Strategy
 
@@ -102,19 +100,29 @@ class EventLoop:
     def update_equity_curves(self):
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
-            if exchange not in self.equity_curves:
-                self.equity_curves[exchange] = []
+            if self.statistics_manager.get_equity_curves(exchange) is None:
+                self.statistics_manager.set_equity_curves(deque(), exchange)
 
             if not self.clock.updated:
                 return
 
             current_time = self.clock.current_time()
-            if len(self.equity_curves[exchange]) != 0:
-                most_recent_time = self.equity_curves[exchange][-1][0]
+            equity_curves: deque = self.statistics_manager.get_equity_curves(exchange)
+            if len(equity_curves) != 0:
+                if len(equity_curves) == 1:
+                    equity_curves.appendleft(
+                        (
+                            current_time - timedelta(minutes=2),
+                            self.broker_manager.get_broker(
+                                exchange
+                            ).get_portfolio_total_equity(),
+                        )
+                    )
+                most_recent_time = equity_curves[-1][0]
                 if most_recent_time >= current_time:
                     return
 
-            self.equity_curves[exchange].append(
+            equity_curves.append(
                 (
                     current_time,
                     self.broker_manager.get_broker(
@@ -125,26 +133,28 @@ class EventLoop:
 
     def update_equity_dfs(self):
         exchanges = {asset.exchange for asset in self.assets}
-        LOG.info(f"exchanges = {exchanges}")
+        LOG.info("exchanges = %s", exchanges)
         for exchange in exchanges:
             equity_df = pd.DataFrame(
-                self.equity_curves[exchange],
+                list(self.statistics_manager.get_equity_curves(exchange)),
                 columns=["Date", "Equity"],
             ).set_index("Date")
-            self.equity_dfs[exchange] = equity_df
+            self.statistics_manager.set_equity_dfs(equity_df, exchange)
 
     def update_positions(self):
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
-            if exchange not in self.positions:
-                self.positions[exchange] = []
+            if self.statistics_manager.get_positions(exchange) is None:
+                self.statistics_manager.set_positions([], exchange)
 
             if not self.clock.updated:
                 return
 
             current_time = self.clock.current_time()
-            if len(self.positions[exchange]) != 0:
-                most_recent_time = self.positions[exchange][-1][0]
+            if len(self.statistics_manager.get_positions(exchange)) != 0:
+                most_recent_time = self.statistics_manager.get_positions(exchange)[-1][
+                    0
+                ]
                 if most_recent_time >= current_time:
                     return
 
@@ -177,7 +187,7 @@ class EventLoop:
                 continue
 
             cash = self.broker_manager.get_broker(exchange).get_portfolio_cash_balance()
-            self.positions[exchange].append(
+            self.statistics_manager.get_positions(exchange).append(
                 (
                     current_time,
                     *positions,
@@ -189,10 +199,10 @@ class EventLoop:
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
             positions_df = pd.DataFrame(
-                self.positions[exchange],
+                self.statistics_manager.get_positions(exchange),
                 columns=["Date", *[asset.key() for asset in self.assets], "cash"],
             ).set_index("Date")
-            self.positions_dfs[exchange] = positions_df
+            self.statistics_manager.set_positions_dfs(positions_df, exchange)
 
     def update_transactions(self):
         exchanges = {asset.exchange for asset in self.assets}
@@ -201,37 +211,48 @@ class EventLoop:
                 return
 
             current_time = self.clock.current_time()
-            if exchange in self.transactions and len(self.transactions[exchange]) != 0:
-                most_recent_time = self.transactions[exchange][-1][0]
+            if (
+                self.statistics_manager.get_transactions(exchange) is not None
+                and len(self.statistics_manager.get_transactions(exchange)) != 0
+            ):
+                most_recent_time = self.statistics_manager.get_transactions(exchange)[
+                    -1
+                ][0]
                 if most_recent_time >= current_time:
                     return
 
             portfolio = self.broker_manager.get_broker(exchange).portfolio
-            self.transactions[exchange] = [
-                (
-                    current_time,
-                    transaction.size
-                    if transaction.action == Action.BUY
-                    else -transaction.size,
-                    transaction.price,
-                    transaction.asset.key(),
-                )
-                for transaction in portfolio.transactions
-            ]
+            self.statistics_manager.set_transactions(
+                [
+                    (
+                        transaction.timestamp,
+                        transaction.size
+                        if transaction.action == Action.BUY
+                        else -transaction.size,
+                        transaction.price,
+                        transaction.asset.key(),
+                    )
+                    for transaction in portfolio.transactions
+                ],
+                exchange,
+            )
 
     def update_transactions_dfs(self):
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
-            if exchange in self.transactions:
+            if self.statistics_manager.get_transactions(exchange) is not None:
                 transactions_df = pd.DataFrame(
-                    self.transactions[exchange],
+                    self.statistics_manager.get_transactions(exchange),
                     columns=["Date", "amount", "price", "symbol"],
                 ).set_index("Date")
-                self.transactions_dfs[exchange] = transactions_df
+                self.statistics_manager.set_transactions_dfs(transactions_df, exchange)
             else:
-                self.transactions_dfs[exchange] = pd.DataFrame(
-                    columns=["Date", "amount", "price", "symbol"]
-                ).set_index("Date")
+                self.statistics_manager.set_transactions_dfs(
+                    pd.DataFrame(
+                        columns=["Date", "amount", "price", "symbol"]
+                    ).set_index("Date"),
+                    exchange,
+                )
 
     def run_strategies(self):
         for strategy in self.strategy_instances:
@@ -285,6 +306,7 @@ class EventLoop:
         live=False,
         close_at_end_of_day=True,
         close_at_end_of_data=True,
+        isolation=Isolation.EXCHANGE,
         statistics_class: type = None,
     ):
         self.events: deque = events
@@ -309,13 +331,8 @@ class EventLoop:
         self.last_update = None
         self.signals_and_orders_last_update = None
         self.current_timestamp = MAX_TIMESTAMP
-        self.equity_curves = {}
-        self.update_equity_curves()
-        self.equity_dfs = {}
-        self.positions = {}
-        self.positions_dfs = {}
-        self.transactions = {}
-        self.transactions_dfs = {}
+        self.isolation = isolation
+        self.statistics_manager = StatisticsManager(isolation=self.isolation)
         self.statistics_class = statistics_class
         self.statistics_df = None
 
@@ -374,12 +391,15 @@ class EventLoop:
                         candles = candles_dict[asset]
                         for candle in candles:
                             timestamp_str = str(candle.timestamp)
-                            if timestamp_str in self.seen_candles[candle.asset]:
-                                LOG.info(
-                                    "Candle with asset %s and timestamp %s has already been processed",
-                                    candle.asset,
-                                    timestamp_str,
-                                )
+                            if timestamp_str in self.seen_candles[candle.asset]: #or (
+                                #candle.timestamp
+                                #< (self.clock.current_time() - candle.asset.time_unit)
+                            #):
+                                # LOG.info(
+                                #    "Candle with asset %s and timestamp %s has already been processed",
+                                #    candle.asset,
+                                #    timestamp_str,
+                                # )
                                 continue
                             self.seen_candles[candle.asset].add(timestamp_str)
                             self.context.add_candle(candle)
@@ -458,13 +478,19 @@ class EventLoop:
                     exchanges = [asset.exchange for asset in self.assets]
                     if self.statistics_class is not None:
                         for exchange in exchanges:
-                            if self.equity_dfs[exchange].empty:
+                            if self.statistics_manager.get_equity_dfs(exchange).empty:
                                 self.statistics_df = pd.DataFrame()
                                 continue
                             self.statistics_df = self.statistics_class(
-                                equity=self.equity_dfs[exchange],
-                                positions=self.positions_dfs[exchange],
-                                transactions=self.transactions_dfs[exchange],
+                                equity=self.statistics_manager.get_equity_dfs(exchange),
+                                positions=self.statistics_manager.get_positions_dfs(
+                                    exchange
+                                ),
+                                transactions=self.statistics_manager.get_transactions_dfs(
+                                    exchange
+                                ),
                             ).get_tearsheet()
+                            print(self.statistics_manager.get_equity_dfs(exchange))
+                            print(self.statistics_df)
                     data_to_process = False
                     break

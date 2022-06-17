@@ -73,5 +73,6 @@ class TiingoDataHandler(DataHandler):
                 candle_dataframe=candle_df,
                 time_unit=timedelta(minutes=1),
                 market_cal_df=market_cal_df,
+                remove_incomplete_head=True
             )
         return candle_df

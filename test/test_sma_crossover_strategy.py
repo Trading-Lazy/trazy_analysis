@@ -29,7 +29,7 @@ def test_sma_crossover_strategy():
     clock = SimulatedClock()
     broker = SimulatedBroker(clock, events, initial_funds=10000.0)
     broker.subscribe_funds_to_portfolio(10000.0)
-    broker_manager = BrokerManager(brokers={EXCHANGE: broker}, clock=clock)
+    broker_manager = BrokerManager(brokers={EXCHANGE: broker})
     position_sizer = PositionSizer(broker_manager=broker_manager)
     order_creator = OrderCreator(broker_manager=broker_manager)
     order_manager = OrderManager(
@@ -37,10 +37,17 @@ def test_sma_crossover_strategy():
         broker_manager=broker_manager,
         position_sizer=position_sizer,
         order_creator=order_creator,
+        clock=clock,
     )
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        indicators_manager=indicators_manager,
+        strategies_parameters=strategies,
+    )
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10010.955

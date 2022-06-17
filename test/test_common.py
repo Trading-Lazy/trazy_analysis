@@ -231,7 +231,5 @@ def test_get_rejected_order_error_message():
         type=OrderType.MARKET,
         clock=clock,
     )
-    expected_error_message = (
-        "MARKET order (asset=IEX-IFMK-0:01:00, action=BUY, direction=LONG, size=1) could not be executed."
-    )
+    expected_error_message = "MARKET order (asset=IEX-IFMK-0:01:00, action=BUY, direction=LONG, size=1) could not be executed."
     assert get_rejected_order_error_message(order) == expected_error_message
