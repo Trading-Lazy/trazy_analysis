@@ -1,5 +1,5 @@
 from trazy_analysis.bot.bot import get_strategies_classes
-from trazy_analysis.strategy.strategy import Strategy
+from trazy_analysis.strategy.strategy import StrategyBase
 
 
 def test_get_strategies_classes():
@@ -10,5 +10,5 @@ def test_get_strategies_classes():
     )
 
     for strategy_class in strategies_classes:
-        assert issubclass(strategy_class, Strategy)
+        assert issubclass(strategy_class, StrategyBase)
     assert len(set(strategies_classes)) == len(strategies_classes)

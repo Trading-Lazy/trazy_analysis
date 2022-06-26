@@ -31,7 +31,7 @@ from trazy_analysis.market_data.historical.tiingo_historical_data_handler import
     TiingoHistoricalDataHandler,
 )
 from trazy_analysis.models.asset import Asset
-from trazy_analysis.models.enums import OrderType, Isolation
+from trazy_analysis.models.enums import OrderType, BrokerIsolation
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -69,7 +69,7 @@ class BacktestConfig:
         preload: bool = True,
         close_at_end_of_day=True,
         close_at_end_of_data=True,
-        isolation: Isolation = Isolation.EXCHANGE,
+        isolation: BrokerIsolation = BrokerIsolation.EXCHANGE,
         statistics_class: type = Statistics,
         events: deque = deque(),
     ):
@@ -108,9 +108,7 @@ class BacktestConfig:
         self.feed = None
         if csv_filenames is not None:
             kwargs = {"sep": csv_file_sep} if csv_file_sep is not None else {}
-            self.feed = CsvFeed(
-                csv_filenames=csv_filenames, events=self.events, **kwargs
-            )
+            self.feed = CsvFeed(csv_filenames=csv_filenames, events=self.events, **kwargs)
         elif download:
             exchanges = [asset.exchange.lower() for asset in assets]
             historical_data_handlers = {}
@@ -214,7 +212,7 @@ class Backtest:
         preload: bool = True,
         close_at_end_of_day=True,
         close_at_end_of_data=True,
-        isolation: Isolation = Isolation.EXCHANGE,
+        isolation: BrokerIsolation = BrokerIsolation.EXCHANGE,
         statistics_class: type = Statistics,
         backtest_config: BacktestConfig = None,
     ):
@@ -307,18 +305,13 @@ class Backtest:
             preload=self.backtest_config.preload,
             initial_data=self.backtest_config.feed.candles,
         )
-        self.event_loop = EventLoop(
-            events=self.events,
-            assets=self.backtest_config.assets,
-            feed=self.backtest_config.feed,
-            order_manager=order_manager,
-            indicators_manager=indicators_manager,
-            strategies_parameters=strategies_parameters,
-            close_at_end_of_day=self.backtest_config.close_at_end_of_day,
-            close_at_end_of_data=self.backtest_config.close_at_end_of_data,
-            statistics_class=self.backtest_config.statistics_class,
-            isolation=self.backtest_config.isolation,
-        )
+        self.event_loop = EventLoop(events=self.events, assets=self.backtest_config.assets,
+                                    feed=self.backtest_config.feed, order_manager=order_manager,
+                                    indicators_manager=indicators_manager, strategies_parameters=strategies_parameters,
+                                    close_at_end_of_day=self.backtest_config.close_at_end_of_day,
+                                    close_at_end_of_data=self.backtest_config.close_at_end_of_data,
+                                    broker_isolation=self.backtest_config.isolation,
+                                    statistics_class=self.backtest_config.statistics_class)
         self.event_loop.loop()
         return self.event_loop.statistics_df
 

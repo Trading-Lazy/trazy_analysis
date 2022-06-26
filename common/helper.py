@@ -3,7 +3,7 @@ import os
 import re
 import traceback
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -243,15 +243,15 @@ def resample_candle_data(
     remove_incomplete_head=True,
 ) -> CandleDataFrame:
     asset = candle_dataframe.asset
+    initial_time_unit = candle_dataframe.time_unit
     if not candle_dataframe.empty:
         first_timestamp = candle_dataframe.get_candle(0).timestamp
     candle_dataframe = fill_missing_datetimes(df=candle_dataframe, time_unit=time_unit)
     candle_dataframe = CandleDataFrame.from_dataframe(
-        candle_dataframe,
-        Asset(exchange=asset.exchange, symbol=asset.symbol, time_unit=time_unit),
+        candle_dataframe, Asset(symbol=asset.symbol, exchange=asset.exchange)
     )
 
-    if market_cal_df is None or asset.time_unit == time_unit:
+    if market_cal_df is None or initial_time_unit == time_unit:
         return candle_dataframe
 
     if time_unit >= timedelta(days=1):
@@ -268,8 +268,7 @@ def resample_candle_data(
         """
         df_resampled = sqldf(s, locals())
         df_resampled = CandleDataFrame.from_dataframe(
-            df_resampled,
-            Asset(exchange=asset.exchange, symbol=asset.symbol, time_unit=time_unit),
+            df_resampled, Asset(symbol=asset.symbol, exchange=asset.exchange)
         )
     if (
         remove_incomplete_head
@@ -360,3 +359,16 @@ def map_ticker_to_kucoin_symbol(ticker: str) -> str:
 
 def datetime_to_epoch(timestamp: datetime, unit_multiplicator: int) -> int:
     return int(timestamp.timestamp()) * unit_multiplicator
+
+
+def normalize_assets(
+    assets: Dict[Asset, Union[timedelta, List[timedelta]]]
+) -> Dict[Asset, List[timedelta]]:
+    assets_copy = assets.copy()
+    assets_to_normalize = set()
+    for asset, time_units in assets_copy.items():
+        if isinstance(time_units, timedelta):
+            assets_to_normalize.add(asset)
+    for asset in assets_to_normalize:
+        assets_copy[asset] = [assets_copy[asset]]
+    return assets_copy

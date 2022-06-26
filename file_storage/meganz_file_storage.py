@@ -48,7 +48,7 @@ class MegaExtended(Mega):
 
     @try_until_success
     def login(self, email: Optional[str] = None, password: Optional[str] = None):
-        return super().login(email, password)
+        return super().login() # TODO fix login with email and password issue
 
     @try_until_success
     def get_files(

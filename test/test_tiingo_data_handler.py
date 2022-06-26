@@ -5,7 +5,7 @@ from trazy_analysis.market_data.historical.tiingo_historical_data_handler import
 )
 from trazy_analysis.models.asset import Asset
 
-ASSET = Asset(exchange="IEX", symbol="IVV")
+ASSET = Asset(symbol="IVV", exchange="IEX")
 
 
 def test_parse_get_tickers_response():

@@ -866,7 +866,7 @@ def test_update_transactions(
             "2021-02-23 11:45:57.873000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="BUY LONG 29.5 BINANCE-XRPEUR-0:01:00 0.33822 23/02/2021",
+        description="BUY LONG 29.5 BINANCE-XRPEUR 0.33822 23/02/2021",
         debit=10.006990000000002,
         credit=0.0,
         balance=51.07118,
@@ -876,7 +876,7 @@ def test_update_transactions(
             "2021-02-23 21:29:44.610000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="SELL LONG 29.4 BINANCE-XRPEUR-0:01:00 0.38805 23/02/2021",
+        description="SELL LONG 29.4 BINANCE-XRPEUR 0.38805 23/02/2021",
         debit=0.0,
         credit=11.41,
         balance=51.07,
@@ -886,7 +886,7 @@ def test_update_transactions(
             "2021-02-23 11:45:59.873000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="BUY LONG 0.000367 BINANCE-ETHEUR-0:01:00 40825.94 23/02/2021",
+        description="BUY LONG 0.000367 BINANCE-ETHEUR 40825.94 23/02/2021",
         debit=15.01261998,
         credit=0.0,
         balance=51.07118,
@@ -896,7 +896,7 @@ def test_update_transactions(
             "2021-02-23 21:29:49.610000+0000", "%Y-%m-%d %H:%M:%S.%f%z"
         ),
         type="symbol_transaction",
-        description="SELL LONG 0.000367 BINANCE-ETHEUR-0:01:00 43825.94 23/02/2021",
+        description="SELL LONG 0.000367 BINANCE-ETHEUR 43825.94 23/02/2021",
         debit=0.0,
         credit=16.08,
         balance=51.07,

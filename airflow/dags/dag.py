@@ -353,7 +353,7 @@ def ccxt_arbitrage_strategy(**kwargs):
                                      file_storage=None, market_cal=None)
 
     # Check whether data is empty or not
-    exchange1_candle_dataframe = feed.candle_dataframes[assets_dict[exchange1]]
+    exchange1_candle_dataframe = feed.candle_dataframes[assets_dict[exchange1]][timedelta(minutes=1)]
 
     state_key = f"{common_pair_key}_arbitrage_result"
     if exchange1_candle_dataframe.empty:
@@ -363,7 +363,7 @@ def ccxt_arbitrage_strategy(**kwargs):
         state_db_storage.save_state(state_key=state_key, content=empty_result)
         return
 
-    exchange2_candle_dataframe = feed.candle_dataframes[assets_dict[exchange2]]
+    exchange2_candle_dataframe = feed.candle_dataframes[assets_dict[exchange2]][timedelta(minutes=1)]
 
     if exchange2_candle_dataframe.empty:
         LOG.info(
@@ -526,7 +526,7 @@ def ccxt_arbitrage_strategy(**kwargs):
     exchange1_transactions = [
         portfolio_event
         for portfolio_event in exchange1_history
-        if portfolio_event.type == "symbol_transaction"
+        if portfolio_event.event_type == "symbol_transaction"
     ]
     # remove first transaction, which is to add securities in the broker
     exchange1_transactions = exchange1_transactions[1:]
@@ -535,7 +535,7 @@ def ccxt_arbitrage_strategy(**kwargs):
     exchange2_transactions = [
         portfolio_event
         for portfolio_event in exchange2_history
-        if portfolio_event.type == "symbol_transaction"
+        if portfolio_event.event_type == "symbol_transaction"
     ]
     # remove first transaction, which is to add securities in the broker
     exchange2_transactions = exchange2_transactions[1:]

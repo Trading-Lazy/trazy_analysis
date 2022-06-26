@@ -26,7 +26,7 @@ from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.test.tools.tools import not_raises
 
-ASSET = Asset(exchange="IEX", symbol="IVV")
+ASSET = Asset(symbol="IVV", exchange="IEX")
 MARKET_CAL = EUREXExchangeCalendar()
 STATUS_CODE_OK = 200
 URL = "trazy.com"

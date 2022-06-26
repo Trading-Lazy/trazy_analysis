@@ -13,10 +13,10 @@ from trazy_analysis.models.parameter import Discrete, Choice, Static
 from trazy_analysis.models.signal import Signal
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.strategy.context import Context
-from trazy_analysis.strategy.strategy import LOG, Strategy
+from trazy_analysis.strategy.strategy import LOG, StrategyBase
 
 
-class SmartMoneyConcept(Strategy):
+class SmartMoneyConcept(StrategyBase):
     DEFAULT_PARAMETERS = {
         "comparator": np.greater,
         "order": 2,
@@ -52,7 +52,7 @@ class SmartMoneyConcept(Strategy):
         parameters: Dict[str, float],
         indicators_manager: IndicatorsManager = IndicatorsManager(),
     ):
-        super().__init__(context, order_manager, events, parameters, indicators_manager)
+        super().__init__(order_manager, events, parameters, indicators_manager)
 
         self.poi_touch = {
             asset: self.indicators_manager.PoiTouch(
@@ -74,14 +74,14 @@ class SmartMoneyConcept(Strategy):
         self.current_extrema_val = None
         self.pois_touch = IntervalTree()
 
-    def generate_signals(self, context: Context, clock: Clock) -> List[Signal]:
+    def current(self, context: Context, clock: Clock) -> List[Signal]:
         signals = []
         signal = None
         for candle in context.get_last_candles():
-            if self.parameters["timeframe"] != candle.asset.time_unit:
+            if self.parameters["timeframe"] != candle.time_unit:
                 continue
             if self.poi_touch[candle.asset].data:
-                LOG.info(f"Time to buy: {candle.asset.time_unit}")
+                LOG.info(f"Time to buy: {candle.time_unit}")
                 signal = Signal(
                     action=Action.BUY,
                     direction=Direction.LONG,

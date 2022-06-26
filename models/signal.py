@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from datetime import datetime, timedelta
 
 import numpy as np

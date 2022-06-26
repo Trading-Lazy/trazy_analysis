@@ -28,12 +28,13 @@ KUCOIN_ASSET = Asset(symbol="XRP/USDT", exchange=KUCOIN_EXCHANGE)
 
 def test_arbitrage_strategy():
     events = deque()
+    time_unit = timedelta(minutes=1)
     feed: Feed = CsvFeed(
-        {
-            BINANCE_ASSET: f"test/data/xrpusdt_one_week_binance.csv",
-            KUCOIN_ASSET: f"test/data/xrpusdt_one_week_kucoin.csv",
+        csv_filenames={
+            BINANCE_ASSET: {time_unit: f"test/data/xrpusdt_one_week_binance.csv"},
+            KUCOIN_ASSET: {time_unit: f"test/data/xrpusdt_one_week_kucoin.csv"},
         },
-        events,
+        events=events,
     )
 
     # Create 2 simulated brokers for the 2 exchanges
@@ -51,7 +52,9 @@ def test_arbitrage_strategy():
         exchange=BINANCE_EXCHANGE,
     )
     binance_broker.subscribe_funds_to_portfolio(initial_funds)
-    binance_first_candle = feed.candle_dataframes[BINANCE_ASSET].get_candle(0)
+    binance_first_candle = feed.candle_dataframes[BINANCE_ASSET][
+        timedelta(minutes=1)
+    ].get_candle(0)
     binance_broker.update_price(binance_first_candle)
 
     # Kucoin simulated broker
@@ -64,7 +67,9 @@ def test_arbitrage_strategy():
         exchange=KUCOIN_EXCHANGE,
     )
     kucoin_broker.subscribe_funds_to_portfolio(initial_funds)
-    kucoin_first_candle = feed.candle_dataframes[KUCOIN_ASSET].get_candle(0)
+    kucoin_first_candle = feed.candle_dataframes[KUCOIN_ASSET][
+        timedelta(minutes=1)
+    ].get_candle(0)
     kucoin_broker.update_price(kucoin_first_candle)
 
     # Buy in advance securities to have something to sell for the purpose of the test
@@ -127,7 +132,7 @@ def test_arbitrage_strategy():
     indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
 
     strategies_parameters = {ArbitrageStrategy: {"margin_factor": 1}}
-    assets = [BINANCE_ASSET, KUCOIN_ASSET]
+    assets = {BINANCE_ASSET: time_unit, KUCOIN_ASSET: time_unit}
     event_loop = EventLoop(
         events=events,
         assets=assets,

@@ -5,43 +5,23 @@ from trazy_analysis.models.candle import Candle
 
 IVV_ASSET = Asset(symbol="IVV", exchange="IEX")
 
-CANDLE1 = Candle(
-    asset=IVV_ASSET,
-    open=25.0,
-    high=25.5,
-    low=24.8,
-    close=25.3,
-    volume=100,
-    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
-)
+CANDLE1 = Candle(asset=IVV_ASSET, open=25.0, high=25.5, low=24.8, close=25.3, volume=100,
+                 timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 CANDLE1_DICT = {
-    "asset": {"exchange": "IEX", "symbol": "IVV", "time_unit": "0:01:00"},
+    "asset": {"exchange": "IEX", "symbol": "IVV"},
     "open": "25.0",
     "high": "25.5",
     "low": "24.8",
     "close": "25.3",
     "volume": 100,
+    "time_unit": "0:01:00",
     "timestamp": datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 }
 
-CANDLE2 = Candle(
-    asset=IVV_ASSET,
-    open=25.0,
-    high=25.5,
-    low=24.8,
-    close=25.3,
-    volume=100,
-    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
-)
-CANDLE3 = Candle(
-    asset=IVV_ASSET,
-    open=25.0,
-    high=25.5,
-    low=24.8,
-    close=25.4,
-    volume=100,
-    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
-)
+CANDLE2 = Candle(asset=IVV_ASSET, open=25.0, high=25.5, low=24.8, close=25.3, volume=100,
+                 timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE3 = Candle(asset=IVV_ASSET, open=25.0, high=25.5, low=24.8, close=25.4, volume=100,
+                 timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 
 
 def test_eq():
@@ -108,12 +88,13 @@ def test_from_json():
 
 def test_to_json():
     str_json = (
-        '{"asset": {"symbol": "IVV", "exchange": "IEX", "time_unit": "0:01:00"}, '
+        '{"asset": {"symbol": "IVV", "exchange": "IEX"}, '
         '"open": "25.0", '
         '"high": "25.5", '
         '"low": "24.8", '
         '"close": "25.3", '
         '"volume": 100, '
+        '"time_unit": "0:01:00", '
         '"timestamp": "2020-05-08 14:17:00+0000"}'
     )
     assert CANDLE1.to_json() == str_json
@@ -125,7 +106,7 @@ def test_copy():
 
 def test_str():
     expected_str = (
-        'Candle(asset=Asset(symbol="IVV",exchange="IEX",time_unit="0:01:00"),'
-        "open=25.0,high=25.5,low=24.8,close=25.3,volume=100,timestamp=2020-05-08 14:17:00+00:00)"
+        'Candle(asset=Asset(symbol="IVV",exchange="IEX"),'
+        "open=25.0,high=25.5,low=24.8,close=25.3,volume=100,time_unit=0:01:00,timestamp=2020-05-08 14:17:00+00:00)"
     )
     assert str(CANDLE1) == expected_str

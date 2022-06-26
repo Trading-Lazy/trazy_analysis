@@ -31,21 +31,25 @@ class CandleFetcher:
     def query_candles(
         self,
         asset: Asset,
+        time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
     ) -> List[Candle]:
-        candles = self.db_storage.get_candles_in_range(asset=asset, start=start, end=end)
+        candles = self.db_storage.get_candles_in_range(
+            asset=asset, time_unit=time_unit, start=start, end=end
+        )
         return candles
 
     def fetch_candle_db_data(
         self,
         asset: Asset,
+        time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
     ) -> CandleDataFrame:
         if self.db_storage is None:
-            return CandleDataFrame(asset=asset)
-        candles = self.query_candles(asset, start, end)
+            return CandleDataFrame(asset=asset, time_unit=time_unit)
+        candles = self.query_candles(asset, time_unit, start, end)
         df = CandleDataFrame.from_candle_list(asset=asset, candles=candles)
         return df
 
@@ -97,9 +101,13 @@ class CandleFetcher:
         return merged_df.loc[start_str:end_str]
 
     def fetch(
-        self, asset: Asset, start: datetime, end: datetime = datetime.now(pytz.UTC)
+        self,
+        asset: Asset,
+        time_unit: timedelta,
+        start: datetime,
+        end: datetime = datetime.now(pytz.UTC),
     ) -> CandleDataFrame:
-        df = self.fetch_candle_db_data(asset, start, end)
+        df = self.fetch_candle_db_data(asset, time_unit, start, end)
         if df.empty or start <= df.iloc[0].name:
             if df.empty:
                 historical_df_end = end

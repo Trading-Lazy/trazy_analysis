@@ -1,4 +1,5 @@
 from collections import deque
+from datetime import timedelta
 
 from trazy_analysis.bot.event_loop import EventLoop
 from trazy_analysis.broker.broker_manager import BrokerManager
@@ -19,10 +20,10 @@ EXCHANGE = "IEX"
 
 def test_sma_crossover_strategy_preload_data():
     aapl_asset = Asset(symbol="AAPL", exchange="IEX")
-    assets = [aapl_asset]
+    assets = {aapl_asset: timedelta(minutes=1)}
     events = deque()
 
-    feed: Feed = CsvFeed({aapl_asset: "test/data/aapl_candles_one_day.csv"}, events)
+    feed: Feed = CsvFeed(csv_filenames={aapl_asset: {timedelta(minutes=1): "test/data/aapl_candles_one_day.csv"}}, events=events)
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
     clock = SimulatedClock()
@@ -39,14 +40,8 @@ def test_sma_crossover_strategy_preload_data():
         clock=clock,
     )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        indicators_manager=indicators_manager,
-        strategies_parameters=strategies,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           indicators_manager=indicators_manager, strategies_parameters=strategies)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10010.955

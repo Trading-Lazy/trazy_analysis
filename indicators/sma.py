@@ -144,24 +144,29 @@ class SmaManager:
         self.preload = preload
 
     def __call__(
-        self, asset: Asset, period: int, price_type: PriceType = PriceType.CLOSE
+        self,
+        asset: Asset,
+        time_unit: timedelta,
+        period: int,
+        price_type: PriceType = PriceType.CLOSE,
     ) -> Sma:
-        get_or_create_nested_dict(self.cache, asset, period)
+        get_or_create_nested_dict(self.cache, asset, time_unit, period)
 
-        if price_type not in self.cache[asset][period]:
+        if price_type not in self.cache[asset][time_unit][period]:
             price_rolling_window = self.price_rolling_window_manager(
-                asset, period, price_type
+                asset, time_unit, period, price_type
             )
-            self.cache[asset][period][price_type] = Sma(
+            self.cache[asset][time_unit][period][price_type] = Sma(
                 period, price_rolling_window, preload=self.preload
             )
-        return self.cache[asset][period][price_type]
+        return self.cache[asset][time_unit][period][price_type]
 
     def warmup(self):
         for asset in self.cache:
-            for period in self.cache[asset]:
-                for price_type in self.cache[asset][period]:
-                    sma_stream = self.cache[asset][period][price_type]
-                    sma_stream.set_size(sma_stream.rolling_window_stream.size)
-                    if self.preload:
-                        self.cache[asset][period][price_type].initialize()
+            for time_unit in self.cache[asset]:
+                for period in self.cache[asset][time_unit]:
+                    for price_type in self.cache[asset][time_unit][period]:
+                        sma_stream = self.cache[asset][time_unit][period][price_type]
+                        sma_stream.set_size(sma_stream.rolling_window_stream.size)
+                        if self.preload:
+                            self.cache[asset][time_unit][period][price_type].initialize()

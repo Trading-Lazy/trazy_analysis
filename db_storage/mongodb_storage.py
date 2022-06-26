@@ -158,7 +158,9 @@ class MongoDbStorage(DbStorage):
     def candle_with_id_exists(self, id: str) -> bool:
         return self.get_candle(id) is not None
 
-    def get_candle_by_identifier(self, asset: Asset, timestamp: datetime) -> Candle:
+    def get_candle_by_identifier(
+        self, asset: Asset, time_unit: timedelta, timestamp: datetime
+    ) -> Candle:
         query = {"asset": asset.to_dict(), "timestamp": timestamp}
         candle_dict = self.find_one(query, CANDLES_COLLECTION_NAME)
         if candle_dict is None:
@@ -166,9 +168,12 @@ class MongoDbStorage(DbStorage):
         return Candle.from_serializable_dict(candle_dict)
 
     def candle_with_identifier_exists(self, asset: Asset, timestamp: datetime) -> bool:
-        return self.get_candle_by_identifier(asset, timestamp) is not None
+        return (
+            self.get_candle_by_identifier(asset, timedelta(minutes=1), timestamp)
+            is not None
+        )
 
-    def get_candles_in_range(self, asset: Asset, start: datetime, end: datetime) -> np.array:  # [Candle]
+    def get_candles_in_range(self, asset: Asset, time_unit, start: datetime, end: datetime) -> np.array:  # [Candle]
         query = {
             "asset": asset.to_dict(),
             "$and": [{"timestamp": {"$gte": start}}, {"timestamp": {"$lte": end}}],

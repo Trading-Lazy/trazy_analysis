@@ -102,7 +102,7 @@ def test_query_candles():
     for candle in CANDLES:
         DB_STORAGE.add_candle(candle)
     start, end = CANDLES[0].timestamp, CANDLES[-1].timestamp
-    candles = CANDLE_FETCHER.query_candles(IVV_ASSET, start, end)
+    candles = CANDLE_FETCHER.query_candles(IVV_ASSET, timedelta(minutes=1), start, end)
     DB_STORAGE.clean_all_candles()
     assert compare_candles_list(candles, CANDLES)
 
@@ -113,7 +113,9 @@ def test_fetch_candle_db_data():
         DB_STORAGE.add_candle(candle)
     start = CANDLES[0].timestamp
     end = CANDLES[-1].timestamp
-    df = CANDLE_FETCHER.fetch_candle_db_data(IVV_ASSET, start, end)
+    df = CANDLE_FETCHER.fetch_candle_db_data(
+        IVV_ASSET, timedelta(minutes=1), start, end
+    )
     expected_df_candles = {
         "timestamp": [
             "2020-05-08 14:17:00+00:00",
@@ -243,6 +245,7 @@ def test_fetch_no_historical_data(get_file_content_mocked):
 
     df = CANDLE_FETCHER.fetch(
         IVV_ASSET,
+        timedelta(minutes=1),
         datetime.strptime("2020-05-06 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     ).rescale(time_unit=timedelta(minutes=5), market_cal=MARKET_CAL)
@@ -354,6 +357,7 @@ def test_fetch_no_db_data(get_file_content_mocked):
 
     df = CANDLE_FETCHER.fetch(
         IVV_ASSET,
+        timedelta(minutes=1),
         datetime.strptime("2020-06-11 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-06-11 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     ).rescale(time_unit=timedelta(minutes=5), market_cal=MARKET_CAL)
@@ -411,6 +415,7 @@ def test_fetch(get_file_content_mocked):
 
     df = CANDLE_FETCHER.fetch(
         IVV_ASSET,
+        timedelta(minutes=1),
         datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     ).rescale(time_unit=timedelta(minutes=5), market_cal=MARKET_CAL)
@@ -528,6 +533,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
 
     df = CANDLE_FETCHER.fetch(
         IVV_ASSET,
+        timedelta(minutes=1),
         datetime.strptime("2020-05-07 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     ).rescale(time_unit=timedelta(days=1), market_cal=MARKET_CAL)
@@ -573,6 +579,7 @@ def test_fetch_none_db_storage_none_file_storage():
 
     df = candle_fetcher.fetch(
         SYMBOL,
+        timedelta(minutes=1),
         datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         datetime.strptime("2020-05-08 14:49:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     ).rescale(time_unit=timedelta(minutes=5), market_cal=MARKET_CAL)

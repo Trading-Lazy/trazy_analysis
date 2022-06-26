@@ -290,7 +290,7 @@ def test_transact_symbol_behaviour():
     assert port.total_realised_pnl == 0
     assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
-    description = "BUY LONG 100 IEX-AAA-0:01:00 567.0 07/10/2017"
+    description = "BUY LONG 100 IEX-AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",
@@ -386,7 +386,7 @@ def test_transact_symbol_behaviour_short():
     assert port.total_realised_pnl == 0
     assert port.total_pnl == pytest.approx(-15.7800, 0.01)
 
-    description = "SELL SHORT 100 IEX-AAA-0:01:00 567.0 07/10/2017"
+    description = "SELL SHORT 100 IEX-AAA 567.0 07/10/2017"
     pe_tn = PortfolioEvent(
         timestamp=even_later_timestamp,
         type="symbol_transaction",

@@ -1,22 +1,20 @@
-from datetime import datetime
-from typing import List, Dict
-
-import numpy as np
+from datetime import datetime, timedelta
+from typing import List, Dict, Tuple
 from sortedcontainers import SortedSet
 
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.enums import EventType
-from trazy_analysis.models.signal import Signal
+from trazy_analysis.models.signal import SignalBase
 
 
 class Event:
-    def __init__(self, type: EventType):
-        self.type = type
+    def __init__(self, event_type: EventType):
+        self.event_type = event_type
 
 
 class AssetSpecificEvent(Event):
-    def __init__(self, type: EventType, asset: str, bars_delay: int = 0):
-        super().__init__(type)
+    def __init__(self, event_type: EventType, asset: str, bars_delay: int = 0):
+        super().__init__(event_type)
         self.asset = asset
         self.bars_delay = bars_delay
 
@@ -24,40 +22,55 @@ class AssetSpecificEvent(Event):
 class DataEvent(Event):
     def __init__(
         self,
-        type: EventType,
-        assets: List[Asset],
+        event_type: EventType,
+        assets: Dict[Asset, List[timedelta]],
         timestamp: datetime,
         bars_delay: int = 0,
     ):
-        super().__init__(type)
+        super().__init__(event_type)
         self.assets = set(assets)
         self.timestamp = timestamp
         self.bars_delay = bars_delay
 
 
 class MarketDataEvent(DataEvent):
-    def __init__(self, candles: Dict[Asset, SortedSet], timestamp: datetime, bars_delay: int = 0):
+    def __init__(
+        self,
+        candles: Dict[Asset, Dict[timedelta, SortedSet]],
+        timestamp: datetime,
+        bars_delay: int = 0,
+    ):
         super().__init__(
             EventType.MARKET_DATA,
-            list(candles.keys()),
+            {asset: list(candles[asset].keys()) for asset in candles},
             timestamp,
             bars_delay,
         )
-        self.candles: np.array = candles
+        self.candles: Dict[Asset, Dict[timedelta, SortedSet]] = candles
 
 
 class MarketEodDataEvent(DataEvent):
-    def __init__(self, assets: List[Asset], timestamp: datetime, bars_delay: int = 0):
+    def __init__(
+        self,
+        assets: Dict[Asset, List[timedelta]],
+        timestamp: datetime,
+        bars_delay: int = 0,
+    ):
         super().__init__(EventType.MARKET_EOD_DATA, assets, timestamp, bars_delay)
 
 
 class MarketDataEndEvent(DataEvent):
-    def __init__(self, assets: List[Asset], timestamp: datetime, bars_delay: int = 0):
+    def __init__(
+        self,
+        assets: Dict[Asset, List[timedelta]],
+        timestamp: datetime,
+        bars_delay: int = 0,
+    ):
         super().__init__(EventType.MARKET_DATA_END, assets, timestamp, bars_delay)
 
 
 class SignalEvent(Event):
-    def __init__(self, signals: List[Signal], bars_delay: int = 0):
+    def __init__(self, signals: List[SignalBase], bars_delay: int = 0):
         super().__init__(EventType.SIGNAL)
         self.signals = signals
         self.bars_delay = bars_delay

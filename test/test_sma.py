@@ -62,36 +62,42 @@ def test_sma_stream_handle_new_data_source_is_filled_rolling_window_stream():
     assert sma.data == 6.666666666666666666666666667
 
 
-def test_sma_factory():
+def test_sma_manager():
     indicators_manager = IndicatorsManager()
-    sma_factory = SmaManager(indicators_manager.price_rolling_window_manager)
-    sma1 = sma_factory(
-        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+    sma_manager = SmaManager(indicators_manager.price_rolling_window_manager)
+    sma1 = sma_manager(
+        Asset(symbol=SYMBOL1, exchange="IEX"),
+        time_unit=timedelta(minutes=5),
         period=5,
         price_type=PriceType.CLOSE,
     )
-    sma2 = sma_factory(
-        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+    sma2 = sma_manager(
+        Asset(symbol=SYMBOL1, exchange="IEX"),
+        time_unit=timedelta(minutes=5),
         period=5,
         price_type=PriceType.CLOSE,
     )
-    sma3 = sma_factory(
-        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+    sma3 = sma_manager(
+        Asset(symbol=SYMBOL1, exchange="IEX"),
+        time_unit=timedelta(minutes=5),
         period=5,
         price_type=PriceType.LOW,
     )
-    sma4 = sma_factory(
-        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=10)),
+    sma4 = sma_manager(
+        Asset(symbol=SYMBOL1, exchange="IEX"),
+        time_unit=timedelta(minutes=10),
         period=5,
         price_type=PriceType.CLOSE,
     )
-    sma5 = sma_factory(
-        Asset(exchange="IEX", symbol=SYMBOL1, time_unit=timedelta(minutes=5)),
+    sma5 = sma_manager(
+        Asset(symbol=SYMBOL1, exchange="IEX"),
+        time_unit=timedelta(minutes=5),
         period=7,
         price_type=PriceType.CLOSE,
     )
-    sma6 = sma_factory(
-        Asset(exchange="IEX", symbol=SYMBOL2, time_unit=timedelta(minutes=5)),
+    sma6 = sma_manager(
+        Asset(symbol=SYMBOL2, exchange="IEX"),
+        time_unit=timedelta(minutes=5),
         period=5,
         price_type=PriceType.CLOSE,
     )

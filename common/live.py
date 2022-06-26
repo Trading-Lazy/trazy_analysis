@@ -25,7 +25,7 @@ from trazy_analysis.market_data.live.tiingo_live_data_handler import (
     TiingoLiveDataHandler,
 )
 from trazy_analysis.models.asset import Asset
-from trazy_analysis.models.enums import OrderType, Isolation
+from trazy_analysis.models.enums import OrderType, BrokerIsolation
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -50,7 +50,7 @@ class LiveConfig:
         exchanges_api_keys: Dict[str, str] = {},
         preload: bool = True,
         close_at_end_of_day=True,
-        isolation: Isolation = Isolation.EXCHANGE,
+        isolation: BrokerIsolation = BrokerIsolation.EXCHANGE,
         statistics_class: type = Statistics,
         events: deque = deque(),
     ):
@@ -138,7 +138,7 @@ class Live:
         exchanges_api_keys: Dict[str, str] = {},
         preload: bool = True,
         close_at_end_of_day=True,
-        isolation: Isolation = Isolation.EXCHANGE,
+        isolation: BrokerIsolation = BrokerIsolation.EXCHANGE,
         statistics_class: type = Statistics,
         live_config: LiveConfig = None,
         base_currency="EUR",
@@ -257,18 +257,12 @@ class Live:
             preload=self.live_config.preload,
             initial_data=self.live_config.feed.candles,
         )
-        self.event_loop = EventLoop(
-            events=self.events,
-            assets=self.live_config.assets,
-            feed=self.live_config.feed,
-            order_manager=order_manager,
-            indicators_manager=indicators_manager,
-            strategies_parameters=strategies_parameters,
-            close_at_end_of_day=self.live_config.close_at_end_of_day,
-            close_at_end_of_data=False,
-            statistics_class=self.live_config.statistics_class,
-            isolation=self.live_config.isolation,
-        )
+        self.event_loop = EventLoop(events=self.events, assets=self.live_config.assets, feed=self.live_config.feed,
+                                    order_manager=order_manager, indicators_manager=indicators_manager,
+                                    strategies_parameters=strategies_parameters,
+                                    close_at_end_of_day=self.live_config.close_at_end_of_day,
+                                    close_at_end_of_data=False, broker_isolation=self.live_config.isolation,
+                                    statistics_class=self.live_config.statistics_class)
         self.event_loop.loop()
         return self.event_loop.statistics_df
 

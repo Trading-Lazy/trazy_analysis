@@ -27,7 +27,7 @@ def test_transaction_representation():
     correctly recreates the object.
     """
     exp_repr = (
-        'Transaction(asset=Asset(symbol="AAPL",exchange="IEX",time_unit="0:01:00"), '
+        'Transaction(asset=Asset(symbol="AAPL",exchange="IEX"), '
         "size=168, action=BUY, direction=LONG, timestamp=2015-05-06 00:00:00, price=56.18, order_id=153)"
     )
     assert repr(TRANSACTION) == exp_repr

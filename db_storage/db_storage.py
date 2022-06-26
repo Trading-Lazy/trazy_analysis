@@ -50,16 +50,19 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_candle_by_identifier(
-        self, asset: str, timestamp: datetime
+        self, asset: str, time_unit: timedelta, timestamp: datetime
     ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 
     def candle_with_identifier_exists(self, asset: Asset, timestamp: datetime) -> bool:
-        return self.get_candle_by_identifier(asset, timestamp) is not None
+        return (
+            self.get_candle_by_identifier(asset, timedelta(minutes=1), timestamp)
+            is not None
+        )
 
     @abc.abstractmethod
     def get_candles_in_range(
-        self, asset: Asset, start: datetime, end: datetime
+        self, asset: Asset, time_unit: timedelta, start: datetime, end: datetime
     ) -> List[Candle]:  # pragma: no cover
         raise NotImplementedError
 

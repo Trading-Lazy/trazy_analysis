@@ -1,4 +1,5 @@
 from collections import deque
+from datetime import timedelta
 
 from trazy_analysis.bot.event_loop import EventLoop
 from trazy_analysis.broker.broker_manager import BrokerManager
@@ -20,10 +21,15 @@ AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 
 
 def test_sma_crossover_strategy():
-    assets = [AAPL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1)}
     events = deque()
 
-    feed: Feed = CsvFeed({AAPL_ASSET: "test/data/aapl_candles_one_day.csv"}, events)
+    feed: Feed = CsvFeed(
+        csv_filenames={
+            AAPL_ASSET: {timedelta(minutes=1): "test/data/aapl_candles_one_day.csv"}
+        },
+        events=events,
+    )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
     clock = SimulatedClock()

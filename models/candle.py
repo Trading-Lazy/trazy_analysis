@@ -17,6 +17,7 @@ class Candle:
         close: float,
         volume: int,
         timestamp: datetime = datetime.now(pytz.UTC),
+        time_unit=timedelta(minutes=1),
     ):
         self.asset: Asset = asset
         self.open: float = open
@@ -24,9 +25,9 @@ class Candle:
         self.low: float = low
         self.close: float = close
         self.volume: int = volume
+        self.time_unit = time_unit
 
         from trazy_analysis.common.utils import timestamp_to_utc
-
         self.timestamp = timestamp_to_utc(timestamp)
 
     @property
@@ -82,6 +83,7 @@ class Candle:
         dict["high"] = str(dict["high"])
         dict["low"] = str(dict["low"])
         dict["close"] = str(dict["close"])
+        dict["time_unit"] = str(dict["time_unit"])
         return dict
 
     def to_json(self) -> str:
@@ -125,6 +127,7 @@ class Candle:
             "low={},"
             "close={},"
             "volume={},"
+            "time_unit={},"
             "timestamp={})".format(
                 self.asset,
                 self.open,
@@ -132,6 +135,7 @@ class Candle:
                 self.low,
                 self.close,
                 self.volume,
+                self.time_unit,
                 self.timestamp,
             )
         )

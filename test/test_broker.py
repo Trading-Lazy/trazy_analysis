@@ -1,4 +1,5 @@
 from collections import deque
+from datetime import timedelta
 from unittest.mock import PropertyMock, call, patch
 
 from trazy_analysis.bot.event_loop import EventLoop
@@ -226,12 +227,18 @@ def test_submit_order_sequential_order():
 
 def test_close_all_open_positions_at_end_of_day():
     aapl_asset = Asset(symbol="AAPL", exchange=EXCHANGE)
-    assets = [aapl_asset]
+    assets = {aapl_asset: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {aapl_asset: "test/data/aapl_candles_one_day_positions_opened_end_of_day.csv"},
-        events,
+        csv_filenames={
+            aapl_asset: {
+                timedelta(
+                    minutes=1
+                ): "test/data/aapl_candles_one_day_positions_opened_end_of_day.csv"
+            }
+        },
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
@@ -249,14 +256,8 @@ def test_close_all_open_positions_at_end_of_day():
         clock=clock,
     )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        indicators_manager=indicators_manager,
-        strategies_parameters=strategies,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           indicators_manager=indicators_manager, strategies_parameters=strategies)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10016.415
@@ -264,14 +265,18 @@ def test_close_all_open_positions_at_end_of_day():
 
 def test_close_all_open_positions_at_end_of_feed_data():
     aapl_asset = Asset(symbol="AAPL", exchange=EXCHANGE)
-    assets = [aapl_asset]
+    assets = {aapl_asset: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {
-            aapl_asset: "test/data/aapl_candles_one_day_positions_opened_end_of_feed_data.csv"
+        csv_filenames={
+            aapl_asset: {
+                timedelta(
+                    minutes=1
+                ): "test/data/aapl_candles_one_day_positions_opened_end_of_feed_data.csv"
+            }
         },
-        events,
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
@@ -289,14 +294,8 @@ def test_close_all_open_positions_at_end_of_feed_data():
         clock=clock,
     )
     indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        indicators_manager=indicators_manager,
-        strategies_parameters=strategies,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           indicators_manager=indicators_manager, strategies_parameters=strategies)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10014.35

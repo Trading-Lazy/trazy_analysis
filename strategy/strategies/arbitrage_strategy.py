@@ -1,40 +1,46 @@
 from collections import deque
+from datetime import timedelta
 from typing import Dict, List
 
 from trazy_analysis.common.clock import Clock
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.candle import Candle
 from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.parameter import Discrete
 from trazy_analysis.models.signal import ArbitragePairSignal, Signal
 from trazy_analysis.order_manager.order_manager import OrderManager
-from trazy_analysis.strategy.context import Context
-from trazy_analysis.strategy.strategy import LOG, Strategy
+from trazy_analysis.strategy.strategy import LOG, MultiAssetsStrategy
 
 
-class ArbitrageStrategy(Strategy):
+class ArbitrageStrategy(MultiAssetsStrategy):
     DEFAULT_PARAMETERS = {"margin_factor": 2}
+
+    DEFAULT_PARAMETERS_SPACE = {"margin_factor": Discrete([1, 4])}
 
     def __init__(
         self,
-        context: Context,
+        assets: Dict[Asset, List[timedelta]],
         order_manager: OrderManager,
         events: deque,
         parameters: Dict[str, float],
         indicators_manager: IndicatorsManager = IndicatorsManager(),
     ):
-        super().__init__(context, order_manager, events, parameters, indicators_manager)
+        super().__init__(assets, order_manager, events, parameters, indicators_manager)
         self.commission = 0.001
 
-    def generate_signals(
-        self, context: Context, clock: Clock
-    ) -> List[Signal]:  # pragma: no cover
-        signals = []
-        candles = context.get_last_candles()
+    def current(
+        self, candles: List[Candle], clock: Clock
+    ) -> None:  # pragma: no cover
         margin_factor = self.parameters["margin_factor"]
-        for candle1 in candles:
-            for candle2 in candles:
+        for i in range(0, len(candles)):
+            candle1 = candles[i]
+            for j in range(i + 1, len(candles)):
+                candle2 = candles[j]
                 if (
                     candle1.asset.exchange == candle2.asset.exchange
                     or candle1.asset.symbol != candle2.asset.symbol
+                    or candle1.time_unit != candle2.time_unit
                 ):
                     continue
                 if candle1.volume == 0 or candle2.volume == 0:
@@ -64,7 +70,7 @@ class ArbitrageStrategy(Strategy):
                         confidence_level=1.0,
                         strategy=self.name,
                         asset=candle1.asset,
-                        root_candle_timestamp=context.current_timestamp,
+                        root_candle_timestamp=candle1.timestamp,
                         parameters={},
                         clock=clock,
                     )
@@ -74,7 +80,7 @@ class ArbitrageStrategy(Strategy):
                         confidence_level=1.0,
                         strategy=self.name,
                         asset=candle2.asset,
-                        root_candle_timestamp=context.current_timestamp,
+                        root_candle_timestamp=candle2.timestamp,
                         parameters={},
                         clock=clock,
                     )
@@ -87,5 +93,4 @@ class ArbitrageStrategy(Strategy):
                         strategy=self.name,
                         parameters={},
                     )
-                    signals.append(arbitrage_pair_signal)
-            return signals
+                    self.add_signal(arbitrage_pair_signal)

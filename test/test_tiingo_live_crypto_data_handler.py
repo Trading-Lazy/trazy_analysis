@@ -91,72 +91,30 @@ def test_parse_ticker_latest_data_points():
     )
     expected_candles = np.array(
         [
-            Candle(
-                asset=ASSET,
-                open=17042.224796462127,
-                high=17068.325134477574,
-                low=17041.08813324084,
-                close=17067.0207267784,
-                volume=44.99116858,
-                timestamp=datetime.strptime(
+            Candle(asset=ASSET, open=17042.224796462127, high=17068.325134477574, low=17041.08813324084,
+                   close=17067.0207267784, volume=44.99116858, timestamp=datetime.strptime(
                     "2017-12-13T00:00:00+0000", DATETIME_FORMAT
-                ),
-            ),
-            Candle(
-                asset=ASSET,
-                open=16912.399791210508,
-                high=16935.48154468411,
-                low=16898.50928968564,
-                close=16900.749140139273,
-                volume=85.58077693,
-                timestamp=datetime.strptime(
+                )),
+            Candle(asset=ASSET, open=16912.399791210508, high=16935.48154468411, low=16898.50928968564,
+                   close=16900.749140139273, volume=85.58077693, timestamp=datetime.strptime(
                     "2017-12-13T00:01:00+0000", DATETIME_FORMAT
-                ),
-            ),
-            Candle(
-                asset=ASSET,
-                open=17035.623180823583,
-                high=17060.86908710398,
-                low=17032.290027982737,
-                close=17059.25902662951,
-                volume=54.42578747,
-                timestamp=datetime.strptime(
+                )),
+            Candle(asset=ASSET, open=17035.623180823583, high=17060.86908710398, low=17032.290027982737,
+                   close=17059.25902662951, volume=54.42578747, timestamp=datetime.strptime(
                     "2017-12-13T00:02:00+0000", DATETIME_FORMAT
-                ),
-            ),
-            Candle(
-                asset=ASSET,
-                open=16978.25334442074,
-                high=17011.583797102718,
-                low=16974.70938582292,
-                close=16995.146302196226,
-                volume=112.06246923,
-                timestamp=datetime.strptime(
+                )),
+            Candle(asset=ASSET, open=16978.25334442074, high=17011.583797102718, low=16974.70938582292,
+                   close=16995.146302196226, volume=112.06246923, timestamp=datetime.strptime(
                     "2017-12-13T00:03:00+0000", DATETIME_FORMAT
-                ),
-            ),
-            Candle(
-                asset=ASSET,
-                open=17112.281365604864,
-                high=17278.87984139109,
-                low=17044.220843317977,
-                close=17134.611038665582,
-                volume=253.65318281000003,
-                timestamp=datetime.strptime(
+                )),
+            Candle(asset=ASSET, open=17112.281365604864, high=17278.87984139109, low=17044.220843317977,
+                   close=17134.611038665582, volume=253.65318281000003, timestamp=datetime.strptime(
                     "2017-12-13T00:04:00+0000", DATETIME_FORMAT
-                ),
-            ),
-            Candle(
-                asset=ASSET,
-                open=17238.0199449088,
-                high=17324.83886467445,
-                low=17234.716552011258,
-                close=17300.679665902073,
-                volume=69.91745618999998,
-                timestamp=datetime.strptime(
+                )),
+            Candle(asset=ASSET, open=17238.0199449088, high=17324.83886467445, low=17234.716552011258,
+                   close=17300.679665902073, volume=69.91745618999998, timestamp=datetime.strptime(
                     "2017-12-13T00:05:00+0000", DATETIME_FORMAT
-                ),
-            ),
+                )),
         ],
         dtype=Candle,
     )

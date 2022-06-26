@@ -232,11 +232,12 @@ FILE_STORAGE = MegaNzFileStorage()
 
 def test_feed():
     events = deque()
-    candles = {AAPL_ASSET: AAPL_CANDLES1, GOOGL_ASSET: GOOGL_CANDLES1}
-    feed = Feed(
-        events=events,
-        candles=candles,
-    )
+    time_unit = timedelta(minutes=1)
+    candles = {
+        AAPL_ASSET: {time_unit: AAPL_CANDLES1},
+        GOOGL_ASSET: {time_unit: GOOGL_CANDLES1},
+    }
+    feed = Feed(events=events, candles=candles)
 
     for i in range(0, 5):
         feed.update_latest_data()
@@ -244,13 +245,13 @@ def test_feed():
     events_list = list(events)
     assert len(events_list) == 5
 
-    assert events_list[0].candles[AAPL_ASSET][0] == AAPL_CANDLES1[0]
+    assert events_list[0].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[0]
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[1].candles[AAPL_ASSET][0] == AAPL_CANDLES1[1]
+    assert events_list[1].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[1]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[2].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[0]
+    assert events_list[2].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[0]
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[3].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[1]
+    assert events_list[3].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[1]
     assert isinstance(events_list[3], MarketDataEvent)
 
     assert events_list[4].assets == set([GOOGL_ASSET, AAPL_ASSET])
@@ -270,7 +271,7 @@ def test_live_feed(request_ticker_lastest_candles_mocked):
     tiingo_live_data_handler = TiingoLiveDataHandler()
     events = deque()
     live_feed = LiveFeed(
-        assets=[AAPL_ASSET, GOOGL_ASSET],
+        assets={AAPL_ASSET: timedelta(minutes=1), GOOGL_ASSET: timedelta(minutes=1)},
         live_data_handlers={"iex": tiingo_live_data_handler},
         events=events,
     )
@@ -281,23 +282,24 @@ def test_live_feed(request_ticker_lastest_candles_mocked):
     events_list = list(events)
     assert len(events_list) == 2
 
+    time_unit = timedelta(minutes=1)
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[AAPL_ASSET][0] == AAPL_CANDLES1[0]
+    assert events_list[0].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[0]
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[AAPL_ASSET][1] == AAPL_CANDLES1[1]
+    assert events_list[0].candles[AAPL_ASSET][time_unit][1] == AAPL_CANDLES1[1]
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[0]
+    assert events_list[0].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[0]
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[GOOGL_ASSET][1] == GOOGL_CANDLES1[1]
+    assert events_list[0].candles[GOOGL_ASSET][time_unit][1] == GOOGL_CANDLES1[1]
 
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[AAPL_ASSET][0] == AAPL_CANDLES2[0]
+    assert events_list[1].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES2[0]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[AAPL_ASSET][1] == AAPL_CANDLES2[1]
+    assert events_list[1].candles[AAPL_ASSET][time_unit][1] == AAPL_CANDLES2[1]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[0]
+    assert events_list[1].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES2[0]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[GOOGL_ASSET][1] == GOOGL_CANDLES2[1]
+    assert events_list[1].candles[GOOGL_ASSET][time_unit][1] == GOOGL_CANDLES2[1]
 
 
 @patch(
@@ -321,8 +323,9 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
             {},
         ),
     ]
+    time_unit = timedelta(minutes=1)
     historical_feed = HistoricalFeed(
-        [AAPL_ASSET, GOOGL_ASSET],
+        {AAPL_ASSET: time_unit, GOOGL_ASSET: time_unit},
         {EXCHANGE.lower(): tiingo_historical_data_handler},
         start,
         end,
@@ -336,24 +339,24 @@ def test_historical_feed(request_ticker_data_in_range_mocked):
     assert len(events_list) == 8
 
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[AAPL_ASSET][0] == AAPL_CANDLES1[0]
+    assert events_list[0].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[0]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[AAPL_ASSET][0] == AAPL_CANDLES1[1]
+    assert events_list[1].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[1]
 
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[AAPL_ASSET][0] == AAPL_CANDLES2[0]
+    assert events_list[2].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES2[0]
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[0]
+    assert events_list[2].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[0]
 
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[AAPL_ASSET][0] == AAPL_CANDLES2[1]
+    assert events_list[3].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES2[1]
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[1]
+    assert events_list[3].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[1]
 
     assert isinstance(events_list[4], MarketDataEvent)
-    assert events_list[4].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[0]
+    assert events_list[4].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES2[0]
     assert isinstance(events_list[5], MarketDataEvent)
-    assert events_list[5].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[1]
+    assert events_list[5].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES2[1]
 
     assert events_list[7].assets == set([AAPL_ASSET, GOOGL_ASSET])
     assert isinstance(events_list[7], MarketDataEndEvent)
@@ -373,38 +376,40 @@ def test_pandas_feed():
     events_list = list(events)
     assert len(events_list) == 8
 
+    time_unit = timedelta(minutes=1)
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[AAPL_ASSET][0] == AAPL_CANDLES1[0]
+    assert events_list[0].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[0]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[AAPL_ASSET][0] == AAPL_CANDLES1[1]
+    assert events_list[1].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[1]
 
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[AAPL_ASSET][0] == AAPL_CANDLES2[0]
+    assert events_list[2].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES2[0]
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[0]
+    assert events_list[2].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[0]
 
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[AAPL_ASSET][0] == AAPL_CANDLES2[1]
+    assert events_list[3].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES2[1]
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[1]
+    assert events_list[3].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[1]
 
     assert isinstance(events_list[4], MarketDataEvent)
-    assert events_list[4].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[0]
+    assert events_list[4].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES2[0]
     assert isinstance(events_list[5], MarketDataEvent)
-    assert events_list[5].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[1]
+    assert events_list[5].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES2[1]
 
-    assert events_list[7].assets == set([AAPL_ASSET, GOOGL_ASSET])
+    assert events_list[7].assets == {AAPL_ASSET, GOOGL_ASSET}
     assert isinstance(events_list[7], MarketDataEndEvent)
 
 
 def test_csv_feed():
     events = deque()
+    time_unit = timedelta(minutes=1)
     csv_feed = CsvFeed(
-        events=events,
         csv_filenames={
-            AAPL_ASSET: "test/data/aapl_candles.csv",
-            GOOGL_ASSET: "test/data/googl_candles.csv",
+            AAPL_ASSET: {time_unit: "test/data/aapl_candles.csv"},
+            GOOGL_ASSET: {time_unit: "test/data/googl_candles.csv"},
         },
+        events=events,
     )
 
     for i in range(0, 8):
@@ -414,26 +419,26 @@ def test_csv_feed():
     assert len(events_list) == 8
 
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[AAPL_ASSET][0] == AAPL_CANDLES1[0]
+    assert events_list[0].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[0]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[AAPL_ASSET][0] == AAPL_CANDLES1[1]
+    assert events_list[1].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES1[1]
 
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[AAPL_ASSET][0] == AAPL_CANDLES2[0]
+    assert events_list[2].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES2[0]
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[0]
+    assert events_list[2].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[0]
 
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[AAPL_ASSET][0] == AAPL_CANDLES2[1]
+    assert events_list[3].candles[AAPL_ASSET][time_unit][0] == AAPL_CANDLES2[1]
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[GOOGL_ASSET][0] == GOOGL_CANDLES1[1]
+    assert events_list[3].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES1[1]
 
     assert isinstance(events_list[4], MarketDataEvent)
-    assert events_list[4].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[0]
+    assert events_list[4].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES2[0]
     assert isinstance(events_list[5], MarketDataEvent)
-    assert events_list[5].candles[GOOGL_ASSET][0] == GOOGL_CANDLES2[1]
+    assert events_list[5].candles[GOOGL_ASSET][time_unit][0] == GOOGL_CANDLES2[1]
 
-    assert events_list[7].assets == set([AAPL_ASSET, GOOGL_ASSET])
+    assert events_list[7].assets == {AAPL_ASSET, GOOGL_ASSET}
     assert isinstance(events_list[7], MarketDataEndEvent)
 
 
@@ -456,8 +461,9 @@ def test_external_storage_feed(get_file_content_mocked):
         )
     ]
     events = deque()
+    time_unit = timedelta(minutes=1)
     external_storage_feed = ExternalStorageFeed(
-        assets=[IVV_ASSET],
+        assets={IVV_ASSET: time_unit},
         start=datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         end=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
         events=events,
@@ -523,15 +529,16 @@ def test_external_storage_feed(get_file_content_mocked):
     assert len(events_list) == 7
 
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[IVV_ASSET][0] == file_content_valid_candles[0]
+    assert events_list[0].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[0]
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[IVV_ASSET][0] == file_content_valid_candles[1]
+    assert events_list[1].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[1]
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[IVV_ASSET][0] == file_content_valid_candles[2]
+    assert events_list[2].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[2]
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[IVV_ASSET][0] == file_content_valid_candles[3]
+    assert events_list[3].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[3]
     assert isinstance(events_list[4], MarketDataEvent)
-    assert events_list[4].candles[IVV_ASSET][0] == Candle(
+    print(str(events_list[4].candles[IVV_ASSET][time_unit][0]))
+    assert events_list[4].candles[IVV_ASSET][time_unit][0] == Candle(
         asset=IVV_ASSET,
         open=93.98,
         high=93.98,
@@ -541,6 +548,6 @@ def test_external_storage_feed(get_file_content_mocked):
         timestamp=datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     )
     assert isinstance(events_list[5], MarketDataEvent)
-    assert events_list[5].candles[IVV_ASSET][0] == CANDLES[0]
+    assert events_list[5].candles[IVV_ASSET][time_unit][0] == CANDLES[0]
     assert isinstance(events_list[6], MarketDataEndEvent)
-    assert events_list[6].assets == set([IVV_ASSET])
+    assert events_list[6].assets == {IVV_ASSET}

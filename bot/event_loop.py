@@ -2,18 +2,19 @@ import os
 from collections import deque
 from datetime import timedelta
 from threading import Thread
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 
 import trazy_analysis.logger
 import trazy_analysis.settings
 from trazy_analysis.common.constants import MAX_TIMESTAMP
+from trazy_analysis.common.helper import get_or_create_nested_dict, normalize_assets
 from trazy_analysis.feed.feed import Feed
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import Action, Direction, EventType, Isolation
+from trazy_analysis.models.enums import Action, Direction, EventType, BrokerIsolation, StrategyParametersIsolation
 from trazy_analysis.models.event import (
     AssetSpecificEvent,
     DataEvent,
@@ -23,7 +24,7 @@ from trazy_analysis.models.event import (
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.statistics.statistics_manager import StatisticsManager
 from trazy_analysis.strategy.context import Context
-from trazy_analysis.strategy.strategy import Strategy
+from trazy_analysis.strategy.strategy import StrategyBase, Strategy, MultiAssetsStrategy
 
 LOG = trazy_analysis.logger.get_root_logger(
     __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
@@ -75,9 +76,22 @@ class EventLoop:
         self, strategy_class: type, parameters: Dict[str, float]
     ):
         if issubclass(strategy_class, Strategy):
+            for asset in self.assets:
+                for time_unit in self.assets[asset]:
+                    self.strategy_instances.append(
+                        strategy_class(
+                            asset,
+                            time_unit,
+                            self.order_manager,
+                            self.events,
+                            parameters,
+                            self.indicators_manager,
+                        )
+                    )
+        elif issubclass(strategy_class, MultiAssetsStrategy):
             self.strategy_instances.append(
                 strategy_class(
-                    self.context,
+                    self.assets,
                     self.order_manager,
                     self.events,
                     parameters,
@@ -92,9 +106,11 @@ class EventLoop:
 
     def _init_seen_candles(self):
         for asset in self.assets:
-            self.seen_candles[asset] = ExpiringSet()
+            get_or_create_nested_dict(self.seen_candles, asset)
+            for time_unit in self.assets[asset]:
+                self.seen_candles[asset][time_unit] = ExpiringSet()
 
-    def run_strategy(self, strategy: Strategy):
+    def run_strategy(self, strategy: StrategyBase):
         strategy.process_context(self.context, self.clock)
 
     def update_equity_curves(self):
@@ -222,20 +238,17 @@ class EventLoop:
                     return
 
             portfolio = self.broker_manager.get_broker(exchange).portfolio
-            self.statistics_manager.set_transactions(
-                [
-                    (
-                        transaction.timestamp,
-                        transaction.size
-                        if transaction.action == Action.BUY
-                        else -transaction.size,
-                        transaction.price,
-                        transaction.asset.key(),
-                    )
-                    for transaction in portfolio.transactions
-                ],
-                exchange,
-            )
+            self.statistics_manager.set_transactions([
+                (
+                    transaction.timestamp,
+                    transaction.size
+                    if transaction.action == Action.BUY
+                    else -transaction.size,
+                    transaction.price,
+                    transaction.asset.key(),
+                )
+                for transaction in portfolio.transactions
+            ], exchange)
 
     def update_transactions_dfs(self):
         exchanges = {asset.exchange for asset in self.assets}
@@ -247,12 +260,9 @@ class EventLoop:
                 ).set_index("Date")
                 self.statistics_manager.set_transactions_dfs(transactions_df, exchange)
             else:
-                self.statistics_manager.set_transactions_dfs(
-                    pd.DataFrame(
-                        columns=["Date", "amount", "price", "symbol"]
-                    ).set_index("Date"),
-                    exchange,
-                )
+                self.statistics_manager.set_transactions_dfs(pd.DataFrame(
+                    columns=["Date", "amount", "price", "symbol"]
+                ).set_index("Date"), exchange)
 
     def run_strategies(self):
         for strategy in self.strategy_instances:
@@ -298,7 +308,7 @@ class EventLoop:
     def __init__(
         self,
         events: deque,
-        assets: List[Asset],
+        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
         feed: Feed,
         order_manager: OrderManager,
         indicators_manager: IndicatorsManager,
@@ -306,20 +316,21 @@ class EventLoop:
         live=False,
         close_at_end_of_day=True,
         close_at_end_of_data=True,
-        isolation=Isolation.EXCHANGE,
+        strategy_parameters_isolation=StrategyParametersIsolation.STRATEGY,
+        broker_isolation=BrokerIsolation.EXCHANGE,
         statistics_class: type = None,
     ):
         self.events: deque = events
         self.asset_delayed_events = {}
         self.delayed_events = []
-        self.assets = sorted(set(assets))
+        self.assets = normalize_assets(assets)
         self.feed = feed
         self.order_manager = order_manager
         self.broker_manager = self.order_manager.broker_manager
         self.clock = self.order_manager.clock
         self.indicators_manager = indicators_manager
         self.strategies_parameters = strategies_parameters
-        self.strategy_instances: List[Strategy] = []
+        self.strategy_instances: List[StrategyBase] = []
         self.context = Context(assets=self.assets)
         self._init_strategy_instances()
         self.indicators_manager.warmup()
@@ -331,8 +342,9 @@ class EventLoop:
         self.last_update = None
         self.signals_and_orders_last_update = None
         self.current_timestamp = MAX_TIMESTAMP
-        self.isolation = isolation
-        self.statistics_manager = StatisticsManager(isolation=self.isolation)
+        self.strategy_parameters_isolation = strategy_parameters_isolation
+        self.broker_isolation = broker_isolation
+        self.statistics_manager = StatisticsManager(isolation=self.broker_isolation)
         self.statistics_class = statistics_class
         self.statistics_df = None
 
@@ -384,29 +396,29 @@ class EventLoop:
                         self.delayed_events.append(event)
                     continue
 
-                if event.type == EventType.MARKET_DATA:
+                if event.event_type == EventType.MARKET_DATA:
                     candles_dict = event.candles
-                    eod_assets = []
+                    eod_assets = {}
                     for asset in candles_dict:
-                        candles = candles_dict[asset]
-                        for candle in candles:
-                            timestamp_str = str(candle.timestamp)
-                            if timestamp_str in self.seen_candles[candle.asset]: #or (
-                                #candle.timestamp
-                                #< (self.clock.current_time() - candle.asset.time_unit)
-                            #):
-                                # LOG.info(
-                                #    "Candle with asset %s and timestamp %s has already been processed",
-                                #    candle.asset,
-                                #    timestamp_str,
-                                # )
-                                continue
-                            self.seen_candles[candle.asset].add(timestamp_str)
-                            self.context.add_candle(candle)
-                            self.handle_asset_delayed_events(candle)
-                            self.handle_delayed_events()
-                            if self.close_at_end_of_day and self.clock.end_of_day():
-                                eod_assets.append(candle.asset)
+                        for time_unit in candles_dict[asset]:
+                            candles = candles_dict[asset][time_unit]
+                            for candle in candles:
+                                timestamp_str = str(candle.timestamp)
+                                if (
+                                    timestamp_str
+                                    in self.seen_candles[candle.asset][candle.time_unit]
+                                ):
+                                    continue
+                                self.seen_candles[candle.asset][candle.time_unit].add(
+                                    timestamp_str
+                                )
+                                self.context.add_candle(candle)
+                                self.handle_asset_delayed_events(candle)
+                                self.handle_delayed_events()
+                                if self.close_at_end_of_day and self.clock.end_of_day():
+                                    if asset not in eod_assets:
+                                        eod_assets[asset] = []
+                                    eod_assets[asset].append(candle.time_unit)
                     candles_are_processed = False
                     while not candles_are_processed:
                         self.context.update()
@@ -421,9 +433,9 @@ class EventLoop:
                         )
                         for candle in last_candles:
                             LOG.info("Process new candle: %s", candle.to_json())
-                            self.indicators_manager.RollingWindow(candle.asset).push(
-                                candle
-                            )
+                            self.indicators_manager.RollingWindow(
+                                candle.asset, candle.time_unit
+                            ).push(candle)
                             self.broker_manager.get_broker(
                                 candle.asset.exchange
                             ).update_price(candle)
@@ -436,9 +448,7 @@ class EventLoop:
                         bars_delay = 0
                         if not self.live:
                             bars_delay = 1
-                        timestamp = min(
-                            [self.clock.current_time() for asset in eod_assets]
-                        )
+                        timestamp = min([self.clock.current_time() for _ in eod_assets])
                         self.events.append(
                             MarketEodDataEvent(
                                 assets=eod_assets,
@@ -446,22 +456,22 @@ class EventLoop:
                                 bars_delay=bars_delay,
                             )
                         )
-                elif event.type == EventType.OPEN_ORDERS:
+                elif event.event_type == EventType.OPEN_ORDERS:
                     for exchange in self.broker_manager.brokers:
                         self.broker_manager.get_broker(exchange).execute_open_orders()
-                elif event.type == EventType.PENDING_SIGNAL:
+                elif event.event_type == EventType.PENDING_SIGNAL:
                     self.order_manager.process_pending_signals()
-                elif event.type == EventType.MARKET_EOD_DATA:
+                elif event.event_type == EventType.MARKET_EOD_DATA:
                     assets = event.assets
                     for asset in assets:
                         self.broker_manager.get_broker(
                             asset.exchange
                         ).close_all_open_positions(asset)
-                elif event.type == EventType.SIGNAL:
+                elif event.event_type == EventType.SIGNAL:
                     signals = event.signals
                     for signal in signals:
                         self.order_manager.check_signal(signal)
-                elif event.type == EventType.MARKET_DATA_END:
+                elif event.event_type == EventType.MARKET_DATA_END:
                     if self.close_at_end_of_data:
                         assets = event.assets
                         for asset in assets:
@@ -483,12 +493,8 @@ class EventLoop:
                                 continue
                             self.statistics_df = self.statistics_class(
                                 equity=self.statistics_manager.get_equity_dfs(exchange),
-                                positions=self.statistics_manager.get_positions_dfs(
-                                    exchange
-                                ),
-                                transactions=self.statistics_manager.get_transactions_dfs(
-                                    exchange
-                                ),
+                                positions=self.statistics_manager.get_positions_dfs(exchange),
+                                transactions=self.statistics_manager.get_transactions_dfs(exchange),
                             ).get_tearsheet()
                             print(self.statistics_manager.get_equity_dfs(exchange))
                             print(self.statistics_df)

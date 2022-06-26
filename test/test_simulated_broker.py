@@ -1,5 +1,5 @@
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -459,11 +459,16 @@ def test_execute_market_order():
 
 
 def test_execute_limit_order():
-    assets = [AAPL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {AAPL_ASSET: "test/data/aapl_candles_one_day_limit_order.csv"}, events
+        csv_filenames={
+            AAPL_ASSET: {
+                timedelta(minutes=1): "test/data/aapl_candles_one_day_limit_order.csv"
+            }
+        },
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
@@ -500,11 +505,16 @@ def test_execute_limit_order():
 
 
 def test_execute_stop_order():
-    assets = [AAPL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {AAPL_ASSET: "test/data/aapl_candles_one_day_stop_order.csv"}, events
+        csv_filenames={
+            AAPL_ASSET: {
+                timedelta(minutes=1): "test/data/aapl_candles_one_day_stop_order.csv"
+            }
+        },
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
@@ -541,11 +551,16 @@ def test_execute_stop_order():
 
 
 def test_execute_target_order():
-    assets = [AAPL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {AAPL_ASSET: "test/data/aapl_candles_one_day_target_order.csv"}, events
+        csv_filenames={
+            AAPL_ASSET: {
+                timedelta(minutes=1): "test/data/aapl_candles_one_day_target_order.csv"
+            }
+        },
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
@@ -582,12 +597,18 @@ def test_execute_target_order():
 
 
 def test_execute_trailing_stop_order():
-    assets = [AAPL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {AAPL_ASSET: "test/data/aapl_candles_one_day_trailing_stop_order.csv"},
-        events,
+        csv_filenames={
+            AAPL_ASSET: {
+                timedelta(
+                    minutes=1
+                ): "test/data/aapl_candles_one_day_trailing_stop_order.csv"
+            }
+        },
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
@@ -624,11 +645,16 @@ def test_execute_trailing_stop_order():
 
 
 def test_execute_cover_order():
-    assets = [AAPL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
+        csv_filenames={
+            AAPL_ASSET: {
+                timedelta(minutes=1): "test/data/aapl_candles_one_day_cover_order.csv"
+            }
+        },
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
@@ -665,11 +691,16 @@ def test_execute_cover_order():
 
 
 def test_execute_bracket_order():
-    assets = [AAPL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1)}
     events = deque()
 
     feed: Feed = CsvFeed(
-        {AAPL_ASSET: "test/data/aapl_candles_one_day_cover_order.csv"}, events
+        csv_filenames={
+            AAPL_ASSET: {
+                timedelta(minutes=1): "test/data/aapl_candles_one_day_cover_order.csv"
+            }
+        },
+        events=events,
     )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}

@@ -16,7 +16,7 @@ SIGNAL1 = Signal(
     asset=IVV_ASSET,
     action=Action.BUY,
     direction=Direction.LONG,
-    confidence_level="0.05",
+    confidence_level=0.05,
     strategy="SmaCrossoverStrategy",
     root_candle_timestamp=datetime.strptime(
         "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
@@ -25,7 +25,7 @@ SIGNAL1 = Signal(
     clock=clock,
 )
 SIGNAL1_DICT = {
-    "asset": {"symbol": "IVV", "exchange": "IEX", "time_unit": "0:01:00"},
+    "asset": {"symbol": "IVV", "exchange": "IEX"},
     "action": "BUY",
     "direction": "LONG",
     "confidence_level": "0.05",

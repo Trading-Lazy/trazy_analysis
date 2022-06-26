@@ -30,100 +30,50 @@ AAPL_SYMBOL = "AAPL"
 AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 AAPL_CANDLES1 = np.array(
     [
-        Candle(
-            asset=AAPL_ASSET,
-            open=355.15,
-            high=355.15,
-            low=353.74,
-            close=353.84,
-            volume=3254,
-            timestamp=datetime.strptime(
-                "2020-06-11 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-            ),
-        ),
-        Candle(
-            asset=AAPL_ASSET,
-            open=354.28,
-            high=354.96,
-            low=353.96,
-            close=354.78,
-            volume=2324,
-            timestamp=datetime.strptime(
-                "2020-06-13 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-            ),
-        ),
+        Candle(asset=AAPL_ASSET, open=355.15, high=355.15, low=353.74, close=353.84, volume=3254,
+               timestamp=datetime.strptime(
+                   "2020-06-11 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+               )),
+        Candle(asset=AAPL_ASSET, open=354.28, high=354.96, low=353.96, close=354.78, volume=2324,
+               timestamp=datetime.strptime(
+                   "2020-06-13 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+               )),
     ],
     dtype=Candle,
 )
-AAPL_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(
-    asset=AAPL_ASSET, candles=AAPL_CANDLES1
-)
+AAPL_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=AAPL_CANDLES1)
 
 AAPL_CANDLES2 = np.array(
     [
-        Candle(
-            asset=AAPL_ASSET,
-            open=354.92,
-            high=355.32,
-            low=354.09,
-            close=354.09,
-            volume=1123,
-            timestamp=datetime.strptime(
-                "2020-06-15 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-            ),
-        ),
+        Candle(asset=AAPL_ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
+               timestamp=datetime.strptime(
+                   "2020-06-15 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+               )),
     ],
     dtype=Candle,
 )
-AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(
-    asset=AAPL_ASSET, candles=AAPL_CANDLES2
-)
+AAPL_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=AAPL_CANDLES2)
 AAPL_CANDLES3 = np.array(
     [
-        Candle(
-            asset=AAPL_ASSET,
-            open=354.25,
-            high=354.59,
-            low=354.14,
-            close=354.59,
-            volume=2613,
-            timestamp=datetime.strptime(
-                "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-            ),
-        ),
-        Candle(
-            asset=AAPL_ASSET,
-            open=354.22,
-            high=354.26,
-            low=353.95,
-            close=353.98,
-            volume=1186,
-            timestamp=datetime.strptime(
-                "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
-            ),
-        ),
-        Candle(
-            asset=AAPL_ASSET,
-            open=354.13,
-            high=354.26,
-            low=353.01,
-            close=353.30,
-            volume=1536,
-            timestamp=datetime.strptime(
-                "2020-06-19 13:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
-            ),
-        ),
+        Candle(asset=AAPL_ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
+               timestamp=datetime.strptime(
+                   "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+               )),
+        Candle(asset=AAPL_ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
+               timestamp=datetime.strptime(
+                   "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+               )),
+        Candle(asset=AAPL_ASSET, open=354.13, high=354.26, low=353.01, close=353.30, volume=1536,
+               timestamp=datetime.strptime(
+                   "2020-06-19 13:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+               )),
     ],
     dtype=Candle,
 )
-AAPL_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(
-    asset=AAPL_ASSET, candles=AAPL_CANDLES3
-)
+AAPL_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=AAPL_CANDLES3)
 
 AAPL_CANDLES = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2, AAPL_CANDLES3])
-AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
-    asset=AAPL_ASSET, candles=AAPL_CANDLES
-)
+AAPL_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=AAPL_CANDLES)
 
 
 def test_parse_ticker_data_tiingo():
@@ -138,39 +88,33 @@ def test_parse_ticker_data_tiingo():
     groups_df = TiingoHistoricalDataHandler.group_ticker_data_by_date(IVV_ASSET, data)
     expected_dates = ["20200617", "20200618"]
     expected_dfs = [
-        CandleDataFrame.from_dataframe(
-            pd.DataFrame(
-                {
-                    "timestamp": [
-                        "2020-06-17 19:59:00+00:00",
-                        "2020-06-17 20:00:00+00:00",
-                    ],
-                    "open": ["355.15", "354.28"],
-                    "high": ["355.15", "354.96"],
-                    "low": ["353.74", "353.96"],
-                    "close": ["353.84", "354.78"],
-                    "volume": [3254, 2324],
-                }
-            ),
-            IVV_ASSET,
-        ),
-        CandleDataFrame.from_dataframe(
-            pd.DataFrame(
-                {
-                    "timestamp": [
-                        "2020-06-18 13:30:00+00:00",
-                        "2020-06-18 13:31:00+00:00",
-                        "2020-06-18 13:32:00+00:00",
-                    ],
-                    "open": ["354.92", "354.25", "354.22"],
-                    "high": ["355.32", "354.59", "354.26"],
-                    "low": ["354.09", "354.14", "353.95"],
-                    "close": ["354.09", "354.59", "353.98"],
-                    "volume": [1123, 2613, 1186],
-                }
-            ),
-            IVV_ASSET,
-        ),
+        CandleDataFrame.from_dataframe(pd.DataFrame(
+            {
+                "timestamp": [
+                    "2020-06-17 19:59:00+00:00",
+                    "2020-06-17 20:00:00+00:00",
+                ],
+                "open": ["355.15", "354.28"],
+                "high": ["355.15", "354.96"],
+                "low": ["353.74", "353.96"],
+                "close": ["353.84", "354.78"],
+                "volume": [3254, 2324],
+            }
+        ), IVV_ASSET),
+        CandleDataFrame.from_dataframe(pd.DataFrame(
+            {
+                "timestamp": [
+                    "2020-06-18 13:30:00+00:00",
+                    "2020-06-18 13:31:00+00:00",
+                    "2020-06-18 13:32:00+00:00",
+                ],
+                "open": ["354.92", "354.25", "354.22"],
+                "high": ["355.32", "354.59", "354.26"],
+                "low": ["354.09", "354.14", "353.95"],
+                "close": ["354.09", "354.59", "353.98"],
+                "volume": [1123, 2613, 1186],
+            }
+        ), IVV_ASSET),
     ]
 
     idx = 0
@@ -437,45 +381,22 @@ def test_request_ticker_data_for_period_tiingo(
 
     expected_candles = np.array(
         [
-            Candle(
-                asset=IVV_ASSET,
-                open=354.28,
-                high=354.96,
-                low=353.96,
-                close=354.78,
-                volume=2324,
-                timestamp=datetime.strptime(
-                    "2020-06-18 19:59:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=IVV_ASSET,
-                open=354.92,
-                high=355.32,
-                low=354.09,
-                close=354.09,
-                volume=1123,
-                timestamp=datetime.strptime(
-                    "2020-06-18 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=IVV_ASSET,
-                open=354.25,
-                high=354.59,
-                low=354.14,
-                close=354.59,
-                volume=2613,
-                timestamp=datetime.strptime(
-                    "2020-06-19 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
+            Candle(asset=IVV_ASSET, open=354.28, high=354.96, low=353.96, close=354.78, volume=2324,
+                   timestamp=datetime.strptime(
+                       "2020-06-18 19:59:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=IVV_ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
+                   timestamp=datetime.strptime(
+                       "2020-06-18 20:00:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=IVV_ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
+                   timestamp=datetime.strptime(
+                       "2020-06-19 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
         ],
         dtype=Candle,
     )
-    expected_candle_dataframe = CandleDataFrame.from_candle_list(
-        asset=IVV_ASSET, candles=expected_candles
-    )
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(asset=IVV_ASSET, candles=expected_candles)
     none_response_periods = set()
     error_response_periods = {}
     candle_dataframe = TiingoHistoricalDataHandler.request_ticker_data_for_period(
@@ -563,39 +484,18 @@ def test_request_ticker_data_for_period_iex(content_mocked, request_ticker_data_
 
     expected_candles = np.array(
         [
-            Candle(
-                asset=IVV_ASSET,
-                open=192.94,
-                high=193.27,
-                low=192.89,
-                close=192.9,
-                volume=2345,
-                timestamp=datetime.strptime(
-                    "2019-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=IVV_ASSET,
-                open=192.6,
-                high=192.6,
-                low=192.3,
-                close=192.3,
-                volume=1350,
-                timestamp=datetime.strptime(
-                    "2019-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=IVV_ASSET,
-                open=192.22,
-                high=192.46,
-                low=192.22,
-                close=192.29,
-                volume=756,
-                timestamp=datetime.strptime(
-                    "2019-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
+            Candle(asset=IVV_ASSET, open=192.94, high=193.27, low=192.89, close=192.9, volume=2345,
+                   timestamp=datetime.strptime(
+                       "2019-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=IVV_ASSET, open=192.6, high=192.6, low=192.3, close=192.3, volume=1350,
+                   timestamp=datetime.strptime(
+                       "2019-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=IVV_ASSET, open=192.22, high=192.46, low=192.22, close=192.29, volume=756,
+                   timestamp=datetime.strptime(
+                       "2019-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
         ],
         dtype=Candle,
     )
@@ -671,9 +571,7 @@ def test_request_ticker_data_for_period_error_iex(
 )
 def test_request_ticker_data_from_periods(request_ticker_data_for_period_mocked):
     expected_candles = np.concatenate([AAPL_CANDLES1, AAPL_CANDLES2, AAPL_CANDLES3])
-    expected_candle_dataframe = CandleDataFrame.from_candle_list(
-        asset=AAPL_ASSET, candles=expected_candles
-    )
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=expected_candles)
     request_ticker_data_for_period_mocked.side_effect = [
         AAPL_CANDLE_DATAFRAME1,
         AAPL_CANDLE_DATAFRAME2,
@@ -722,9 +620,7 @@ def test_request_ticker_data_in_range(request_ticker_data_from_periods_mocked):
     )
     start = datetime.strptime("2020-06-11 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z")
     end = datetime.strptime("2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z")
-    expected_candle_dataframe = CandleDataFrame.from_candle_list(
-        asset=AAPL_ASSET, candles=AAPL_CANDLES[1:-1]
-    )
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=AAPL_CANDLES[1:-1])
     TiingoHistoricalDataHandler.MAX_DOWNLOAD_FRAME = timedelta(days=3)
     (
         candle_dataframe,

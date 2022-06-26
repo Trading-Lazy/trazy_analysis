@@ -171,17 +171,13 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
                     minutes=1
                 )
                 candle_dataframe = candle_dataframe.loc[limit_timestamp:end]
-                candle_dataframe = CandleDataFrame.concat(
-                    [end_candle_dataframe, candle_dataframe], asset=ticker
-                )
+                candle_dataframe = CandleDataFrame.concat([end_candle_dataframe, candle_dataframe], asset=ticker)
             else:
                 limit_timestamp = end_candle_dataframe.iloc[0].name - timedelta(
                     minutes=1
                 )
                 candle_dataframe = candle_dataframe.loc[start:limit_timestamp]
-                candle_dataframe = CandleDataFrame.concat(
-                    [candle_dataframe, end_candle_dataframe], asset=ticker
-                )
+                candle_dataframe = CandleDataFrame.concat([candle_dataframe, end_candle_dataframe], asset=ticker)
 
         candle_dataframe = fill_missing_datetimes(
             df=candle_dataframe, time_unit=timedelta(minutes=1)

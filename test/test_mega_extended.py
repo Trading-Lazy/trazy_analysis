@@ -98,7 +98,7 @@ def mega_extended_fixture():
 @patch("mega.Mega.login")
 def test_login(login_mocked, mega_extended_fixture):
     MEGA_EXTENDED.login(EMAIL, PASSWORD)
-    calls = [call(EMAIL, PASSWORD)]
+    calls = [call()]
     login_mocked.assert_has_calls(calls)
 
 

@@ -12,10 +12,9 @@ import pytz
 
 
 def test_smart_money_concept():
-    assets = [
-        Asset(symbol="BTCUSDT", exchange="BINANCE", time_unit=timedelta(minutes=1)),
-        Asset(symbol="BTCUSDT", exchange="BINANCE", time_unit=timedelta(minutes=5))
-    ]
+    assets = {
+        Asset(symbol="BTCUSDT", exchange="BINANCE"): timedelta(minutes=1)
+    }
     start = datetime(2022, 5, 17, 23, 57, 0, 0, tzinfo=pytz.UTC)
     end = datetime(2022, 5, 25, 0, 0, 0, 0, tzinfo=pytz.UTC)
     db_storage = InfluxDbStorage()
@@ -85,7 +84,7 @@ def test_plot():
         file_storage=None,
         market_cal=None,
     )
-    df = feed.candle_dataframes[ASSET]
+    df = feed.candle_dataframes[ASSET][timedelta(minutes=1)]
 
     fig = go.Figure(
         data=[

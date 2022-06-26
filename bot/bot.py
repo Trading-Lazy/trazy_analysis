@@ -23,7 +23,7 @@ from trazy_analysis.order_manager.position_sizer import PositionSizer
 from trazy_analysis.strategy.strategies.sma_crossover_strategy import (
     SmaCrossoverStrategy,
 )
-from trazy_analysis.strategy.strategy import Strategy
+from trazy_analysis.strategy.strategy import StrategyBase
 
 EXCHANGE = "IEX"
 
@@ -50,7 +50,7 @@ def get_strategies_classes(
             if (
                 strategy_class
                 and inspect.isclass(strategy_class)
-                and issubclass(strategy_class, Strategy)
+                and issubclass(strategy_class, StrategyBase)
             ):
                 strategies_classes.add(strategy_class)
     return list(strategies_classes)

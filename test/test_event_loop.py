@@ -1,5 +1,5 @@
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import call, patch
 
 from trazy_analysis.bot.event_loop import EventLoop
@@ -41,12 +41,18 @@ MARKET_CAL = EUREXExchangeCalendar()
 CLOCK = SimulatedClock()
 EVENTS = deque()
 FEED = CsvFeed(
-    {Asset(symbol="AAPL", exchange="IEX"): "test/data/aapl_candles_one_day.csv"}, EVENTS
+    csv_filenames={
+        Asset(symbol="AAPL", exchange="IEX"): {
+            timedelta(minutes=1): "test/data/aapl_candles_one_day.csv"
+        }
+    },
+    events=EVENTS,
 )
 
 
 def test_init_live():
-    assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
+    time_unit = timedelta(minutes=1)
+    assets = {AAPL_ASSET: time_unit, GOOGL_ASSET: time_unit}
     strategies_classes = {
         SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS,
         IdleStrategy: IdleStrategy.DEFAULT_PARAMETERS,
@@ -69,21 +75,24 @@ def test_init_live():
         live=True,
     )
 
-    assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
+    assert event_loop.assets == {AAPL_ASSET: [time_unit], GOOGL_ASSET: [time_unit]}
     assert event_loop.strategies_parameters == strategies_classes
 
-    assert len(event_loop.strategy_instances) == 2
+    assert len(event_loop.strategy_instances) == 4
     assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
-    assert isinstance(event_loop.context.candles[AAPL_ASSET], deque)
-    assert len(event_loop.context.candles[AAPL_ASSET]) == 0
-    assert isinstance(event_loop.context.candles[GOOGL_ASSET], deque)
-    assert len(event_loop.context.candles[GOOGL_ASSET]) == 0
+    assert isinstance(event_loop.context.candles[AAPL_ASSET][time_unit], deque)
+    assert len(event_loop.context.candles[AAPL_ASSET][time_unit]) == 0
+    assert isinstance(event_loop.context.candles[GOOGL_ASSET][time_unit], deque)
+    assert len(event_loop.context.candles[GOOGL_ASSET][time_unit]) == 0
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
+    assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
+    assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
+    assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
 
 
 def test_init_backtest():
-    assets = [AAPL_ASSET, GOOGL_ASSET, AAPL_ASSET]
+    time_unit = timedelta(minutes=1)
+    assets = {AAPL_ASSET: timedelta(minutes=1), GOOGL_ASSET: timedelta(minutes=1)}
     strategies_classes = {
         SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS,
         IdleStrategy: IdleStrategy.DEFAULT_PARAMETERS,
@@ -105,24 +114,26 @@ def test_init_backtest():
         strategies_parameters=strategies_classes,
     )
 
-    assert event_loop.assets == [AAPL_ASSET, GOOGL_ASSET]
+    assert event_loop.assets == {AAPL_ASSET: [time_unit], GOOGL_ASSET: [time_unit]}
     assert event_loop.strategies_parameters == strategies_classes
 
-    assert len(event_loop.strategy_instances) == 2
+    assert len(event_loop.strategy_instances) == 4
     assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
-    assert isinstance(event_loop.context.candles[AAPL_ASSET], deque)
-    assert len(event_loop.context.candles[AAPL_ASSET]) == 0
-    assert isinstance(event_loop.context.candles[GOOGL_ASSET], deque)
-    assert len(event_loop.context.candles[GOOGL_ASSET]) == 0
+    assert isinstance(event_loop.context.candles[AAPL_ASSET][time_unit], deque)
+    assert len(event_loop.context.candles[AAPL_ASSET][time_unit]) == 0
+    assert isinstance(event_loop.context.candles[GOOGL_ASSET][time_unit], deque)
+    assert len(event_loop.context.candles[GOOGL_ASSET][time_unit]) == 0
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
+    assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
+    assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
+    assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
 
 
 @patch(
     "trazy_analysis.strategy.strategies.sma_crossover_strategy.SmaCrossoverStrategy.process_context"
 )
 def test_run_strategy(process_context):
-    assets = [AAPL_ASSET, GOOGL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1), GOOGL_ASSET: timedelta(minutes=1)}
     strategies_classes = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
     broker = SimulatedBroker(clock=CLOCK, events=EVENTS, initial_funds=FUND)
     position_sizer = PositionSizer(broker)
@@ -146,7 +157,7 @@ def test_run_strategy(process_context):
 
 @patch("trazy_analysis.bot.event_loop.EventLoop.run_strategy")
 def test_run_strategies(run_strategy_mocked):
-    assets = [AAPL_ASSET, GOOGL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1), GOOGL_ASSET: timedelta(minutes=1)}
     strategies_classes = {
         SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS,
         IdleStrategy: IdleStrategy.DEFAULT_PARAMETERS,
@@ -178,7 +189,7 @@ def test_run_strategies(run_strategy_mocked):
 
 
 def test_run_backtest():
-    assets = [AAPL_ASSET, GOOGL_ASSET]
+    assets = {AAPL_ASSET: timedelta(minutes=1), GOOGL_ASSET: timedelta(minutes=1)}
     strategies_classes = {
         SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS,
         IdleStrategy: IdleStrategy.DEFAULT_PARAMETERS,

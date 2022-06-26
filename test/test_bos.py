@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import List, Tuple
 
 import numpy as np
@@ -199,7 +200,7 @@ def test_bos_stream_handle_new_data_source_is_rolling_window_stream():
 
 def test_bos_stream_handle_new_data_source_is_filled():
     indicator_data = Indicator()
-    loader = CsvLoader(csv_filenames={ASSET: "test/data/bos.csv"})
+    loader = CsvLoader(csv_filenames={ASSET: {timedelta(minutes=1): "test/data/bos.csv"}})
     loader.load()
     candles = loader.candles[ASSET]
     rolling_window_stream = RollingWindow(

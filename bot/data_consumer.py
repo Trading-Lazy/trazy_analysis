@@ -11,7 +11,7 @@ from trazy_analysis.db_storage.db_storage import DbStorage
 from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.candle import Candle
 from trazy_analysis.order_manager.order_manager import OrderManager
-from trazy_analysis.strategy.strategy import Strategy
+from trazy_analysis.strategy.strategy import StrategyBase
 
 LOG = trazy_analysis.logger.get_root_logger(
     __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
@@ -21,7 +21,7 @@ LOG = trazy_analysis.logger.get_root_logger(
 class DataConsumer:
     def _init_strategy_instance(self, strategy_class: type):
         for symbol in self.symbols:
-            if issubclass(strategy_class, Strategy):
+            if issubclass(strategy_class, StrategyBase):
                 self.strategy_instances.append(
                     strategy_class(
                         symbol,
@@ -83,7 +83,7 @@ class DataConsumer:
         self.clock = self.order_manager.clock
         self.indicators_manager = indicators_manager
         self.strategies_classes = strategies_classes
-        self.strategy_instances: List[Strategy] = []
+        self.strategy_instances: List[StrategyBase] = []
         self._init_strategy_instances()
         self.indicators_manager.warmup()
         self.live = live
@@ -105,7 +105,7 @@ class DataConsumer:
     def add_strategy(self, strategy_class: type):
         self._init_strategy_instance(strategy_class)
 
-    def run_strategy(self, strategy: Strategy, candle: Candle):
+    def run_strategy(self, strategy: StrategyBase, candle: Candle):
         strategy.process_context(candle, self.clock)
 
     def run_strategies(self, candle: Candle):

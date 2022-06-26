@@ -607,7 +607,7 @@ class PoiTouch(Indicator):
 
         time_to_buy = False
         for interval in self.poi_touchs[low:high]:
-            LOG.info("we reached and interesting poi %s", new_data.asset.time_unit)
+            LOG.info("we reached and interesting poi %s", new_data.time_unit)
             begin, end, data = interval
             if (end - low) / (end - begin) >= 0.3:
                 time_to_buy = True
@@ -673,7 +673,7 @@ class PoiTouch(Indicator):
             self.candle_bos.previous_extrema.data is not None
             and self.candle_bos.reverse_extrema_change.data
         ):
-            LOG.info(f"Waiting for BOS {new_data.asset.time_unit}")
+            LOG.info(f"Waiting for BOS {new_data.time_unit}")
             self.pending_bos = True
             self.bos_happened = False
             min_value = self.candle_bos.reverse_extrema_change.previous_extrema.data

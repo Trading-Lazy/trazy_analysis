@@ -42,67 +42,30 @@ AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange=EXCHANGE)
 def test_write_candle_dataframe_in_file_storage(write_mocked):
     candles = np.array(
         [
-            Candle(
-                asset=AAPL_ASSET,
-                open=355.15,
-                high=355.15,
-                low=353.74,
-                close=353.84,
-                volume=3254,
-                timestamp=datetime.strptime(
-                    "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=AAPL_ASSET,
-                open=354.28,
-                high=354.96,
-                low=353.96,
-                close=354.78,
-                volume=2324,
-                timestamp=datetime.strptime(
-                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=AAPL_ASSET,
-                open=354.92,
-                high=355.32,
-                low=354.09,
-                close=354.09,
-                volume=1123,
-                timestamp=datetime.strptime(
-                    "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=AAPL_ASSET,
-                open=354.25,
-                high=354.59,
-                low=354.14,
-                close=354.59,
-                volume=2613,
-                timestamp=datetime.strptime(
-                    "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=AAPL_ASSET,
-                open=354.22,
-                high=354.26,
-                low=353.95,
-                close=353.98,
-                volume=1186,
-                timestamp=datetime.strptime(
-                    "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
+            Candle(asset=AAPL_ASSET, open=355.15, high=355.15, low=353.74, close=353.84, volume=3254,
+                   timestamp=datetime.strptime(
+                       "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=AAPL_ASSET, open=354.28, high=354.96, low=353.96, close=354.78, volume=2324,
+                   timestamp=datetime.strptime(
+                       "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=AAPL_ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
+                   timestamp=datetime.strptime(
+                       "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=AAPL_ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
+                   timestamp=datetime.strptime(
+                       "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=AAPL_ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
+                   timestamp=datetime.strptime(
+                       "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
         ],
         dtype=Candle,
     )
-    candle_dataframe = CandleDataFrame.from_candle_list(
-        asset=AAPL_ASSET, candles=candles
-    )
+    candle_dataframe = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=candles)
     historical_data_pipeline = HistoricalDataPipeline(
         TIINGO_HISTORICAL_DATA_HANDLER, STORAGE
     )
@@ -245,7 +208,7 @@ def test_write_tickers_list_in_file_storage(create_directory_mocked, write_mocke
         date_today.strftime(DATE_DIR_FORMAT),
     )
     ticker_csv = (
-        "tickers\n" "IEX-aapl-0:01:00\n" "IEX-googl-0:01:00\n" "IEX-amzn-0:01:00\n"
+        "tickers\n" "IEX-aapl\n" "IEX-googl\n" "IEX-amzn\n"
     )
     write_mocked_calls = [call(ticker_filename, ticker_csv)]
     write_mocked.assert_has_calls(write_mocked_calls)
@@ -379,96 +342,50 @@ def test_get_all_tickers_for_all_periods(
 ):
     aapl_candles = np.array(
         [
-            Candle(
-                asset=AAPL_ASSET,
-                open=355.15,
-                high=355.15,
-                low=353.74,
-                close=353.84,
-                volume=3254,
-                timestamp=datetime.strptime(
-                    "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=AAPL_ASSET,
-                open=354.28,
-                high=354.96,
-                low=353.96,
-                close=354.78,
-                volume=2324,
-                timestamp=datetime.strptime(
-                    "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
+            Candle(asset=AAPL_ASSET, open=355.15, high=355.15, low=353.74, close=353.84, volume=3254,
+                   timestamp=datetime.strptime(
+                       "2020-06-17 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
+            Candle(asset=AAPL_ASSET, open=354.28, high=354.96, low=353.96, close=354.78, volume=2324,
+                   timestamp=datetime.strptime(
+                       "2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                   )),
         ],
         dtype=Candle,
     )
-    aapl_candle_dataframe = CandleDataFrame.from_candle_list(
-        asset=AAPL_ASSET, candles=aapl_candles
-    )
+    aapl_candle_dataframe = CandleDataFrame.from_candle_list(asset=AAPL_ASSET, candles=aapl_candles)
 
     googl_candles = np.array(
         [
-            Candle(
-                asset=Asset(symbol="googl", exchange="IEX"),
-                open=354.92,
-                high=355.32,
-                low=354.09,
-                close=354.09,
-                volume=1123,
-                timestamp=datetime.strptime(
+            Candle(asset=Asset(symbol="googl", exchange="IEX"), open=354.92, high=355.32, low=354.09, close=354.09,
+                   volume=1123, timestamp=datetime.strptime(
                     "2020-06-18 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=Asset(symbol="googl", exchange="IEX"),
-                open=354.25,
-                high=354.59,
-                low=354.14,
-                close=354.59,
-                volume=2613,
-                timestamp=datetime.strptime(
+                )),
+            Candle(asset=Asset(symbol="googl", exchange="IEX"), open=354.25, high=354.59, low=354.14, close=354.59,
+                   volume=2613, timestamp=datetime.strptime(
                     "2020-06-19 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
+                )),
         ],
         dtype=Candle,
     )
-    googl_candle_dataframe = CandleDataFrame.from_candle_list(
-        asset=Asset(symbol="googl", exchange="IEX"), candles=googl_candles
-    )
+    googl_candle_dataframe = CandleDataFrame.from_candle_list(asset=Asset(symbol="googl", exchange="IEX"),
+                                                              candles=googl_candles)
 
     amzn_candles = np.array(
         [
-            Candle(
-                asset=Asset(symbol="amzn", exchange="IEX"),
-                open=354.22,
-                high=354.26,
-                low=353.95,
-                close=353.98,
-                volume=1186,
-                timestamp=datetime.strptime(
+            Candle(asset=Asset(symbol="amzn", exchange="IEX"), open=354.22, high=354.26, low=353.95, close=353.98,
+                   volume=1186, timestamp=datetime.strptime(
                     "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=Asset(symbol="amzn", exchange="IEX"),
-                open=354.13,
-                high=354.26,
-                low=353.01,
-                close=353.30,
-                volume=1536,
-                timestamp=datetime.strptime(
+                )),
+            Candle(asset=Asset(symbol="amzn", exchange="IEX"), open=354.13, high=354.26, low=353.01, close=353.30,
+                   volume=1536, timestamp=datetime.strptime(
                     "2020-06-19 13:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
+                )),
         ],
         dtype=Candle,
     )
-    amzn_candle_dataframe = CandleDataFrame.from_candle_list(
-        asset=Asset(symbol="amzn", exchange="IEX"), candles=amzn_candles
-    )
+    amzn_candle_dataframe = CandleDataFrame.from_candle_list(asset=Asset(symbol="amzn", exchange="IEX"),
+                                                             candles=amzn_candles)
 
     request_ticker_data_from_periods_mocked.side_effect = [
         (aapl_candle_dataframe, [(date(2020, 6, 11), date(2020, 6, 13))], {}),
