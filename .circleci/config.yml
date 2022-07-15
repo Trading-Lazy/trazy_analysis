@@ -13,6 +13,9 @@ jobs:
           key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
       - run:
           command: |
+            mkdir trazy_analysis
+            mv * trazy_analysis
+            cd trazy_analysis
             wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
             tar -xzf ta-lib-0.4.0-src.tar.gz
             cd ta-lib/
