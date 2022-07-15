@@ -3,13 +3,14 @@ from typing import Dict, Any
 
 from trazy_analysis.broker.broker import Broker
 from trazy_analysis.common.helper import get_or_create_nested_dict
-from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.enums import BrokerIsolation
 
 
 class BrokerManager:
     def __init__(
-        self, isolation: BrokerIsolation = BrokerIsolation.EXCHANGE, brokers: Dict[Any, Any] = {}
+        self,
+        isolation: BrokerIsolation = BrokerIsolation.EXCHANGE,
+        brokers: Dict[Any, Any] = {},
     ) -> None:
         self.brokers = brokers
         self.isolation = isolation

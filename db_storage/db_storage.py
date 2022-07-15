@@ -8,6 +8,7 @@ from trazy_analysis.models.candle import Candle
 from trazy_analysis.models.order import Order
 
 
+# > This class is a wrapper around a database connection
 class DbStorage:
     def __init__(
         self, database_name: str, database_url: str, table_analogous_name: str = "table"

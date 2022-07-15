@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pytz
 from pandas_market_calendars import MarketCalendar
 from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
+
 from trazy_analysis.common.utils import timestamp_to_utc
 
 

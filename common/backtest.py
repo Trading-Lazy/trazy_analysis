@@ -23,7 +23,6 @@ from trazy_analysis.feed.feed import (
     ExternalStorageFeed,
 )
 from trazy_analysis.file_storage.file_storage import FileStorage
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.market_data.historical.ccxt_historical_data_handler import (
     CcxtHistoricalDataHandler,
 )
@@ -108,7 +107,9 @@ class BacktestConfig:
         self.feed = None
         if csv_filenames is not None:
             kwargs = {"sep": csv_file_sep} if csv_file_sep is not None else {}
-            self.feed = CsvFeed(csv_filenames=csv_filenames, events=self.events, **kwargs)
+            self.feed = CsvFeed(
+                csv_filenames=csv_filenames, events=self.events, **kwargs
+            )
         elif download:
             exchanges = [asset.exchange.lower() for asset in assets]
             historical_data_handlers = {}
@@ -160,11 +161,23 @@ class BacktestConfig:
                 candle_dataframes=candle_dataframes, events=self.events
             )
         elif db_storage is not None:
-            self.feed = ExternalStorageFeed(assets=assets, start=start, end=end, events=self.events,
-                                            db_storage=db_storage, market_cal=market_cal)
+            self.feed = ExternalStorageFeed(
+                assets=assets,
+                start=start,
+                end=end,
+                events=self.events,
+                db_storage=db_storage,
+                market_cal=market_cal,
+            )
         elif file_storage is not None:
-            self.feed = ExternalStorageFeed(assets=assets, start=start, end=end, events=self.events,
-                                            file_storage=file_storage, market_cal=market_cal)
+            self.feed = ExternalStorageFeed(
+                assets=assets,
+                start=start,
+                end=end,
+                events=self.events,
+                file_storage=file_storage,
+                market_cal=market_cal,
+            )
         else:
             raise Exception(
                 "No source for data feed, one of "
@@ -301,17 +314,17 @@ class Backtest:
             order_creator=order_creator,
             clock=clock,
         )
-        indicators_manager = IndicatorsManager(
-            preload=self.backtest_config.preload,
-            initial_data=self.backtest_config.feed.candles,
+        self.event_loop = EventLoop(
+            events=self.events,
+            assets=self.backtest_config.assets,
+            feed=self.backtest_config.feed,
+            order_manager=order_manager,
+            strategies_parameters=strategies_parameters,
+            close_at_end_of_day=self.backtest_config.close_at_end_of_day,
+            close_at_end_of_data=self.backtest_config.close_at_end_of_data,
+            broker_isolation=self.backtest_config.isolation,
+            statistics_class=self.backtest_config.statistics_class,
         )
-        self.event_loop = EventLoop(events=self.events, assets=self.backtest_config.assets,
-                                    feed=self.backtest_config.feed, order_manager=order_manager,
-                                    indicators_manager=indicators_manager, strategies_parameters=strategies_parameters,
-                                    close_at_end_of_day=self.backtest_config.close_at_end_of_day,
-                                    close_at_end_of_data=self.backtest_config.close_at_end_of_data,
-                                    broker_isolation=self.backtest_config.isolation,
-                                    statistics_class=self.backtest_config.statistics_class)
         self.event_loop.loop()
         return self.event_loop.statistics_df
 

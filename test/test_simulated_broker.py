@@ -9,10 +9,9 @@ from trazy_analysis.broker.fixed_fee_model import FixedFeeModel
 from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import CsvFeed, Feed
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.enums import Action, Direction, OrderType, ExecutionMode
 from trazy_analysis.models.order import Order
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
@@ -489,14 +488,13 @@ def test_execute_limit_order():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
     )
 
     event_loop.loop()
@@ -535,14 +533,13 @@ def test_execute_stop_order():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
     )
 
     event_loop.loop()
@@ -581,14 +578,13 @@ def test_execute_target_order():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
     )
 
     event_loop.loop()
@@ -629,14 +625,13 @@ def test_execute_trailing_stop_order():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
     )
 
     event_loop.loop()
@@ -675,14 +670,13 @@ def test_execute_cover_order():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
     )
 
     event_loop.loop()
@@ -719,14 +713,13 @@ def test_execute_bracket_order():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=events,
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
     )
 
     event_loop.loop()

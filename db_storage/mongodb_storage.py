@@ -173,7 +173,9 @@ class MongoDbStorage(DbStorage):
             is not None
         )
 
-    def get_candles_in_range(self, asset: Asset, time_unit, start: datetime, end: datetime) -> np.array:  # [Candle]
+    def get_candles_in_range(
+        self, asset: Asset, time_unit, start: datetime, end: datetime
+    ) -> np.array:  # [Candle]
         query = {
             "asset": asset.to_dict(),
             "$and": [{"timestamp": {"$gte": start}}, {"timestamp": {"$lte": end}}],

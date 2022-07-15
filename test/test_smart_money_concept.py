@@ -1,20 +1,20 @@
-from trazy_analysis.common.backtest import Backtest, BacktestConfig
+from datetime import datetime, timedelta
+
+import pytz
+
 from trazy_analysis.broker.binance_fee_model import BinanceFeeModel
+from trazy_analysis.common.backtest import Backtest
+from trazy_analysis.db_storage.influxdb_storage import InfluxDbStorage
 from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import OrderType
+from trazy_analysis.statistics.statistics import Statistics
 from trazy_analysis.strategy.strategies.smart_money_concept import (
     SmartMoneyConcept,
 )
-from trazy_analysis.models.enums import OrderType
-from trazy_analysis.db_storage.influxdb_storage import InfluxDbStorage
-from trazy_analysis.statistics.statistics import Statistics
-from datetime import datetime, timedelta
-import pytz
 
 
 def test_smart_money_concept():
-    assets = {
-        Asset(symbol="BTCUSDT", exchange="BINANCE"): timedelta(minutes=1)
-    }
+    assets = {Asset(symbol="BTCUSDT", exchange="BINANCE"): timedelta(minutes=1)}
     start = datetime(2022, 5, 17, 23, 57, 0, 0, tzinfo=pytz.UTC)
     end = datetime(2022, 5, 25, 0, 0, 0, 0, tzinfo=pytz.UTC)
     db_storage = InfluxDbStorage()
@@ -38,6 +38,7 @@ def test_smart_money_concept():
         statistics_class=Statistics,
     )
     backtest.run_strategy(SmartMoneyConcept, SmartMoneyConcept.DEFAULT_PARAMETERS)
+
 
 # def test_live():
 #     from trazy_analysis.common.live import Live
@@ -67,7 +68,7 @@ def test_smart_money_concept():
 #         simulation_initial_funds=10000.0,
 #     )
 
-    #live.run_strategy(SmartMoneyConcept, SmartMoneyConcept.DEFAULT_PARAMETERS)
+# live.run_strategy(SmartMoneyConcept, SmartMoneyConcept.DEFAULT_PARAMETERS)
 
 
 def test_plot():

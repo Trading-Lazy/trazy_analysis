@@ -7,11 +7,9 @@ import pytest
 from trazy_analysis.feed.loader import CsvLoader
 from trazy_analysis.indicators.bos import CandleBOS, Imbalance, EngulfingCandle
 from trazy_analysis.indicators.indicator import Indicator
-from trazy_analysis.indicators.rolling_window import RollingWindow
-
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import CandleDirection
+from trazy_analysis.models.enums import CandleDirection, ExecutionMode
 
 BIG_DATA = [
     56281.78,
@@ -143,76 +141,66 @@ ASSET = Asset(symbol="BTCUSDT", exchange="Binance")
     ],
 )
 def test_imbalance(three_candles: List[Candle], expected: Tuple[bool, float]):
-    # rolling_window_stream = RollingWindow(size=3, preload=False)
-    # rolling_window_stream.prefill(filling_array=three_candles)
-    source = Indicator()
-    imbalance = Imbalance(source_indicator=source)
+    source = Indicator(size=1)
+    imbalance = Imbalance(source=source, mode=ExecutionMode.LIVE)
     for i in range(0, len(three_candles)):
         source.push(three_candles[i])
     assert imbalance.data == expected
 
 
 def test_bos_stream_handle_new_data_source_is_indicator_data():
-    indicator_data = Indicator()
+    source = Indicator(size=1)
     bos = CandleBOS(
-        comparator=np.greater,
-        order=1,
-        source_indicator=indicator_data,
-        size=1,
-        preload=False,
+        comparator=np.greater, order=1, source=source, size=1, mode=ExecutionMode.LIVE
     )
-    indicator_data.push(7.2)
+    source.push(7.2)
     assert bos.data is False
-    indicator_data.push(6.1)
+    source.push(6.1)
     assert bos.data is False
-    indicator_data.push(6.3)
+    source.push(6.3)
     assert bos.data is False
-    indicator_data.push(7.2)
+    source.push(7.2)
     assert bos.data is False
-    indicator_data.push(6.9)
+    source.push(6.9)
     assert bos.data is False
-    indicator_data.push(6.8)
+    source.push(6.8)
     assert bos.data is True
 
 
 def test_bos_stream_handle_new_data_source_is_rolling_window_stream():
-    rolling_window_stream = RollingWindow(size=3, preload=False)
+    source = Indicator(size=1)
     bos = CandleBOS(
-        comparator=np.greater,
-        order=2,
-        source_indicator=rolling_window_stream,
-        size=1,
-        preload=False,
+        comparator=np.greater, order=2, source=source, size=1, mode=ExecutionMode.LIVE
     )
-    rolling_window_stream.push(7.2)
+    source.push(7.2)
     assert bos.data is False
-    rolling_window_stream.push(6.1)
+    source.push(6.1)
     assert bos.data is False
-    rolling_window_stream.push(6.3)
+    source.push(6.3)
     assert bos.data is False
-    rolling_window_stream.push(7.2)
+    source.push(7.2)
     assert bos.data is False
-    rolling_window_stream.push(6.9)
+    source.push(6.9)
     assert bos.data is False
-    rolling_window_stream.push(6.8)
+    source.push(6.8)
     assert bos.data is True
 
 
 def test_bos_stream_handle_new_data_source_is_filled():
-    indicator_data = Indicator()
-    loader = CsvLoader(csv_filenames={ASSET: {timedelta(minutes=1): "test/data/bos.csv"}})
+    indicator_data = Indicator(size=1)
+    loader = CsvLoader(
+        csv_filenames={ASSET: {timedelta(minutes=1): "test/data/bos.csv"}}
+    )
     loader.load()
     candles = loader.candles[ASSET]
-    rolling_window_stream = RollingWindow(
-        size=candles.size, source_indicator=indicator_data, preload=False
-    )
-    rolling_window_stream.prefill(filling_array=candles)
+    rolling_window_stream = Indicator(source=indicator_data, size=candles.size)
+    rolling_window_stream.fill(array=candles)
     bos = CandleBOS(
         comparator=np.greater,
         order=1,
-        source_indicator=rolling_window_stream,
+        source=rolling_window_stream,
         size=candles.size,
-        preload=False,
+        mode=ExecutionMode.LIVE,
     )
     # assert bos.window == expected_window
 
@@ -261,8 +249,8 @@ def test_bos_stream_handle_new_data_source_is_filled():
 def test_engulfing_candle(
     two_candles: List[Candle], direction: CandleDirection, expected: bool
 ):
-    source = Indicator()
-    engulfing_candle = EngulfingCandle(direction=direction, source_indicator=source)
+    source = Indicator(size=1)
+    engulfing_candle = EngulfingCandle(direction=direction, source=source)
     for i in range(0, len(two_candles)):
         source.push(two_candles[i])
     assert engulfing_candle.data == expected

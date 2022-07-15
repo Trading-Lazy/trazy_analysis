@@ -3,9 +3,9 @@ from unittest.mock import call, patch
 
 import numpy as np
 import pandas as pd
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 
 from trazy_analysis.common.constants import DATE_FORMAT
-from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.db_storage.mongodb_storage import MongoDbStorage
 from trazy_analysis.file_storage.common import DATASETS_DIR, DONE_DIR

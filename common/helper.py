@@ -298,10 +298,10 @@ def get_or_create_nested_dict(nested_dict: dict, *keys) -> None:
             _nested_dict = _nested_dict[key]
 
 
-def check_type(object, allowed_types: List[type]):
-    if object is None:
+def check_type(object_or_type: Union[object, type], allowed_types: List[type]):
+    if object_or_type is None:
         return
-    object_type = type(object)
+    object_type = type(object_or_type)
     if object_type not in allowed_types:
         raise Exception(
             "data type should be one of {} not {}".format(allowed_types, object_type)
@@ -372,3 +372,13 @@ def normalize_assets(
     for asset in assets_to_normalize:
         assets_copy[asset] = [assets_copy[asset]]
     return assets_copy
+
+
+def all_subclasses(cls: type):
+    return set(cls.__subclasses__()).union(
+        [
+            subsubclass
+            for subclass in cls.__subclasses__()
+            for subsubclass in all_subclasses(subclass)
+        ]
+    )

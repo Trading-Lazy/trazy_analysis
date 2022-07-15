@@ -161,8 +161,12 @@ class BinanceBroker(Broker):
                 buy_size = 0
                 sell_size = size
 
-            currency_pair = Asset(symbol=symbol + "/" + self.base_currency, exchange=self.exchange)
-            currency_pair_reversed = Asset(symbol=self.base_currency + "/" + symbol, exchange=self.exchange)
+            currency_pair = Asset(
+                symbol=symbol + "/" + self.base_currency, exchange=self.exchange
+            )
+            currency_pair_reversed = Asset(
+                symbol=self.base_currency + "/" + symbol, exchange=self.exchange
+            )
             if currency_pair not in self.lot_size:
                 continue
 

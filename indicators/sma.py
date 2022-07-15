@@ -1,172 +1,91 @@
-from datetime import timedelta
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
-from typing import Any
+import talib
 
-from trazy_analysis.common.helper import get_or_create_nested_dict
-from trazy_analysis.indicators.common import PriceType
-from trazy_analysis.indicators.indicator import Indicator
-from trazy_analysis.indicators.rolling_window import (
-    PriceRollingWindowManager,
-    RollingWindow,
+from trazy_analysis.indicators.indicator import (
+    Indicator,
 )
-from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import ExecutionMode
 
 
-class Sma(RollingWindow):
-    instances = 0
-    count = 0
-
-    def initialize(self):
-        ret = np.cumsum(self.rolling_window_stream.window, dtype=float)
-        if self.period + 1 > len(ret):
-            cum_sum_before = 0.0
-        else:
-            cum_sum_before = ret[-1 - self.period]
-        self.sum = ret[-1] - cum_sum_before
-        ret[self.period :] = ret[self.period :] - ret[: -self.period]
-        moving_averages = ret[self.period - 1 :] / self.period
-        self.prefill(moving_averages)
-        if self.rolling_window_stream.filled():
-            self.oldest = self.rolling_window_stream[-self.period + 1]
-
-    def __init__(self, period: int, source_indicator: Indicator = None, preload=False):
-        Sma.instances += 1
+class Sma(Indicator):
+    def __init__(
+        self,
+        source: Indicator,
+        period: int,
+        size: int = 1,
+    ):
         self.period = period
         self.sum: float = 0.0
         self.oldest: float = 0.0
-        self.rolling_window_stream = None
-        if issubclass(type(source_indicator), RollingWindow) and (
-            not source_indicator.ready or source_indicator.size >= self.period
-        ):
-            self.rolling_window_stream = source_indicator
-            size = self.rolling_window_stream.size
-        else:
-            self.rolling_window_stream = RollingWindow(
-                size=self.period,
-                source_indicator=source_indicator,
-                idtype=float,
-                preload=False,
-            )
-            size = self.period
         super().__init__(
-            size=size,
-            source_indicator=self.rolling_window_stream,
-            idtype=float,
-            preload=preload,
+            source=source, source_minimal_size=period, size=size, dtype=float
         )
-        if self.rolling_window_stream.filled():
-            self.initialize()
 
-    def handle_new_data(self, new_data: float) -> None:
-        Sma.count += 1
-        if not self.preload:
-            self.sum += new_data - self.oldest
-            if self.rolling_window_stream.nb_elts >= self.period:
-                self.data = self.sum / self.period
-                self.oldest = self.rolling_window_stream[-self.period + 1]
-                super().handle_new_data(self.data)
-                return
+    def initialize_batch(self):
+        window = Sma.compute(self.input_window.window, self.period)
+        self.fill(window)
+
+    def initialize_stream(self):
+        self.initialize_batch()
+        self.sum = sum(self.input_window.window)
+        self.oldest = self.input_window[-self.period + 1]
+        self.data = self.window[-1]
+
+    @staticmethod
+    def compute(data: Union[np.ndarray, pd.DataFrame], period: int) -> np.ndarray:
+        return talib.SMA(data, timeperiod=period)
+
+    def handle_stream_data(self, data: Any):
+        self.sum += data - self.oldest
+        if self.input_window.count() >= self.period:
+            self.data = self.sum / self.period
+            self.oldest = self.input_window[-self.period + 1]
+            super().handle_stream_data(self.data)
+            return
+        self.on_next(self.data)
+
+    def handle_batch_data(self):
+        if self.index + 1 < self.period - 1:
+            self.data = None
             self.on_next(self.data)
+            self.index = (self.index + 1) % self.size
         else:
-            if self.index < self.period:
-                self.data = None
-                self.on_next(self.data)
-                self.index += 1
-            else:
-                super().handle_new_data(new_data)
+            super().handle_batch_data()
 
     def push(self, new_data: Any = None):
-        self.rolling_window_stream.push(new_data)
+        self.input_window.push(new_data)
 
 
-class Average(RollingWindow):
-    def initialize(self):
+class Average(Indicator):
+    def initialize_batch(self):
         pass
 
-    def __init__(
-        self,
-        size: int,
-        source_indicator: Indicator = None,
-        idtype: type = None,
-        preload=False,
-    ):
+    def initialize_stream(self):
+        pass
+
+    def __init__(self, size: int, source: Indicator = None):
         self.size = size
         self.sum: float = 0.0
         self.count = 0
         self.oldest: float = 0.0
-        self.rolling_window_stream = None
-        if issubclass(type(source_indicator), RollingWindow) and (
-            not source_indicator.ready
-        ):
-            self.rolling_window_stream = source_indicator
-        else:
-            self.rolling_window_stream = RollingWindow(
-                size=self.size,
-                source_indicator=source_indicator,
-                idtype=idtype,
-                preload=False,
-            )
-        super().__init__(
-            size=size,
-            source_indicator=self.rolling_window_stream,
-            idtype=idtype,
-            preload=preload,
-        )
-        if self.rolling_window_stream.filled():
-            self.initialize()
+        super().__init__(source=source, size=size)
 
-    def handle_new_data(self, new_data: float) -> None:
+    def handle_data(self, new_data: float) -> None:
         if self.count < self.size:
             self.count += 1
-        if not self.preload:
+        if self.mode == ExecutionMode.LIVE:
             self.sum += new_data - self.oldest
             self.data = self.sum / self.count
-            if self.rolling_window_stream.nb_elts >= self.size:
-                self.oldest = self.rolling_window_stream[-self.size + 1]
-                super().handle_new_data(self.data)
+            if self.input_window.nb_elts >= self.size:
+                self.oldest = self.input_window[-self.size + 1]
+                super().handle_stream_data(self.data)
                 return
             self.on_next(self.data)
-        else:
-            super().handle_new_data(new_data)
+        elif self.mode == ExecutionMode.BATCH:
+            super().handle_stream_data(new_data)
 
     def push(self, new_data: Any = None):
-        self.rolling_window_stream.push(new_data)
-
-
-class SmaManager:
-    def __init__(
-        self, price_rolling_window_manager: PriceRollingWindowManager, preload=True
-    ):
-        self.cache = {}
-        self.price_rolling_window_manager = price_rolling_window_manager
-        self.preload = preload
-
-    def __call__(
-        self,
-        asset: Asset,
-        time_unit: timedelta,
-        period: int,
-        price_type: PriceType = PriceType.CLOSE,
-    ) -> Sma:
-        get_or_create_nested_dict(self.cache, asset, time_unit, period)
-
-        if price_type not in self.cache[asset][time_unit][period]:
-            price_rolling_window = self.price_rolling_window_manager(
-                asset, time_unit, period, price_type
-            )
-            self.cache[asset][time_unit][period][price_type] = Sma(
-                period, price_rolling_window, preload=self.preload
-            )
-        return self.cache[asset][time_unit][period][price_type]
-
-    def warmup(self):
-        for asset in self.cache:
-            for time_unit in self.cache[asset]:
-                for period in self.cache[asset][time_unit]:
-                    for price_type in self.cache[asset][time_unit][period]:
-                        sma_stream = self.cache[asset][time_unit][period][price_type]
-                        sma_stream.set_size(sma_stream.rolling_window_stream.size)
-                        if self.preload:
-                            self.cache[asset][time_unit][period][price_type].initialize()
+        self.input_window.push(new_data)

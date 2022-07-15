@@ -8,15 +8,13 @@ from typing import List, Set
 
 from trazy_analysis.bot.event_loop import EventLoop
 from trazy_analysis.broker.binance_broker import BinanceBroker
-
-# from trazy_analysis.broker.degiro_broker import DegiroBroker
 from trazy_analysis.broker.broker_manager import BrokerManager
 from trazy_analysis.common.clock import LiveClock
 from trazy_analysis.feed.feed import Feed, LiveFeed
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.market_data.live.binance_live_data_handler import (
     BinanceLiveDataHandler,
 )
+from trazy_analysis.models.enums import ExecutionMode
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -55,6 +53,7 @@ def get_strategies_classes(
                 strategies_classes.add(strategy_class)
     return list(strategies_classes)
 
+
 if __name__ == "__main__":
     symbols = ["XRPUSDT"]
     events = deque()
@@ -72,10 +71,21 @@ if __name__ == "__main__":
         trailing_stop_order_pct=0.002,
         with_trailing_cover=True,
     )
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator, clock=clock, filter_at_end_of_day=False)
-    indicators_manager = IndicatorsManager(preload=False)
-    event_loop = EventLoop(events=events, assets=[], feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies, live=True,
-                           close_at_end_of_day=False)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+        clock=clock,
+        filter_at_end_of_day=False,
+    )
+    event_loop = EventLoop(
+        events=events,
+        assets=[],
+        feed=feed,
+        order_manager=order_manager,
+        strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
+        close_at_end_of_day=False,
+    )
     event_loop.loop()

@@ -10,10 +10,9 @@ from trazy_analysis.broker.kucoin_fee_model import KucoinFeeModel
 from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import CsvFeed, Feed
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import Action, Direction, OrderType
+from trazy_analysis.models.enums import Action, Direction, OrderType, ExecutionMode
 from trazy_analysis.models.order import Order
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
@@ -129,7 +128,6 @@ def test_arbitrage_strategy():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
 
     strategies_parameters = {ArbitrageStrategy: {"margin_factor": 1}}
     assets = {BINANCE_ASSET: time_unit, KUCOIN_ASSET: time_unit}
@@ -138,10 +136,10 @@ def test_arbitrage_strategy():
         assets=assets,
         feed=feed,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies_parameters,
         close_at_end_of_day=False,
         close_at_end_of_data=False,
+        mode=ExecutionMode.BATCH,
     )
     event_loop.loop()
 

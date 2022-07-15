@@ -70,7 +70,9 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
         # First call without putting since
         exchange_to_lower = ticker.exchange.lower()
         exchange_instance = self.ccxt_connector.get_exchange_instance(exchange_to_lower)
-        empty_candle_dataframe = CandleDataFrame.from_candle_list(asset=ticker, candles=np.array([], dtype=Candle))
+        empty_candle_dataframe = CandleDataFrame.from_candle_list(
+            asset=ticker, candles=np.array([], dtype=Candle)
+        )
         try:
             raw_candles = exchange_instance.fetchOHLCV(symbol=ticker.symbol)
             # don't hit the rateLimit or you will be banned
@@ -171,13 +173,17 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
                     minutes=1
                 )
                 candle_dataframe = candle_dataframe.loc[limit_timestamp:end]
-                candle_dataframe = CandleDataFrame.concat([end_candle_dataframe, candle_dataframe], asset=ticker)
+                candle_dataframe = CandleDataFrame.concat(
+                    [end_candle_dataframe, candle_dataframe], asset=ticker
+                )
             else:
                 limit_timestamp = end_candle_dataframe.iloc[0].name - timedelta(
                     minutes=1
                 )
                 candle_dataframe = candle_dataframe.loc[start:limit_timestamp]
-                candle_dataframe = CandleDataFrame.concat([candle_dataframe, end_candle_dataframe], asset=ticker)
+                candle_dataframe = CandleDataFrame.concat(
+                    [candle_dataframe, end_candle_dataframe], asset=ticker
+                )
 
         candle_dataframe = fill_missing_datetimes(
             df=candle_dataframe, time_unit=timedelta(minutes=1)

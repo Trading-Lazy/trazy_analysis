@@ -10,11 +10,19 @@ import trazy_analysis.logger
 import trazy_analysis.settings
 from trazy_analysis.common.constants import MAX_TIMESTAMP
 from trazy_analysis.common.helper import get_or_create_nested_dict, normalize_assets
-from trazy_analysis.feed.feed import Feed
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.feed.feed import Feed, LiveFeed
+from trazy_analysis.indicators.indicator import CandleData
+from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import Action, Direction, EventType, BrokerIsolation, StrategyParametersIsolation
+from trazy_analysis.models.enums import (
+    Action,
+    Direction,
+    EventType,
+    BrokerIsolation,
+    StrategyParametersIsolation,
+    ExecutionMode,
+)
 from trazy_analysis.models.event import (
     AssetSpecificEvent,
     DataEvent,
@@ -31,6 +39,7 @@ LOG = trazy_analysis.logger.get_root_logger(
 )
 
 
+# It's a thread that propagates exceptions to the main thread
 class PropagatingThread(Thread):
     def run(self):
         self.exc = None
@@ -52,6 +61,7 @@ class PropagatingThread(Thread):
         return self.ret
 
 
+# It's a set that expires its elements after a certain amount of time
 class ExpiringSet:
     def __init__(self, max_len: int = 10):
         self.max_len = max_len
@@ -71,49 +81,68 @@ class ExpiringSet:
         return item in self.set
 
 
+# EventLoop is a class that runs a loop that processes events.
 class EventLoop:
     def _init_strategy_instance(
         self, strategy_class: type, parameters: Dict[str, float]
     ):
+        """
+        > This function initializes the strategy instances, which are the objects that will be used to generate signals
+
+        :param strategy_class: The strategy class to be instantiated
+        :type strategy_class: type
+        :param parameters: Dict[str, float]
+        :type parameters: Dict[str, float]
+        """
         if issubclass(strategy_class, Strategy):
             for asset in self.assets:
                 for time_unit in self.assets[asset]:
-                    self.strategy_instances.append(
-                        strategy_class(
-                            asset,
-                            time_unit,
-                            self.order_manager,
-                            self.events,
+                    if self.data.exists(asset, time_unit):
+                        strategy = strategy_class(
+                            self.data(asset, time_unit),
                             parameters,
-                            self.indicators_manager,
+                            self.indicatorsManager,
                         )
-                    )
+                        strategy.set_context(self.context)
+                        self.strategy_instances.append(strategy)
         elif issubclass(strategy_class, MultiAssetsStrategy):
-            self.strategy_instances.append(
-                strategy_class(
-                    self.assets,
-                    self.order_manager,
-                    self.events,
-                    parameters,
-                    self.indicators_manager,
-                )
-            )
+            strategy = strategy_class(self.data, parameters, self.indicatorsManager)
+            strategy.set_context(self.context)
+            self.strategy_instances.append(strategy)
 
     def _init_strategy_instances(self):
+        """
+        It creates a new instance of each strategy class
+        """
         for strategy_class in self.strategies_parameters:
             parameters = self.strategies_parameters[strategy_class]
             self._init_strategy_instance(strategy_class, parameters)
 
     def _init_seen_candles(self):
+        """
+        It creates a dictionary of dictionaries of ExpiringSets
+        """
         for asset in self.assets:
             get_or_create_nested_dict(self.seen_candles, asset)
             for time_unit in self.assets[asset]:
                 self.seen_candles[asset][time_unit] = ExpiringSet()
 
     def run_strategy(self, strategy: StrategyBase):
+        """
+        > The function `run_strategy` takes a strategy object and calls the `process_context` function on it, passing in the
+        context and clock objects
+
+        :param strategy: The strategy object to be run
+        :type strategy: StrategyBase
+        """
         strategy.process_context(self.context, self.clock)
 
     def update_equity_curves(self):
+        """
+        If the current time is greater than the most recent time in the equity curve, then add the current time and the
+        current equity to the equity curve
+        :return: The equity curves for each exchange.
+        """
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
             if self.statistics_manager.get_equity_curves(exchange) is None:
@@ -148,6 +177,9 @@ class EventLoop:
             )
 
     def update_equity_dfs(self):
+        """
+        It takes the equity curves from the statistics manager and puts them into a dataframe
+        """
         exchanges = {asset.exchange for asset in self.assets}
         LOG.info("exchanges = %s", exchanges)
         for exchange in exchanges:
@@ -158,6 +190,9 @@ class EventLoop:
             self.statistics_manager.set_equity_dfs(equity_df, exchange)
 
     def update_positions(self):
+        """
+        It updates the positions of the assets in the portfolio
+        """
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
             if self.statistics_manager.get_positions(exchange) is None:
@@ -212,6 +247,9 @@ class EventLoop:
             )
 
     def update_positions_dfs(self):
+        """
+        > It takes the positions from the statistics manager and creates a dataframe for each exchange
+        """
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
             positions_df = pd.DataFrame(
@@ -221,6 +259,10 @@ class EventLoop:
             self.statistics_manager.set_positions_dfs(positions_df, exchange)
 
     def update_transactions(self):
+        """
+        > If the clock has been updated, and the most recent transaction time is less than the current time, then update the
+        transactions
+        """
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
             if not self.clock.updated:
@@ -238,19 +280,25 @@ class EventLoop:
                     return
 
             portfolio = self.broker_manager.get_broker(exchange).portfolio
-            self.statistics_manager.set_transactions([
-                (
-                    transaction.timestamp,
-                    transaction.size
-                    if transaction.action == Action.BUY
-                    else -transaction.size,
-                    transaction.price,
-                    transaction.asset.key(),
-                )
-                for transaction in portfolio.transactions
-            ], exchange)
+            self.statistics_manager.set_transactions(
+                [
+                    (
+                        transaction.timestamp,
+                        transaction.size
+                        if transaction.action == Action.BUY
+                        else -transaction.size,
+                        transaction.price,
+                        transaction.asset.key(),
+                    )
+                    for transaction in portfolio.transactions
+                ],
+                exchange,
+            )
 
     def update_transactions_dfs(self):
+        """
+        It takes the transactions from the statistics manager and puts them into a dataframe
+        """
         exchanges = {asset.exchange for asset in self.assets}
         for exchange in exchanges:
             if self.statistics_manager.get_transactions(exchange) is not None:
@@ -260,11 +308,17 @@ class EventLoop:
                 ).set_index("Date")
                 self.statistics_manager.set_transactions_dfs(transactions_df, exchange)
             else:
-                self.statistics_manager.set_transactions_dfs(pd.DataFrame(
-                    columns=["Date", "amount", "price", "symbol"]
-                ).set_index("Date"), exchange)
+                self.statistics_manager.set_transactions_dfs(
+                    pd.DataFrame(
+                        columns=["Date", "amount", "price", "symbol"]
+                    ).set_index("Date"),
+                    exchange,
+                )
 
     def run_strategies(self):
+        """
+        It runs the strategy, then logs the cash balance, portfolio, and total equity for each exchange
+        """
         for strategy in self.strategy_instances:
             self.run_strategy(strategy)
             exchanges = {asset.exchange for asset in self.context.candles}
@@ -276,15 +330,22 @@ class EventLoop:
                     self.broker_manager.get_broker(
                         exchange
                     ).get_portfolio_cash_balance(),
-                    strategy.order_manager.broker_manager.get_broker(
+                    self.context.broker_manager.get_broker(
                         exchange
                     ).get_portfolio_as_dict(),
-                    strategy.order_manager.broker_manager.get_broker(
+                    self.context.broker_manager.get_broker(
                         exchange
                     ).get_portfolio_total_equity(),
                 )
 
     def handle_asset_delayed_events(self, candle: Candle):
+        """
+        If there are any delayed events for the asset in the current candle, decrement the delay counter for each delayed
+        event and if the delay counter reaches zero, add the event to the events queue.
+
+        :param candle: The candle that was just received
+        :type candle: Candle
+        """
         asset_delayed_events = []
         if candle.asset in self.asset_delayed_events:
             for event in self.asset_delayed_events[candle.asset]:
@@ -296,6 +357,10 @@ class EventLoop:
             self.asset_delayed_events[candle.asset] = asset_delayed_events
 
     def handle_delayed_events(self):
+        """
+        It takes all the events that are delayed, and if their delay is up, it adds them to the list of events to be
+        processed
+        """
         delayed_events = []
         for event in self.delayed_events:
             event.bars_delay -= 1
@@ -311,9 +376,8 @@ class EventLoop:
         assets: Dict[Asset, Union[timedelta, List[timedelta]]],
         feed: Feed,
         order_manager: OrderManager,
-        indicators_manager: IndicatorsManager,
         strategies_parameters: Dict[type, Dict[str, Any]] = {},
-        live=False,
+        mode: ExecutionMode = ExecutionMode.BATCH,
         close_at_end_of_day=True,
         close_at_end_of_data=True,
         strategy_parameters_isolation=StrategyParametersIsolation.STRATEGY,
@@ -325,18 +389,23 @@ class EventLoop:
         self.delayed_events = []
         self.assets = normalize_assets(assets)
         self.feed = feed
+        self.indicatorsManager = ReactiveIndicators(mode=mode, memoize=True)
+        self.data = CandleData(candles=feed.candles, indicators=self.indicatorsManager)
         self.order_manager = order_manager
         self.broker_manager = self.order_manager.broker_manager
         self.clock = self.order_manager.clock
-        self.indicators_manager = indicators_manager
         self.strategies_parameters = strategies_parameters
         self.strategy_instances: List[StrategyBase] = []
-        self.context = Context(assets=self.assets)
+        self.context = Context(
+            assets=self.assets,
+            order_manager=self.order_manager,
+            broker_manager=self.broker_manager,
+            events=self.events,
+        )
+        self.mode = mode
         self._init_strategy_instances()
-        self.indicators_manager.warmup()
         self.seen_candles = {}
         self._init_seen_candles()
-        self.live = live
         self.close_at_end_of_day = close_at_end_of_day
         self.close_at_end_of_data = close_at_end_of_data
         self.last_update = None
@@ -347,11 +416,16 @@ class EventLoop:
         self.statistics_manager = StatisticsManager(isolation=self.broker_isolation)
         self.statistics_class = statistics_class
         self.statistics_df = None
+        # Indicator.plot_instances_graph()
 
     def loop(self):
+        """
+        The function loops through the events queue and processes each event
+        """
         data_to_process = True
+        live = self.mode == ExecutionMode.LIVE and isinstance(self.feed, LiveFeed)
         while data_to_process:
-            if self.live:
+            if live:
                 # tasks to be done regularly
                 for exchange in self.broker_manager.brokers:
                     self.broker_manager.get_broker(exchange).synchronize()
@@ -433,9 +507,7 @@ class EventLoop:
                         )
                         for candle in last_candles:
                             LOG.info("Process new candle: %s", candle.to_json())
-                            self.indicators_manager.RollingWindow(
-                                candle.asset, candle.time_unit
-                            ).push(candle)
+                            self.data(candle.asset, candle.time_unit).push(candle)
                             self.broker_manager.get_broker(
                                 candle.asset.exchange
                             ).update_price(candle)
@@ -446,7 +518,7 @@ class EventLoop:
                             ).execute_open_orders()
                     if len(eod_assets) != 0:
                         bars_delay = 0
-                        if not self.live:
+                        if not live:
                             bars_delay = 1
                         timestamp = min([self.clock.current_time() for _ in eod_assets])
                         self.events.append(
@@ -493,8 +565,12 @@ class EventLoop:
                                 continue
                             self.statistics_df = self.statistics_class(
                                 equity=self.statistics_manager.get_equity_dfs(exchange),
-                                positions=self.statistics_manager.get_positions_dfs(exchange),
-                                transactions=self.statistics_manager.get_transactions_dfs(exchange),
+                                positions=self.statistics_manager.get_positions_dfs(
+                                    exchange
+                                ),
+                                transactions=self.statistics_manager.get_transactions_dfs(
+                                    exchange
+                                ),
                             ).get_tearsheet()
                             print(self.statistics_manager.get_equity_dfs(exchange))
                             print(self.statistics_df)

@@ -5,11 +5,11 @@ import pandas as pd
 import pytest
 import pytz
 from freezegun import freeze_time
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from pytz import timezone
 from requests import Response, Session
 
 from trazy_analysis.common.constants import DATE_FORMAT
-from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from trazy_analysis.common.helper import (
     TimeInterval,
     calc_required_history_start_timestamp,

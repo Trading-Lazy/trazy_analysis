@@ -14,8 +14,15 @@ QUEUE_NAME2 = "candles2"
 QUEUE_NAME3 = "candles3"
 QUEUE_NAME4 = "candles4"
 MESSAGE = "Rabbits like carrots"
-CANDLE = Candle(asset=Asset(symbol="AAPL", exchange="IEX"), open=354.28, high=354.96, low=353.96, close=354.78,
-                volume=2324, timestamp=datetime.strptime("2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE = Candle(
+    asset=Asset(symbol="AAPL", exchange="IEX"),
+    open=354.28,
+    high=354.96,
+    low=353.96,
+    close=354.78,
+    volume=2324,
+    timestamp=datetime.strptime("2020-06-18 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 CONNECTION_URL = trazy_analysis.settings.CLOUDAMQP_URL
 CONNECTION = pika.BlockingConnection(pika.URLParameters(CONNECTION_URL))
 CHANNEL = CONNECTION.channel()

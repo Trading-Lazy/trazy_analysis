@@ -141,7 +141,9 @@ class CandleDataFrame(DataFrame):
 
     @staticmethod
     def concat(
-        candle_dataframes: np.array, asset: Asset, time_unit: timedelta=timedelta(minutes=1)
+        candle_dataframes: np.array,
+        asset: Asset,
+        time_unit: timedelta = timedelta(minutes=1),
     ) -> "CandleDataFrame":
         concatenated_candle_dataframe = pd.concat(
             candle_dataframes, verify_integrity=True

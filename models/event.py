@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple
+from typing import List, Dict
+
 from sortedcontainers import SortedSet
 
 from trazy_analysis.models.asset import Asset

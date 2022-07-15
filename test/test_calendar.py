@@ -1,11 +1,11 @@
 from datetime import datetime
 
 import pandas as pd
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from pytz import timezone
 
 from trazy_analysis.common.calendar import is_business_day, is_business_hour
 from trazy_analysis.common.constants import DATE_FORMAT
-from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 
 euronext_cal = EUREXExchangeCalendar()
 

@@ -4,12 +4,11 @@ from datetime import datetime, timedelta
 import numpy as np
 
 from trazy_analysis.feed.feed import CsvFeed, Feed
-from trazy_analysis.indicators.indicator import Indicator
+from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
 from trazy_analysis.indicators.level import Peak, ResistanceLevels, TightTradingRange
-from trazy_analysis.indicators.rolling_window import RollingWindow
-
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import ExecutionMode
 
 BIG_DATA = [
     56281.78,
@@ -65,47 +64,103 @@ BIG_DATA = [
 ]
 
 TTR_CANDLES = [
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49205.00, high=49205.00, low=49120.82,
-           close=49135.32, volume=25.25826,
-           timestamp=datetime.strptime("2021-12-04 21:03:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49135.26, high=49210.64, low=49135.26,
-           close=49181.5, volume=24.54924,
-           timestamp=datetime.strptime("2021-12-04 21:03:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49181.49, high=49198.81, low=49100.01,
-           close=49107.0, volume=20.07389,
-           timestamp=datetime.strptime("2021-12-04 21:04:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49107.0, high=49169.05, low=49104.1, close=49166.55,
-           volume=22.484460000000002, timestamp=datetime.strptime("2021-12-04 21:05:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49166.55, high=49174.84, low=49116.44,
-           close=49144.08, volume=21.12189,
-           timestamp=datetime.strptime("2021-12-04 21:06:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49144.47, high=49160.37, low=49105.87,
-           close=49121.02, volume=21.91763,
-           timestamp=datetime.strptime("2021-12-04 21:07:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49121.01, high=49182.0, low=49080.01,
-           close=49162.41, volume=22.84226,
-           timestamp=datetime.strptime("2021-12-04 21:08:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49162.41, high=49198.12, low=49108.85,
-           close=49108.86, volume=16.63171,
-           timestamp=datetime.strptime("2021-12-04 21:09:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49108.85, high=49179.6, low=49102.01,
-           close=49158.39, volume=22.02259,
-           timestamp=datetime.strptime("2021-12-04 21:10:00+0000", "%Y-%m-%d %H:%M:%S%z")),
-    Candle(asset=Asset(symbol="BTC/USDT", exchange="BINANCE"), open=49158.38, high=49160.19, low=48928.01,
-           close=49020.81, volume=83.29263,
-           timestamp=datetime.strptime("2021-12-04 21:11:00+0000", "%Y-%m-%d %H:%M:%S%z")),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49205.00,
+        high=49205.00,
+        low=49120.82,
+        close=49135.32,
+        volume=25.25826,
+        timestamp=datetime.strptime("2021-12-04 21:03:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49135.26,
+        high=49210.64,
+        low=49135.26,
+        close=49181.5,
+        volume=24.54924,
+        timestamp=datetime.strptime("2021-12-04 21:03:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49181.49,
+        high=49198.81,
+        low=49100.01,
+        close=49107.0,
+        volume=20.07389,
+        timestamp=datetime.strptime("2021-12-04 21:04:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49107.0,
+        high=49169.05,
+        low=49104.1,
+        close=49166.55,
+        volume=22.484460000000002,
+        timestamp=datetime.strptime("2021-12-04 21:05:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49166.55,
+        high=49174.84,
+        low=49116.44,
+        close=49144.08,
+        volume=21.12189,
+        timestamp=datetime.strptime("2021-12-04 21:06:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49144.47,
+        high=49160.37,
+        low=49105.87,
+        close=49121.02,
+        volume=21.91763,
+        timestamp=datetime.strptime("2021-12-04 21:07:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49121.01,
+        high=49182.0,
+        low=49080.01,
+        close=49162.41,
+        volume=22.84226,
+        timestamp=datetime.strptime("2021-12-04 21:08:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49162.41,
+        high=49198.12,
+        low=49108.85,
+        close=49108.86,
+        volume=16.63171,
+        timestamp=datetime.strptime("2021-12-04 21:09:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49108.85,
+        high=49179.6,
+        low=49102.01,
+        close=49158.39,
+        volume=22.02259,
+        timestamp=datetime.strptime("2021-12-04 21:10:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
+    Candle(
+        asset=Asset(symbol="BTC/USDT", exchange="BINANCE"),
+        open=49158.38,
+        high=49160.19,
+        low=48928.01,
+        close=49020.81,
+        volume=83.29263,
+        timestamp=datetime.strptime("2021-12-04 21:11:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+    ),
 ]
+indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
 
 
 def test_peak_stream_handle_new_data_source_is_indicator_data():
-    indicator_data = Indicator()
-    peak = Peak(
-        comparator=np.greater,
-        order=2,
-        size=1,
-        source_indicator=indicator_data,
-        preload=False,
-    )
+    indicator_data = indicators.Indicator(size=1)
+    peak = Peak(comparator=np.greater, order=2, size=1, source=indicator_data)
     indicator_data.push(7.2)
     assert peak.data is False
     indicator_data.push(6.1)
@@ -121,14 +176,8 @@ def test_peak_stream_handle_new_data_source_is_indicator_data():
 
 
 def test_peak_stream_handle_new_data_source_is_rolling_window_stream():
-    rolling_window_stream = RollingWindow(size=3, preload=False)
-    peak = Peak(
-        comparator=np.greater,
-        order=2,
-        size=1,
-        source_indicator=rolling_window_stream,
-        preload=False,
-    )
+    rolling_window_stream = indicators.Indicator(size=3)
+    peak = Peak(comparator=np.greater, order=2, size=1, source=rolling_window_stream)
     rolling_window_stream.push(7.2)
     assert peak.data is False
     rolling_window_stream.push(6.1)
@@ -144,30 +193,22 @@ def test_peak_stream_handle_new_data_source_is_rolling_window_stream():
 
 
 def test_peak_stream_handle_new_data_source_is_filled_small_data():
-    indicator_data = Indicator()
-    rolling_window_stream = RollingWindow(
-        size=3, source_indicator=indicator_data, preload=False
-    )
-    rolling_window_stream.prefill(filling_array=[7.2, 7.5, 2.3])
-    peak = Peak(
-        comparator=np.greater,
-        order=1,
-        size=1,
-        source_indicator=rolling_window_stream,
-        preload=False,
-    )
+    indicator_data = indicators.Indicator(size=1)
+    rolling_window_stream = indicators.Indicator(source=indicator_data, size=3)
+    rolling_window_stream.fill(array=[7.2, 7.5, 2.3])
+    peak = Peak(comparator=np.greater, order=1, size=1, source=rolling_window_stream)
     assert peak.data == True
 
 
 def test_peak_stream_handle_new_data_source_is_filled_big_data():
     order = 2
-    rolling_window_stream = RollingWindow(size=len(BIG_DATA), preload=False)
-    rolling_window_stream.prefill(filling_array=BIG_DATA)
+    rolling_window_stream = indicators.Indicator(size=len(BIG_DATA))
+    rolling_window_stream.fill(array=BIG_DATA)
     peak = Peak(
         comparator=np.greater_equal,
         order=order,
         size=len(BIG_DATA),
-        source_indicator=rolling_window_stream,
+        source=rolling_window_stream,
     )
     peaks = list(peak.window[order:])
     peaks_indexes = []
@@ -183,19 +224,17 @@ def test_resistance():
     exchange = "BINANCE"
     exchange_asset = Asset(symbol="BTC/USDT", exchange=exchange)
     events = deque()
-    feed: Feed = CsvFeed(csv_filenames={exchange_asset: {timedelta(minutes=1): f"test/data/btc_usdt.csv"}}, events=events)
+    feed: Feed = CsvFeed(
+        csv_filenames={
+            exchange_asset: {timedelta(minutes=1): f"test/data/btc_usdt.csv"}
+        },
+        events=events,
+    )
     df = feed.candle_dataframes[exchange_asset][timedelta(minutes=1)]
     candles = df.to_candles()
-    rolling_window_stream = RollingWindow(
-        size=len(candles), idtype=Candle, preload=False
-    )
+    rolling_window_stream = indicators.Indicator(size=len(candles))
 
-    r = ResistanceLevels(
-        accuracy=2,
-        order=2,
-        size=1,
-        source_indicator=rolling_window_stream,
-    )
+    r = ResistanceLevels(accuracy=2, order=2, size=1, source=rolling_window_stream)
 
     index = 0
     high_sum = 0
@@ -217,14 +256,17 @@ def test_tight_trading_range():
     exchange = "BINANCE"
     exchange_asset = Asset(symbol="BTC/USDT", exchange=exchange)
     events = deque()
-    feed: Feed = CsvFeed(csv_filenames={exchange_asset: {timedelta(minutes=1):f"test/data/btc_usdt_tight_trading_range.csv"}}, events=events)
+    feed: Feed = CsvFeed(
+        csv_filenames={
+            exchange_asset: {
+                timedelta(minutes=1): f"test/data/btc_usdt_tight_trading_range.csv"
+            }
+        },
+        events=events,
+    )
     df = feed.candle_dataframes[exchange_asset][timedelta(minutes=1)]
-    rolling_window_stream = RollingWindow(
-        size=len(TTR_CANDLES), idtype=Candle, preload=False
-    )
-    t = TightTradingRange(
-        size=10, min_overlaps=10, source_indicator=rolling_window_stream
-    )
+    rolling_window_stream = indicators.Indicator(size=len(TTR_CANDLES))
+    t = TightTradingRange(size=10, min_overlaps=10, source=rolling_window_stream)
 
     for candle in TTR_CANDLES:
         rolling_window_stream.push(candle)

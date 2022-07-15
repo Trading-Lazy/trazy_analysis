@@ -8,7 +8,6 @@ from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
 from trazy_analysis.common.constants import DATE_DIR_FORMAT
-from trazy_analysis.common.helper import resample_candle_data
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.db_storage.db_storage import DbStorage
 from trazy_analysis.file_storage.common import DATASETS_DIR, DONE_DIR

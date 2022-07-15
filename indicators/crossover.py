@@ -20,16 +20,19 @@ class Crossover(Indicator):
     count = 0
     instances = 0
 
-    def __init__(self, source_stream_data1: Indicator, source_stream_data2: Indicator):
+    def __init__(
+        self,
+        source_stream_data1: Indicator,
+        source_stream_data2: Indicator,
+    ):
         Crossover.instances += 1
         self.sign_stream = source_stream_data1.sub(source_stream_data2)
-        super().__init__(source_indicator=self.sign_stream)
+        super().__init__(source=self.sign_stream)
         check_type(source_stream_data1.data, [int, float, np.float64, Decimal])
         check_type(source_stream_data2.data, [int, float, np.float64, Decimal])
         self.state = CrossoverState.IDLE
-        self.data = 0
 
-    def handle_new_data(self, new_data: float) -> None:
+    def handle_data(self, new_data: float) -> None:
         Crossover.count += 1
         new_state = get_state(new_data)
         if (

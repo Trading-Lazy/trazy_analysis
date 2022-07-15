@@ -26,50 +26,100 @@ ETH_SYMBOL = "ETH"
 ETH_ASSET = Asset(symbol=ETH_SYMBOL, exchange=EXCHANGE)
 ETH_CANDLES1 = np.array(
     [
-        Candle(asset=ETH_ASSET, open=355.15, high=355.15, low=353.74, close=353.84, volume=3254,
-               timestamp=datetime.strptime(
-                   "2020-06-11 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
-               )),
-        Candle(asset=ETH_ASSET, open=354.28, high=354.96, low=353.96, close=354.78, volume=2324,
-               timestamp=datetime.strptime(
-                   "2020-06-13 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
-               )),
+        Candle(
+            asset=ETH_ASSET,
+            open=355.15,
+            high=355.15,
+            low=353.74,
+            close=353.84,
+            volume=3254,
+            timestamp=datetime.strptime(
+                "2020-06-11 13:30:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=ETH_ASSET,
+            open=354.28,
+            high=354.96,
+            low=353.96,
+            close=354.78,
+            volume=2324,
+            timestamp=datetime.strptime(
+                "2020-06-13 13:31:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
     ],
     dtype=Candle,
 )
-ETH_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(asset=ETH_ASSET, candles=ETH_CANDLES1)
+ETH_CANDLE_DATAFRAME1 = CandleDataFrame.from_candle_list(
+    asset=ETH_ASSET, candles=ETH_CANDLES1
+)
 
 ETH_CANDLES2 = np.array(
     [
-        Candle(asset=ETH_ASSET, open=354.92, high=355.32, low=354.09, close=354.09, volume=1123,
-               timestamp=datetime.strptime(
-                   "2020-06-15 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-               )),
+        Candle(
+            asset=ETH_ASSET,
+            open=354.92,
+            high=355.32,
+            low=354.09,
+            close=354.09,
+            volume=1123,
+            timestamp=datetime.strptime(
+                "2020-06-15 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
     ],
     dtype=Candle,
 )
-ETH_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(asset=ETH_ASSET, candles=ETH_CANDLES2)
+ETH_CANDLE_DATAFRAME2 = CandleDataFrame.from_candle_list(
+    asset=ETH_ASSET, candles=ETH_CANDLES2
+)
 ETH_CANDLES3 = np.array(
     [
-        Candle(asset=ETH_ASSET, open=354.25, high=354.59, low=354.14, close=354.59, volume=2613,
-               timestamp=datetime.strptime(
-                   "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-               )),
-        Candle(asset=ETH_ASSET, open=354.22, high=354.26, low=353.95, close=353.98, volume=1186,
-               timestamp=datetime.strptime(
-                   "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
-               )),
-        Candle(asset=ETH_ASSET, open=354.13, high=354.26, low=353.01, close=353.30, volume=1536,
-               timestamp=datetime.strptime(
-                   "2020-06-19 13:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
-               )),
+        Candle(
+            asset=ETH_ASSET,
+            open=354.25,
+            high=354.59,
+            low=354.14,
+            close=354.59,
+            volume=2613,
+            timestamp=datetime.strptime(
+                "2020-06-17 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=ETH_ASSET,
+            open=354.22,
+            high=354.26,
+            low=353.95,
+            close=353.98,
+            volume=1186,
+            timestamp=datetime.strptime(
+                "2020-06-19 13:34:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
+        Candle(
+            asset=ETH_ASSET,
+            open=354.13,
+            high=354.26,
+            low=353.01,
+            close=353.30,
+            volume=1536,
+            timestamp=datetime.strptime(
+                "2020-06-19 13:35:00+0000", "%Y-%m-%d %H:%M:%S%z"
+            ),
+        ),
     ],
     dtype=Candle,
 )
-ETH_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(asset=ETH_ASSET, candles=ETH_CANDLES3)
+ETH_CANDLE_DATAFRAME3 = CandleDataFrame.from_candle_list(
+    asset=ETH_ASSET, candles=ETH_CANDLES3
+)
 
 ETH_CANDLES = np.concatenate([ETH_CANDLES1, ETH_CANDLES2, ETH_CANDLES3])
-ETH_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(asset=ETH_ASSET, candles=ETH_CANDLES)
+ETH_CANDLE_DATAFRAME = CandleDataFrame.from_candle_list(
+    asset=ETH_ASSET, candles=ETH_CANDLES
+)
 
 FETCH_OHLCV_RETURN_VALUE = [
     [
@@ -268,19 +318,36 @@ def test_request_ticker_data_in_range(binance_init_mocked):
 
     start = datetime(2020, 6, 11, 13, 31, tzinfo=pytz.UTC)
     end = datetime(2020, 6, 19, 13, 34, tzinfo=pytz.UTC)
-    expected_candle_dataframe = CandleDataFrame.from_candle_list(asset=ETH_ASSET, candles=np.array(
-        [
-            Candle(asset=ETH_ASSET, open=7935.62, high=7935.62, low=7935.62, close=7935.62, volume=0.0,
-                   timestamp=datetime.strptime(
-                       "2020-06-13 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-            Candle(asset=ETH_ASSET, open=7935.62, high=7935.62, low=7935.62, close=7935.62, volume=0.0,
-                   timestamp=datetime.strptime(
-                       "2020-06-15 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                   )),
-        ],
-        dtype=Candle,
-    ))
+    expected_candle_dataframe = CandleDataFrame.from_candle_list(
+        asset=ETH_ASSET,
+        candles=np.array(
+            [
+                Candle(
+                    asset=ETH_ASSET,
+                    open=7935.62,
+                    high=7935.62,
+                    low=7935.62,
+                    close=7935.62,
+                    volume=0.0,
+                    timestamp=datetime.strptime(
+                        "2020-06-13 13:32:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    ),
+                ),
+                Candle(
+                    asset=ETH_ASSET,
+                    open=7935.62,
+                    high=7935.62,
+                    low=7935.62,
+                    close=7935.62,
+                    volume=0.0,
+                    timestamp=datetime.strptime(
+                        "2020-06-15 13:33:00+0000", "%Y-%m-%d %H:%M:%S%z"
+                    ),
+                ),
+            ],
+            dtype=Candle,
+        ),
+    )
 
     ccxt_connector = CcxtConnector(exchanges_api_keys=EXCHANGES_API_KEYS)
     historical_data_handler = CcxtHistoricalDataHandler(ccxt_connector)

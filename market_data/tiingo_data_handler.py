@@ -4,8 +4,8 @@ from datetime import timedelta
 from typing import List
 
 import pandas as pd
-
 from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
+
 from trazy_analysis.common.helper import resample_candle_data
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.common.utils import lists_equal
@@ -73,6 +73,6 @@ class TiingoDataHandler(DataHandler):
                 candle_dataframe=candle_df,
                 time_unit=timedelta(minutes=1),
                 market_cal_df=market_cal_df,
-                remove_incomplete_head=True
+                remove_incomplete_head=True,
             )
         return candle_df

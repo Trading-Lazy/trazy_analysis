@@ -1,14 +1,7 @@
 from datetime import time
 
 from pandas.tseries.holiday import (
-    AbstractHolidayCalendar,
-    GoodFriday,
     Holiday,
-    USLaborDay,
-    USMartinLutherKingJr,
-    USMemorialDay,
-    USPresidentsDay,
-    USThanksgivingDay,
 )
 from pandas_market_calendars import MarketCalendar
 from pandas_market_calendars.market_calendar import (
@@ -53,7 +46,7 @@ class CryptoExchangeCalendar(MarketCalendar):
     aliases = ["CryptoStock"]
     regular_market_times = {
         "market_open": ((None, time(0)),),
-        "market_close": ((None, time(23,59)),)
+        "market_close": ((None, time(23, 59)),),
     }
 
     def __init__(self, open_time=None, close_time=None):

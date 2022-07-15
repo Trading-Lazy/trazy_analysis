@@ -10,7 +10,6 @@ def ma(df: pd.DataFrame, n):
     return df
 
 
-# TODO: Adapt and test the indicators below
 # Exponential Moving Average
 def EMA(df, n):
     EMA = pd.Series(

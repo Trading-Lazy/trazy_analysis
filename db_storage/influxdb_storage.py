@@ -30,6 +30,7 @@ LOG = trazy_analysis.logger.get_root_logger(
 )
 
 
+# It's a subclass of the DbStorage class that uses the InfluxDB database
 class InfluxDbStorage(DbStorage):
     def __init__(
         self,

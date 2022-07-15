@@ -529,13 +529,21 @@ def test_external_storage_feed(get_file_content_mocked):
     assert len(events_list) == 7
 
     assert isinstance(events_list[0], MarketDataEvent)
-    assert events_list[0].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[0]
+    assert (
+        events_list[0].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[0]
+    )
     assert isinstance(events_list[1], MarketDataEvent)
-    assert events_list[1].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[1]
+    assert (
+        events_list[1].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[1]
+    )
     assert isinstance(events_list[2], MarketDataEvent)
-    assert events_list[2].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[2]
+    assert (
+        events_list[2].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[2]
+    )
     assert isinstance(events_list[3], MarketDataEvent)
-    assert events_list[3].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[3]
+    assert (
+        events_list[3].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[3]
+    )
     assert isinstance(events_list[4], MarketDataEvent)
     print(str(events_list[4].candles[IVV_ASSET][time_unit][0]))
     assert events_list[4].candles[IVV_ASSET][time_unit][0] == Candle(

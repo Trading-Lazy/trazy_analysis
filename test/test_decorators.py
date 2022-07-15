@@ -1,4 +1,4 @@
-from trazy_analysis.common.decorators import Singleton, try_until_success
+from trazy_analysis.common.decorators import singleton, try_until_success
 
 
 def test_try_until_success():
@@ -18,7 +18,7 @@ def test_try_until_success():
 
 
 def test_singleton():
-    @Singleton
+    @singleton
     class SingletonClass:
         pass
 

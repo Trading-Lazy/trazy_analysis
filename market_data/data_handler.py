@@ -7,7 +7,7 @@ import numpy as np
 
 import trazy_analysis.settings
 from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
-from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.common.meta import RateLimitedSingleton
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.logger import logger
 
@@ -16,7 +16,7 @@ LOG = trazy_analysis.logger.get_root_logger(
 )
 
 
-class DataHandler(metaclass=RateLimitedSingletonMeta):
+class DataHandler(metaclass=RateLimitedSingleton):
     # properties
     @property
     @classmethod

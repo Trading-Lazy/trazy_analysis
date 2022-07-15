@@ -30,14 +30,35 @@ from trazy_analysis.test.tools.tools import (
 AAPL_SYMBOL = "AAPL"
 AAPL_ASSET = Asset(symbol=AAPL_SYMBOL, exchange="IEX")
 
-CANDLE1: Candle = Candle(asset=AAPL_ASSET, open=10.5, high=10.9, low=10.3, close=10.6, volume=100,
-                         timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE1: Candle = Candle(
+    asset=AAPL_ASSET,
+    open=10.5,
+    high=10.9,
+    low=10.3,
+    close=10.6,
+    volume=100,
+    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 
-CANDLE2: Candle = Candle(asset=AAPL_ASSET, open=10.4, high=10.8, low=10.4, close=10.5, volume=80,
-                         timestamp=datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE2: Candle = Candle(
+    asset=AAPL_ASSET,
+    open=10.4,
+    high=10.8,
+    low=10.4,
+    close=10.5,
+    volume=80,
+    timestamp=datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 
-CANDLE3: Candle = Candle(asset=AAPL_ASSET, open=10.8, high=11.0, low=10.7, close=11.1, volume=110,
-                         timestamp=datetime.strptime("2020-05-08 14:37:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE3: Candle = Candle(
+    asset=AAPL_ASSET,
+    open=10.8,
+    high=11.0,
+    low=10.7,
+    close=11.1,
+    volume=110,
+    timestamp=datetime.strptime("2020-05-08 14:37:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 
 clock = SimulatedClock()
 
@@ -279,7 +300,9 @@ def test_get_candle_by_identifier():
     INFLUXDB_STORAGE.clean_all_candles()
 
     INFLUXDB_STORAGE.add_candle(CANDLE1)
-    candle: Candle = INFLUXDB_STORAGE.get_candle_by_identifier(CANDLE1.asset, timedelta(minutes=1), CANDLE1.timestamp)
+    candle: Candle = INFLUXDB_STORAGE.get_candle_by_identifier(
+        CANDLE1.asset, timedelta(minutes=1), CANDLE1.timestamp
+    )
     assert candle == CANDLE1
 
     INFLUXDB_STORAGE.clean_all_candles()
@@ -288,7 +311,9 @@ def test_get_candle_by_identifier():
 def test_get_candle_by_identifier_non_existing_identifier_non_existing_candle():
     INFLUXDB_STORAGE.clean_all_candles()
 
-    candle: Candle = INFLUXDB_STORAGE.get_candle_by_identifier(CANDLE1.asset, timedelta(minutes=1), CANDLE1.timestamp)
+    candle: Candle = INFLUXDB_STORAGE.get_candle_by_identifier(
+        CANDLE1.asset, timedelta(minutes=1), CANDLE1.timestamp
+    )
     assert candle is None
 
 
@@ -317,9 +342,12 @@ def test_get_candles_in_range():
     INFLUXDB_STORAGE.add_candle(CANDLE1)
     INFLUXDB_STORAGE.add_candle(CANDLE2)
     INFLUXDB_STORAGE.add_candle(CANDLE3)
-    candles: List[Candle] = INFLUXDB_STORAGE.get_candles_in_range(CANDLE1.asset, timedelta(minutes=1),
-                                                                  CANDLE1.timestamp - timedelta(minutes=1),
-                                                                  CANDLE1.timestamp + timedelta(minutes=1))
+    candles: List[Candle] = INFLUXDB_STORAGE.get_candles_in_range(
+        CANDLE1.asset,
+        timedelta(minutes=1),
+        CANDLE1.timestamp - timedelta(minutes=1),
+        CANDLE1.timestamp + timedelta(minutes=1),
+    )
     assert compare_candles_list(candles, [CANDLE2, CANDLE1])
 
     INFLUXDB_STORAGE.clean_all_candles()

@@ -9,7 +9,7 @@ import trazy_analysis.logger
 import trazy_analysis.settings
 from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
 from trazy_analysis.common.helper import request
-from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.common.meta import RateLimitedSingleton
 from trazy_analysis.market_data.data_handler import DataHandler
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
@@ -19,7 +19,7 @@ LOG = trazy_analysis.logger.get_root_logger(
 )
 
 
-class LiveDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
+class LiveDataHandler(DataHandler, metaclass=RateLimitedSingleton):
     @property
     @classmethod
     @abc.abstractmethod

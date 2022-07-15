@@ -100,6 +100,7 @@ class Ordinal(Parameter):
         super().__init__(range)
         self.type = type(self.range[0])
 
+
 class Static(Parameter):
     """
     Static parameter class. A fixed parameter.

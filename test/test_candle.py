@@ -5,8 +5,15 @@ from trazy_analysis.models.candle import Candle
 
 IVV_ASSET = Asset(symbol="IVV", exchange="IEX")
 
-CANDLE1 = Candle(asset=IVV_ASSET, open=25.0, high=25.5, low=24.8, close=25.3, volume=100,
-                 timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE1 = Candle(
+    asset=IVV_ASSET,
+    open=25.0,
+    high=25.5,
+    low=24.8,
+    close=25.3,
+    volume=100,
+    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 CANDLE1_DICT = {
     "asset": {"exchange": "IEX", "symbol": "IVV"},
     "open": "25.0",
@@ -18,10 +25,24 @@ CANDLE1_DICT = {
     "timestamp": datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
 }
 
-CANDLE2 = Candle(asset=IVV_ASSET, open=25.0, high=25.5, low=24.8, close=25.3, volume=100,
-                 timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-CANDLE3 = Candle(asset=IVV_ASSET, open=25.0, high=25.5, low=24.8, close=25.4, volume=100,
-                 timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
+CANDLE2 = Candle(
+    asset=IVV_ASSET,
+    open=25.0,
+    high=25.5,
+    low=24.8,
+    close=25.3,
+    volume=100,
+    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
+CANDLE3 = Candle(
+    asset=IVV_ASSET,
+    open=25.0,
+    high=25.5,
+    low=24.8,
+    close=25.4,
+    volume=100,
+    timestamp=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
+)
 
 
 def test_eq():

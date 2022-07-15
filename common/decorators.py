@@ -11,14 +11,14 @@ def try_until_success(func: Callable) -> Callable:
             try:
                 data = func(*args, **kwargs)
                 done = True
-            except:
+            except Exception:
                 pass
         return data
 
     return wrapper_try_until_succes
 
 
-def Singleton(cls):
+def singleton(cls):
     instances = {}
 
     def wrapper(*args, **kwargs):

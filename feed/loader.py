@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pytz
 from pandas_market_calendars import MarketCalendar
-
 from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 
 from trazy_analysis.common.constants import MARKET_CAL
@@ -147,7 +146,9 @@ class ExternalStorageLoader:
 
     def load(self):
         for asset in self.assets:
-            candle_dataframe = self.candle_fetcher.fetch(asset, timedelta(minutes=1), self.start, self.end)
+            candle_dataframe = self.candle_fetcher.fetch(
+                asset, timedelta(minutes=1), self.start, self.end
+            )
             get_or_create_nested_dict(self.candle_dataframes, asset)
             get_or_create_nested_dict(self.candles, asset)
             for time_unit in self.assets[asset]:

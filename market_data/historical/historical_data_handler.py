@@ -12,7 +12,7 @@ from requests.models import Response
 import trazy_analysis.settings
 from trazy_analysis.common.constants import CONNECTION_ERROR_MESSAGE, ENCODING
 from trazy_analysis.common.helper import fill_missing_datetimes, request
-from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.common.meta import RateLimitedSingleton
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.common.utils import timestamp_to_utc
 from trazy_analysis.db_storage.db_storage import DbStorage
@@ -27,7 +27,7 @@ LOG = trazy_analysis.logger.get_root_logger(
 )
 
 
-class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
+class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingleton):
     # properties
     @property
     @classmethod
@@ -122,7 +122,9 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingletonMeta):
             error_response_periods[period_tuple] = "{}: {}".format(
                 response.status_code, data
             )
-        return CandleDataFrame.from_candle_list(asset=ticker, candles=np.array([], dtype=Candle))
+        return CandleDataFrame.from_candle_list(
+            asset=ticker, candles=np.array([], dtype=Candle)
+        )
 
     @classmethod
     def request_ticker_data_from_periods(

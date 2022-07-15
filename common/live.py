@@ -19,7 +19,6 @@ from trazy_analysis.common.crypto_exchange_calendar import CryptoExchangeCalenda
 from trazy_analysis.feed.feed import (
     LiveFeed,
 )
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.market_data.live.ccxt_live_data_handler import CcxtLiveDataHandler
 from trazy_analysis.market_data.live.tiingo_live_data_handler import (
     TiingoLiveDataHandler,
@@ -253,20 +252,19 @@ class Live:
             order_creator=order_creator,
             clock=clock,
         )
-        indicators_manager = IndicatorsManager(
-            preload=self.live_config.preload,
-            initial_data=self.live_config.feed.candles,
+        self.event_loop = EventLoop(
+            events=self.events,
+            assets=self.live_config.assets,
+            feed=self.live_config.feed,
+            order_manager=order_manager,
+            strategies_parameters=strategies_parameters,
+            close_at_end_of_day=self.live_config.close_at_end_of_day,
+            close_at_end_of_data=False,
+            broker_isolation=self.live_config.isolation,
+            statistics_class=self.live_config.statistics_class,
         )
-        self.event_loop = EventLoop(events=self.events, assets=self.live_config.assets, feed=self.live_config.feed,
-                                    order_manager=order_manager, indicators_manager=indicators_manager,
-                                    strategies_parameters=strategies_parameters,
-                                    close_at_end_of_day=self.live_config.close_at_end_of_day,
-                                    close_at_end_of_data=False, broker_isolation=self.live_config.isolation,
-                                    statistics_class=self.live_config.statistics_class)
         self.event_loop.loop()
         return self.event_loop.statistics_df
 
-    def run_strategy(
-        self, strategy: type, strategy_parameters: Dict[str, Any]
-    ) -> None:
+    def run_strategy(self, strategy: type, strategy_parameters: Dict[str, Any]) -> None:
         self.run_strategies({strategy: strategy_parameters})

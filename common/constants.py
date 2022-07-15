@@ -23,5 +23,5 @@ NONE_API_KEYS = {
 MARKET_CAL = {
     "binance": CryptoExchangeCalendar(),
     "euronext": EUREXExchangeCalendar(),
-    "iex": IEXExchangeCalendar()
+    "iex": IEXExchangeCalendar(),
 }

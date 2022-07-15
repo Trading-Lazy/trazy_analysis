@@ -6,8 +6,8 @@ from trazy_analysis.broker.broker_manager import BrokerManager
 from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import CsvFeed, Feed
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
+from trazy_analysis.models.enums import ExecutionMode
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -23,7 +23,12 @@ def test_sma_crossover_strategy_preload_data():
     assets = {aapl_asset: timedelta(minutes=1)}
     events = deque()
 
-    feed: Feed = CsvFeed(csv_filenames={aapl_asset: {timedelta(minutes=1): "test/data/aapl_candles_one_day.csv"}}, events=events)
+    feed: Feed = CsvFeed(
+        csv_filenames={
+            aapl_asset: {timedelta(minutes=1): "test/data/aapl_candles_one_day.csv"}
+        },
+        events=events,
+    )
 
     strategies = {SmaCrossoverStrategy: SmaCrossoverStrategy.DEFAULT_PARAMETERS}
     clock = SimulatedClock()
@@ -39,9 +44,14 @@ def test_sma_crossover_strategy_preload_data():
         order_creator=order_creator,
         clock=clock,
     )
-    indicators_manager = IndicatorsManager(initial_data=feed.candles)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies)
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        strategies_parameters=strategies,
+        mode=ExecutionMode.LIVE,
+    )
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10010.955

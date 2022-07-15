@@ -1,22 +1,22 @@
 from collections import deque
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import numpy as np
 from intervaltree import IntervalTree
 
 from trazy_analysis.indicators.common import PriceType
-from trazy_analysis.indicators.indicator import Indicator
-from trazy_analysis.indicators.rolling_window import (
-    RollingWindow,
+from trazy_analysis.indicators.indicator import (
+    Indicator,
     get_price_selector_function,
 )
-from trazy_analysis.indicators.sma import Average, Sma
+from trazy_analysis.indicators.sma import Average
 from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import ExecutionMode
 
 
-class Peak(RollingWindow):
+class Peak(Indicator):
     def fractal_is_peak(self, index_to_check: int) -> bool:
-        data = self.rolling_window_stream
+        data = self.input_window
         for current_order in range(1, self.order + 1):
             for direction in [-1, +1]:
                 index = index_to_check + direction * current_order
@@ -29,7 +29,7 @@ class Peak(RollingWindow):
         return True
 
     def local_extrema_is_peak(self, index_to_check: int) -> bool:
-        data = self.rolling_window_stream
+        data = self.input_window
         for current_order in range(1, self.order + 1):
             for direction in [-1, +1]:
                 first_index = index_to_check
@@ -48,15 +48,15 @@ class Peak(RollingWindow):
         else:
             raise Exception(f"method {self.method} is not among the supported method")
 
-    def initialize(self):
-        data = self.rolling_window_stream
+    def initialize_stream(self):
+        data = self.input_window
         len = data.nb_elts
         start = -len + self.order + 1
         end = -self.order + 1
         peaks = [False] * self.order * 2
         for index_to_check in range(start, end):
             peaks.append(self.is_peak(index_to_check))
-        self.prefill(np.array(peaks, dtype=self.odtype))
+        self.fill(np.array(peaks, dtype=self.dtype))
 
     def __init__(
         self,
@@ -64,45 +64,31 @@ class Peak(RollingWindow):
         order: int = 1,
         method: str = "fractal",
         size: int = 1,
-        source_indicator: Indicator = None,
-        preload=False,
+        source: Optional[Indicator] = None,
     ):
-        self.rolling_window_stream = None
         self.order = order
         self.method = method
         self.peak_size = 2 * order + 1
-        if issubclass(type(source_indicator), RollingWindow) and (
-            not source_indicator.ready or source_indicator.size >= self.peak_size
-        ):
-            self.rolling_window_stream = source_indicator
-        else:
-            self.rolling_window_stream = RollingWindow(size=self.peak_size, source_indicator=source_indicator,
-                                                       idtype=float, odtype=float, preload=False)
-        super().__init__(size=size, source_indicator=self.rolling_window_stream, idtype=float, odtype=bool,
-                         preload=preload)
-        # self.prefill(np.zeros(self.size, dtype=bool))
+        super().__init__(source=source, source_minimal_size=self.peak_size, size=size)
         self.comparator = comparator
 
-        if self.rolling_window_stream.filled():
-            self.initialize()
-
-    def handle_new_data(self, new_data) -> None:
-        if not self.preload:
+    def handle_stream_data(self, new_data) -> None:
+        if self.mode == ExecutionMode.BATCH:
             index_to_check = -self.order
-            if self.rolling_window_stream.nb_elts < self.peak_size:
-                super().handle_new_data(False)
+            if self.input_window.nb_elts < self.peak_size:
+                super().handle_stream_data(False)
                 return
-            super().handle_new_data(self.is_peak(index_to_check))
+            super().handle_stream_data(self.is_peak(index_to_check))
         else:
             if self.index < self.peak_size:
                 self.data = None
                 self.on_next(self.data)
                 self.index += 1
             else:
-                super().handle_new_data(new_data)
+                super().handle_stream_data(new_data)
 
     def push(self, new_data: Any = None):
-        self.rolling_window_stream.push(new_data)
+        self.input_window.push(new_data)
 
 
 class Level:
@@ -153,31 +139,25 @@ class ResistanceLevels(Indicator):
         accuracy: int = 2,
         order: int = 2,
         size: int = None,
-        source_indicator: "Indicator" = None,
-        transform: Callable = lambda new_data: new_data,
+        source: Indicator = None,
+        transform: Callable = None,
+        memoize: bool = True,
     ):
         self.order = order
         self.peak_size = 2 * order + 1
         self.size = size
-        if (
-            issubclass(type(source_indicator), RollingWindow)
-            and source_indicator.idtype == Candle
-            and (not source_indicator.ready or source_indicator.size >= self.peak_size)
-        ):
-            self.rolling_window_stream = source_indicator
-        else:
-            self.rolling_window_stream = RollingWindow(size=self.peak_size, source_indicator=source_indicator,
-                                                       idtype=Candle, preload=False)
-        self.highs = self.rolling_window_stream.map(
-            get_price_selector_function(PriceType.HIGH)
+        super().__init__(
+            source=source,
+            transform=transform,
+            source_minimal_size=self.peak_size,
+            size=self.size,
         )
-        self.lows = self.rolling_window_stream.map(
-            get_price_selector_function(PriceType.LOW)
-        )
-        self.size = self.rolling_window_stream.size
+        self.highs = self.input_window.map(get_price_selector_function(PriceType.HIGH))
+        self.lows = self.input_window.map(get_price_selector_function(PriceType.LOW))
+        self.size = self.input_window.size
         self.merge_dist = (
-            Average(size=self.size, source_indicator=self.highs).sub(
-                Average(size=self.size, source_indicator=self.lows)
+            Average(size=self.size, source=self.highs).sub(
+                Average(size=self.size, source=self.lows)
             )
         ).truediv(accuracy)
         self.maximas = Peak(
@@ -185,25 +165,24 @@ class ResistanceLevels(Indicator):
             order=self.order,
             method="local_extrema",
             size=self.size,
-            source_indicator=self.highs,
+            source=self.highs,
         )
         self.minimas = Peak(
             comparator=np.less,
             order=self.order,
             method="local_extrema",
             size=self.size,
-            source_indicator=self.highs,
+            source=self.highs,
         )
         self.resistances = IntervalTree()
         self.supports = IntervalTree()
         self.levels = {}
         self.candle_index = -1
-        super().__init__(source_indicator, transform)
 
-    def handle_new_data(self, new_data: Candle) -> None:
+    def handle_data(self, new_data: Candle) -> None:
         self.candle_index += 1
         if self.maximas.data:
-            last_peak = self.rolling_window_stream[-self.order]
+            last_peak = self.input_window[-self.order]
             level = Level(
                 self.candle_index - self.order,
                 last_peak.high,
@@ -227,7 +206,7 @@ class ResistanceLevels(Indicator):
                 left = max_value - 0.0000001
             self.resistances[left:right] = (level, level_info)
         elif self.minimas.data:
-            last_peak = self.rolling_window_stream[-self.order]
+            last_peak = self.input_window[-self.order]
             level = Level(
                 self.candle_index - self.order,
                 last_peak.low,
@@ -251,7 +230,7 @@ class ResistanceLevels(Indicator):
                 right = min_value + 0.0000001
             self.supports[left:right] = (level, level_info)
 
-        previous_candle = self.rolling_window_stream[-1]
+        previous_candle = self.input_window[-1]
         if previous_candle is not None and previous_candle.high < new_data.high:
             for interval in self.resistances[previous_candle.low : new_data.high]:
                 level, level_info = interval.data
@@ -295,23 +274,20 @@ class TightTradingRange(Indicator):
         self,
         size: int,
         min_overlaps: int,
-        source_indicator: "Indicator" = None,
-        transform: Callable = lambda new_data: new_data,
+        source: Indicator = None,
+        transform: Callable = None,
+        memoize: bool = True,
     ):
         self.size = size
         self.min_overlaps = min_overlaps
-        if (
-            issubclass(type(source_indicator), RollingWindow)
-            and source_indicator.idtype == Candle
-            and (not source_indicator.ready or source_indicator.size >= self.size)
-        ):
-            self.rolling_window_stream = source_indicator
-        else:
-            self.rolling_window_stream = RollingWindow(size=self.size, source_indicator=source_indicator, idtype=Candle,
-                                                       preload=False)
         self.candle_index = -1
         self.trading_ranges = IntervalTree()
-        super().__init__(source_indicator, transform)
+        super().__init__(
+            source=source,
+            transform=transform,
+            source_minimal_size=self.size,
+            size=self.size,
+        )
 
     def overlap(self, intervals):
         # variable to store the maximum
@@ -354,9 +330,9 @@ class TightTradingRange(Indicator):
         # printing the maximum value
         return ans
 
-    def handle_new_data(self, new_data: Candle) -> None:
+    def handle_data(self, new_data: Candle) -> None:
         self.candle_index += 1
-        recent_candles = self.rolling_window_stream[-self.size + 1 :]
+        recent_candles = self.input_window[-self.size + 1 :]
         intervals = []
         min_low = float("inf")
         max_high = float("-inf")

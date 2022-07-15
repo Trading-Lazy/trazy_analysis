@@ -5,18 +5,20 @@ from typing import Any, Dict, List
 import GPyOpt
 import black_box as bb
 import numpy as np
+
 # import optuna
 # import sherpa
 # from bayes_opt import BayesianOptimization
 from hyperopt import Trials, fmin, hp, tpe
+
 # from skopt import gp_minimize
 # from skopt.space import Categorical, Integer, Real
 from trazy_analysis.models.parameter import (
     Choice,
     Continuous,
     Discrete,
-    Ordinal,
-    Parameter, Static,
+    Parameter,
+    Static,
 )
 
 
@@ -232,8 +234,9 @@ class HyperOptimizer(Optimizer):
 
         for param_key, param_value in space.items():
             if isinstance(param_value, Choice) or isinstance(param_value, Static):
-                best_params_dict[param_key] = param_value.range[best_params_dict[param_key]]
-
+                best_params_dict[param_key] = param_value.range[
+                    best_params_dict[param_key]
+                ]
 
         best_result = func(**best_params_dict)
         best_params_dict["best_result"] = best_result

@@ -61,3 +61,8 @@ class StrategyParametersIsolation(Enum):
     STRATEGY = ("STRATEGY",)
     STRATEGY_AND_ASSET = ("STRATEGY_AND_ASSET",)
     STRATEGY_AND_TIME_UNIT = ("STRATEGY_AND_TIME_UNIT",)
+
+
+class ExecutionMode(Enum):
+    LIVE = ("LIVE",)
+    BATCH = ("BATCH",)

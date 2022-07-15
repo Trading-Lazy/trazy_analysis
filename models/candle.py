@@ -19,6 +19,23 @@ class Candle:
         timestamp: datetime = datetime.now(pytz.UTC),
         time_unit=timedelta(minutes=1),
     ):
+        """
+        :param asset: The asset that this candle represents
+        :type asset: Asset
+        :param open: The price of the asset at the beginning of the time unit
+        :type open: float
+        :param high: The highest price of the asset during the time unit
+        :type high: float
+        :param low: The lowest price of the asset during the time unit
+        :type low: float
+        :param close: The close price of the asset at the end of the time unit
+        :type close: float
+        :param volume: The volume of the asset traded during the time unit
+        :type volume: int
+        :param timestamp: The timestamp of the candle
+        :type timestamp: datetime
+        :param time_unit: The time unit of the candle
+        """
         self.asset: Asset = asset
         self.open: float = open
         self.high: float = high
@@ -28,6 +45,7 @@ class Candle:
         self.time_unit = time_unit
 
         from trazy_analysis.common.utils import timestamp_to_utc
+
         self.timestamp = timestamp_to_utc(timestamp)
 
     @property

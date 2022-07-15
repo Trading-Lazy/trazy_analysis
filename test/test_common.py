@@ -8,7 +8,7 @@ import pytz
 from trazy_analysis.broker.common import get_rejected_order_error_message
 from trazy_analysis.common.clock import LiveClock
 from trazy_analysis.common.helper import get_or_create_nested_dict
-from trazy_analysis.common.meta import RateLimitedSingletonMeta
+from trazy_analysis.common.meta import RateLimitedSingleton
 from trazy_analysis.file_storage.common import concat_path
 from trazy_analysis.indicators.common import get_state
 from trazy_analysis.indicators.crossover import CrossoverState
@@ -65,30 +65,30 @@ def test_get_or_create_nested_dict():
 
 
 def test_rate_limited_singleton_meta():
-    class RateLimitedSingleton(metaclass=RateLimitedSingletonMeta):
+    class RLS(metaclass=RateLimitedSingleton):
         MAX_CALLS = 3
         PERIOD = 5
 
-    assert RateLimitedSingleton.request is not None
+    assert RLS.request is not None
 
-    rate_limited_singleton1 = RateLimitedSingleton()
-    rate_limited_singleton2 = RateLimitedSingleton()
+    rate_limited_singleton1 = RLS()
+    rate_limited_singleton2 = RLS()
     assert rate_limited_singleton1 == rate_limited_singleton2
 
     dummy_url = "http://www.google.com"
     window = []
-    for i in range(0, RateLimitedSingleton.MAX_CALLS + 1):
+    for i in range(0, RLS.MAX_CALLS + 1):
         start = time.time()
-        RateLimitedSingleton.request(dummy_url)
+        RLS.request(dummy_url)
         end = time.time()
         window.append((start, end))
 
     first_start = window[0][0]
     third_end = window[2][1]
-    assert (third_end - first_start) < RateLimitedSingleton.PERIOD
+    assert (third_end - first_start) < RLS.PERIOD
 
     last_end = window[-1][1]
-    assert (last_end - first_start) > RateLimitedSingleton.PERIOD
+    assert (last_end - first_start) > RLS.PERIOD
 
 
 def test_get_periods():

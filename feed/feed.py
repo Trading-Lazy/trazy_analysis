@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 import pytz
 from pandas_market_calendars import MarketCalendar
-
 from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 from sortedcontainers import SortedSet
 
@@ -30,6 +29,7 @@ from trazy_analysis.models.event import (
 )
 
 
+# It's a class that represents a feed
 class Feed:
     def __init__(
         self,
@@ -37,6 +37,16 @@ class Feed:
         candles: Dict[Asset, Dict[timedelta, np.array]] = {},
         candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = {},
     ):
+        """
+        :param events: A deque of events that will be processed by the backtest
+        :type events: deque
+        :param candles: A dictionary of dictionaries of numpy arrays. The first key is the asset, the second key is the time
+        unit, and the value is a numpy array of candles
+        :type candles: Dict[Asset, Dict[timedelta, np.array]]
+        :param candle_dataframes: A dictionary of dictionaries of CandleDataFrames. The first key is the asset, the second
+        key is the time_unit
+        :type candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]]
+        """
         self.assets = list(candles.keys())
         self.events = events
         self.candles = candles
@@ -56,6 +66,9 @@ class Feed:
         self.min_timestamp = self.current_timestamp = current_timestamp
 
     def reset(self):
+        """
+        It resets the index of the data to the first row of the first asset.
+        """
         self.indexes = {
             asset: {time_unit: 0}
             for asset in self.assets
@@ -65,6 +78,12 @@ class Feed:
         self.current_timestamp = self.min_timestamp
 
     def update_latest_data(self):
+        """
+        If there are candles to be added to the event queue, add them and update the current timestamp.
+
+        If there are no candles to be added to the event queue, but all the candles have been added, add a
+        MarketDataEndEvent to the event queue.
+        """
         candles = []
         min_timestamp = MAX_TIMESTAMP
         completed = 0
@@ -101,6 +120,7 @@ class Feed:
             self.completed = True
 
 
+# It's a subclass of the Feed class that add candles to the event queue in real time
 class LiveFeed(Feed):
     def __init__(
         self,
@@ -117,6 +137,10 @@ class LiveFeed(Feed):
         self.live_data_handlers = live_data_handlers
 
     def update_latest_data(self):
+        """
+        It takes the latest 10 candles from the exchange, and if the latest candle is not older more than 1 minute,
+        it adds it to the list of events
+        """
         now = datetime.now(pytz.UTC)
         candles_dict = {}
         one_minute_timedelta = timedelta(minutes=1)
@@ -142,6 +166,7 @@ class LiveFeed(Feed):
             )
 
 
+# It's a subclass of the Feed class, which is a class that Django provides for us
 class ExternalStorageFeed(Feed):
     def __init__(
         self,
@@ -153,6 +178,26 @@ class ExternalStorageFeed(Feed):
         file_storage: FileStorage = None,
         market_cal: MarketCalendar = IEXExchangeCalendar(),
     ):
+        """
+        `__init__` is a function that takes in a dictionary of assets and their corresponding time intervals, a start date,
+        an end date, a deque of events, a database storage object, a file storage object, and a market calendar object, and
+        then loads the data from the external storage.
+
+        :param assets: Dict[Asset, Union[timedelta, List[timedelta]]]
+        :type assets: Dict[Asset, Union[timedelta, List[timedelta]]]
+        :param start: The start date of the backtest
+        :type start: datetime
+        :param end: datetime = datetime.now(pytz.UTC),
+        :type end: datetime
+        :param events: deque = deque()
+        :type events: deque
+        :param db_storage: DbStorage = None,
+        :type db_storage: DbStorage
+        :param file_storage: FileStorage = None,
+        :type file_storage: FileStorage
+        :param market_cal: The market calendar to use
+        :type market_cal: MarketCalendar
+        """
         external_storage_loader = ExternalStorageLoader(
             assets=assets,
             start=start,
@@ -167,6 +212,7 @@ class ExternalStorageFeed(Feed):
         super().__init__(events, candles, candle_dataframes)
 
 
+# > This class is a subclass of the Feed class, and it's used to create a feed of historical data
 class HistoricalFeed(Feed):
     def __init__(
         self,
@@ -176,6 +222,22 @@ class HistoricalFeed(Feed):
         end: datetime,
         events: deque = deque(),
     ):
+        """
+        > Takes in a dictionary of assets and their corresponding historical
+        data handlers, a start and end date, and a queue of events. It then creates a `HistoricalDataLoader` object, which
+        loads the historical data for the assets
+
+        :param assets: A dictionary of assets and their corresponding timeframes
+        :type assets: Dict[Asset, Union[timedelta, List[timedelta]]]
+        :param historical_data_handlers: A dictionary of historical data handlers
+        :type historical_data_handlers: Dict[str, HistoricalDataHandler]
+        :param start: The start date of the backtest
+        :type start: datetime
+        :param end: The end date of the backtest
+        :type end: datetime
+        :param events: A deque of events
+        :type events: deque
+        """
         historical_data_loader = HistoricalDataLoader(
             assets=assets,
             historical_data_handlers=historical_data_handlers,
@@ -189,8 +251,15 @@ class HistoricalFeed(Feed):
         super().__init__(events, candles, candle_dataframes)
 
 
+# It's a subclass of the Feed class that takes a Pandas DataFrames as inputs.
 class PandasFeed(Feed):
     def __init__(self, candle_dataframes: np.array, events: deque = deque()):
+        """
+        :param candle_dataframes: np.array
+        :type candle_dataframes: np.array
+        :param events: a deque of events that will be processed by the strategy
+        :type events: deque
+        """
         candles = {}
         candle_dataframes_dict = {}
         for candle_dataframe in candle_dataframes:
@@ -205,6 +274,7 @@ class PandasFeed(Feed):
         super().__init__(events, candles, candle_dataframes_dict)
 
 
+# It's a subclass of the Feed class, that takes csv files as inputs
 class CsvFeed(Feed):
     def __init__(
         self,
@@ -215,6 +285,24 @@ class CsvFeed(Feed):
         events: deque = deque(),
         sep: str = ",",
     ):
+        """
+        > The `__init__` function of the `CsvFeed` class takes in a bunch of optional arguments, and then uses the
+        `CsvLoader` class to load the data
+
+        :param asset: The asset to load data for
+        :type asset: Optional[Asset]
+        :param time_unit: The time unit of the candles
+        :type time_unit: Optional[timedelta]
+        :param csv_filename: The path to the CSV file
+        :type csv_filename: Optional[str]
+        :param csv_filenames: A dictionary of dictionaries. The outer dictionary is keyed by asset, and the inner dictionary
+        is keyed by time_unit. The value of the inner dictionary is the filename of the CSV file
+        :type csv_filenames: Optional[Dict[Asset, Dict[timedelta, str]]]
+        :param events: deque = deque()
+        :type events: deque
+        :param sep: str = ",",, defaults to ,
+        :type sep: str (optional)
+        """
         csv_loader = CsvLoader(
             asset=asset,
             time_unit=time_unit,

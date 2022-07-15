@@ -1,14 +1,16 @@
 import pytest
 
-from trazy_analysis.indicators.crossover import Crossover, CrossoverState
-from trazy_analysis.indicators.indicator import Indicator
+from trazy_analysis.indicators.crossover import CrossoverState
+from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
+
+indicators = ReactiveIndicators(memoize=False)
 
 
 @pytest.fixture
 def test_crossover_fixture_neg():
-    stream_data1 = Indicator()
-    stream_data2 = Indicator()
-    crossover = Crossover(stream_data1, stream_data2)
+    stream_data1 = indicators.Indicator(size=1)
+    stream_data2 = indicators.Indicator(size=1)
+    crossover = indicators.Crossover(stream_data1, stream_data2)
     stream_data1.on_next(2)
     stream_data2.on_next(3)
     return stream_data1, stream_data2, crossover
@@ -16,9 +18,9 @@ def test_crossover_fixture_neg():
 
 @pytest.fixture
 def test_crossover_fixture_pos():
-    stream_data1 = Indicator()
-    stream_data2 = Indicator()
-    crossover = Crossover(stream_data1, stream_data2)
+    stream_data1 = indicators.Indicator(size=1)
+    stream_data2 = indicators.Indicator(size=1)
+    crossover = indicators.Crossover(stream_data1, stream_data2)
     stream_data1.on_next(3)
     stream_data2.on_next(2)
     return stream_data1, stream_data2, crossover
@@ -26,17 +28,17 @@ def test_crossover_fixture_pos():
 
 @pytest.fixture
 def test_crossover_fixture_idle():
-    stream_data1 = Indicator()
-    stream_data2 = Indicator()
-    crossover = Crossover(stream_data1, stream_data2)
+    stream_data1 = indicators.Indicator(size=1)
+    stream_data2 = indicators.Indicator(size=1)
+    crossover = indicators.Crossover(stream_data1, stream_data2)
     return stream_data1, stream_data2, crossover
 
 
 @pytest.fixture
 def test_crossover_fixture_idle_neg_trend():
-    stream_data1 = Indicator()
-    stream_data2 = Indicator()
-    crossover = Crossover(stream_data1, stream_data2)
+    stream_data1 = indicators.Indicator(size=1)
+    stream_data2 = indicators.Indicator(size=1)
+    crossover = indicators.Crossover(stream_data1, stream_data2)
     stream_data1.on_next(2)
     stream_data2.on_next(3)
     stream_data1.on_next(1)
@@ -46,9 +48,9 @@ def test_crossover_fixture_idle_neg_trend():
 
 @pytest.fixture
 def test_crossover_fixture_idle_pos_trend():
-    stream_data1 = Indicator()
-    stream_data2 = Indicator()
-    crossover = Crossover(stream_data1, stream_data2)
+    stream_data1 = indicators.Indicator(size=1)
+    stream_data2 = indicators.Indicator(size=1)
+    crossover = indicators.Crossover(stream_data1, stream_data2)
     stream_data1.on_next(3)
     stream_data2.on_next(2)
     stream_data1.on_next(3)
@@ -58,7 +60,7 @@ def test_crossover_fixture_idle_pos_trend():
 
 def test_crossover_first_value_pos(test_crossover_fixture_idle):
     stream_data1, stream_data2, crossover = test_crossover_fixture_idle
-    assert crossover.data == 0
+    assert crossover.data is None
     stream_data1.on_next(3)
     stream_data2.on_next(2)
     assert crossover.state == CrossoverState.IDLE_POS_TREND
@@ -67,7 +69,7 @@ def test_crossover_first_value_pos(test_crossover_fixture_idle):
 
 def test_crossover_first_value_neg(test_crossover_fixture_idle):
     stream_data1, stream_data2, crossover = test_crossover_fixture_idle
-    assert crossover.data == 0
+    assert crossover.data is None
     stream_data1.on_next(2)
     stream_data2.on_next(3)
     assert crossover.state == CrossoverState.IDLE_NEG_TREND
@@ -76,7 +78,7 @@ def test_crossover_first_value_neg(test_crossover_fixture_idle):
 
 def test_crossover_first_value_idle(test_crossover_fixture_idle):
     stream_data1, stream_data2, crossover = test_crossover_fixture_idle
-    assert crossover.data == 0
+    assert crossover.data is None
     stream_data1.on_next(3)
     stream_data2.on_next(2)
     assert crossover.state == CrossoverState.IDLE_POS_TREND

@@ -1004,13 +1004,29 @@ def test_execute_target_order(
         type=OrderType.TARGET,
         clock=clock,
     )
-    candle = Candle(asset=ASSET1, open=1.105, high=1.12, low=1.10, close=1.11, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.105,
+        high=1.12,
+        low=1.10,
+        close=1.11,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
     degiro_broker.execute_order(target_order)
     assert len(degiro_broker.open_orders) == 1
     assert degiro_broker.open_orders.popleft() == target_order
 
-    candle = Candle(asset=ASSET1, open=3.105, high=3.12, low=3.10, close=3.11, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=3.105,
+        high=3.12,
+        low=3.10,
+        close=3.11,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
     degiro_broker.execute_order(target_order)
     assert len(degiro_broker.open_orders) == 0
@@ -1026,13 +1042,29 @@ def test_execute_target_order(
         type=OrderType.TARGET,
         clock=clock,
     )
-    candle = Candle(asset=ASSET1, open=1.105, high=1.12, low=1.10, close=1.11, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.105,
+        high=1.12,
+        low=1.10,
+        close=1.11,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
     degiro_broker.execute_order(target_order)
     assert len(degiro_broker.open_orders) == 1
     assert degiro_broker.open_orders.popleft() == target_order
 
-    candle = Candle(asset=ASSET1, open=0.495, high=0.502, low=0.493, close=0.494, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=0.495,
+        high=0.502,
+        low=0.493,
+        close=0.494,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
     degiro_broker.execute_order(target_order)
     assert len(degiro_broker.open_orders) == 0
@@ -1112,7 +1144,15 @@ def test_execute_trailing_stop_order_sell(
         type=OrderType.TRAILING_STOP,
         clock=clock,
     )
-    candle = Candle(asset=ASSET1, open=1.105, high=1.12, low=1.10, close=1.11, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.105,
+        high=1.12,
+        low=1.10,
+        close=1.11,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
     sellorder_mocked.side_effect = [ORDER_ID2, ORDER_ID3]
     degiro_broker.execute_order(trailing_stop_order)
@@ -1125,7 +1165,15 @@ def test_execute_trailing_stop_order_sell(
         == candle.close - candle.close * trailing_stop_order.stop_pct
     )
 
-    candle = Candle(asset=ASSET1, open=1.145, high=1.16, low=1.14, close=1.15, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.145,
+        high=1.16,
+        low=1.14,
+        close=1.15,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
 
     degiro_broker.execute_order(trailing_stop_order)
@@ -1137,7 +1185,15 @@ def test_execute_trailing_stop_order_sell(
         == candle.close - candle.close * trailing_stop_order.stop_pct
     )
 
-    candle = Candle(asset=ASSET1, open=1.09, high=1.10, low=1.08, close=1.09, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.09,
+        high=1.10,
+        low=1.08,
+        close=1.09,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
 
     degiro_broker.execute_order(trailing_stop_order)
@@ -1218,7 +1274,15 @@ def test_execute_trailing_stop_order_buy(
         type=OrderType.TRAILING_STOP,
         clock=clock,
     )
-    candle = Candle(asset=ASSET1, open=1.145, high=1.16, low=1.14, close=1.15, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.145,
+        high=1.16,
+        low=1.14,
+        close=1.15,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
 
     degiro_broker.update_price(candle)
     buyorder_mocked.side_effect = [ORDER_ID2, ORDER_ID3]
@@ -1230,7 +1294,15 @@ def test_execute_trailing_stop_order_buy(
         trailing_stop_order.stop
         == candle.close + candle.close * trailing_stop_order.stop_pct
     )
-    candle = Candle(asset=ASSET1, open=1.105, high=1.12, low=1.10, close=1.11, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.105,
+        high=1.12,
+        low=1.10,
+        close=1.11,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
 
     degiro_broker.execute_order(trailing_stop_order)
@@ -1241,7 +1313,15 @@ def test_execute_trailing_stop_order_buy(
         == candle.close + candle.close * trailing_stop_order.stop_pct
     )
 
-    candle = Candle(asset=ASSET1, open=1.185, high=1.19, low=1.16, close=1.17, volume=100, timestamp=TIMESTAMP)
+    candle = Candle(
+        asset=ASSET1,
+        open=1.185,
+        high=1.19,
+        low=1.16,
+        close=1.17,
+        volume=100,
+        timestamp=TIMESTAMP,
+    )
     degiro_broker.update_price(candle)
 
     degiro_broker.execute_order(trailing_stop_order)

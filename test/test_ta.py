@@ -2,7 +2,7 @@ import math
 
 import pandas as pd
 
-from trazy_analysis.strategy.ta import ma
+from trazy_analysis.indicators.ta import ma
 
 
 def test_resample_candle_data_interval_5_minute():

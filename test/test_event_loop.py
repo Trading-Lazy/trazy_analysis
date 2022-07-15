@@ -2,15 +2,16 @@ from collections import deque
 from datetime import datetime, timedelta
 from unittest.mock import call, patch
 
+from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
+
 from trazy_analysis.bot.event_loop import EventLoop
 from trazy_analysis.broker.broker_manager import BrokerManager
 from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
-from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 from trazy_analysis.feed.feed import CsvFeed
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
+from trazy_analysis.models.enums import ExecutionMode
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -64,30 +65,26 @@ def test_init_live():
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
         assets=assets,
         feed=FEED,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies_classes,
-        live=True,
+        mode=ExecutionMode.LIVE,
     )
 
     assert event_loop.assets == {AAPL_ASSET: [time_unit], GOOGL_ASSET: [time_unit]}
     assert event_loop.strategies_parameters == strategies_classes
 
-    assert len(event_loop.strategy_instances) == 4
+    assert len(event_loop.strategy_instances) == 2
     assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
     assert isinstance(event_loop.context.candles[AAPL_ASSET][time_unit], deque)
     assert len(event_loop.context.candles[AAPL_ASSET][time_unit]) == 0
     assert isinstance(event_loop.context.candles[GOOGL_ASSET][time_unit], deque)
     assert len(event_loop.context.candles[GOOGL_ASSET][time_unit]) == 0
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
-    assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
-    assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
+    assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
 
 
 def test_init_backtest():
@@ -104,29 +101,26 @@ def test_init_backtest():
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
         assets=assets,
         feed=FEED,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies_classes,
+        mode=ExecutionMode.LIVE,
     )
 
     assert event_loop.assets == {AAPL_ASSET: [time_unit], GOOGL_ASSET: [time_unit]}
     assert event_loop.strategies_parameters == strategies_classes
 
-    assert len(event_loop.strategy_instances) == 4
+    assert len(event_loop.strategy_instances) == 2
     assert list(event_loop.context.candles.keys()) == [AAPL_ASSET, GOOGL_ASSET]
     assert isinstance(event_loop.context.candles[AAPL_ASSET][time_unit], deque)
     assert len(event_loop.context.candles[AAPL_ASSET][time_unit]) == 0
     assert isinstance(event_loop.context.candles[GOOGL_ASSET][time_unit], deque)
     assert len(event_loop.context.candles[GOOGL_ASSET][time_unit]) == 0
     assert isinstance(event_loop.strategy_instances[0], SmaCrossoverStrategy)
-    assert isinstance(event_loop.strategy_instances[1], SmaCrossoverStrategy)
-    assert isinstance(event_loop.strategy_instances[2], IdleStrategy)
-    assert isinstance(event_loop.strategy_instances[3], IdleStrategy)
+    assert isinstance(event_loop.strategy_instances[1], IdleStrategy)
 
 
 @patch(
@@ -139,14 +133,13 @@ def test_run_strategy(process_context):
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker_manager=broker)
     order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator, CLOCK)
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
         assets=assets,
         feed=FEED,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies_classes,
+        mode=ExecutionMode.LIVE,
     )
     strategy_object = event_loop.strategy_instances[0]
     event_loop.run_strategy(strategy_object)
@@ -169,14 +162,13 @@ def test_run_strategies(run_strategy_mocked):
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
         assets=assets,
         feed=FEED,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies_classes,
+        mode=ExecutionMode.LIVE,
     )
 
     event_loop.run_strategies()
@@ -202,13 +194,12 @@ def test_run_backtest():
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    indicators_manager = IndicatorsManager(preload=False)
     event_loop = EventLoop(
         events=EVENTS,
         assets=assets,
         feed=FEED,
         order_manager=order_manager,
-        indicators_manager=indicators_manager,
         strategies_parameters=strategies_classes,
+        mode=ExecutionMode.LIVE,
     )
     event_loop.loop()

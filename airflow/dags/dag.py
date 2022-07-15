@@ -9,7 +9,6 @@ from trazy_analysis.broker.broker_manager import BrokerManager
 from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import ExternalStorageFeed, Feed
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
 from trazy_analysis.models.candle import Candle
 from trazy_analysis.models.enums import Action, Direction, OrderType
 from trazy_analysis.models.order import Order
@@ -349,11 +348,20 @@ def ccxt_arbitrage_strategy(**kwargs):
     ]
     assets_dict = {asset.exchange: asset for asset in assets}
 
-    feed: Feed = ExternalStorageFeed(assets=assets, start=start, end=end, events=events, db_storage=external_db_storage,
-                                     file_storage=None, market_cal=None)
+    feed: Feed = ExternalStorageFeed(
+        assets=assets,
+        start=start,
+        end=end,
+        events=events,
+        db_storage=external_db_storage,
+        file_storage=None,
+        market_cal=None,
+    )
 
     # Check whether data is empty or not
-    exchange1_candle_dataframe = feed.candle_dataframes[assets_dict[exchange1]][timedelta(minutes=1)]
+    exchange1_candle_dataframe = feed.candle_dataframes[assets_dict[exchange1]][
+        timedelta(minutes=1)
+    ]
 
     state_key = f"{common_pair_key}_arbitrage_result"
     if exchange1_candle_dataframe.empty:
@@ -363,7 +371,9 @@ def ccxt_arbitrage_strategy(**kwargs):
         state_db_storage.save_state(state_key=state_key, content=empty_result)
         return
 
-    exchange2_candle_dataframe = feed.candle_dataframes[assets_dict[exchange2]][timedelta(minutes=1)]
+    exchange2_candle_dataframe = feed.candle_dataframes[assets_dict[exchange2]][
+        timedelta(minutes=1)
+    ]
 
     if exchange2_candle_dataframe.empty:
         LOG.info(
@@ -471,7 +481,9 @@ def ccxt_arbitrage_strategy(**kwargs):
     initial_size = max_size_exchange2
 
     # exchange 2
-    candle = Candle(asset=assets_dict[exchange2], open=0, high=0, low=0, close=0, volume=0)
+    candle = Candle(
+        asset=assets_dict[exchange2], open=0, high=0, low=0, close=0, volume=0
+    )
     exchange2_broker.update_price(candle)
     order = Order(
         asset=assets_dict[exchange2],
@@ -490,18 +502,30 @@ def ccxt_arbitrage_strategy(**kwargs):
     exchange2_broker.execute_market_order(order)
 
     # prepare event loop parameters
-    broker_manager = BrokerManager(brokers_per_exchange={
-        exchange1: exchange1_broker,
-        exchange2: exchange2_broker,
-    })
+    broker_manager = BrokerManager(
+        brokers_per_exchange={
+            exchange1: exchange1_broker,
+            exchange2: exchange2_broker,
+        }
+    )
     position_sizer = PositionSizer(broker_manager=broker_manager, integer_size=False)
     order_creator = OrderCreator(broker_manager=broker_manager)
-    order_manager = OrderManager(events=events, broker_manager=broker_manager, position_sizer=position_sizer,
-                                 order_creator=order_creator, clock=clock)
-    indicators_manager = IndicatorsManager(preload=True, initial_data=feed.candles)
-    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           indicators_manager=indicators_manager, strategies_parameters=strategies,
-                           close_at_end_of_day=False, close_at_end_of_data=False)
+    order_manager = OrderManager(
+        events=events,
+        broker_manager=broker_manager,
+        position_sizer=position_sizer,
+        order_creator=order_creator,
+        clock=clock,
+    )
+    event_loop = EventLoop(
+        events=events,
+        assets=assets,
+        feed=feed,
+        order_manager=order_manager,
+        strategies_parameters=strategies,
+        close_at_end_of_day=False,
+        close_at_end_of_data=False,
+    )
 
     # get initial state of portfolio for stats computation total_market_value
     exchange1_broker.update_price(exchange1_first_candle)

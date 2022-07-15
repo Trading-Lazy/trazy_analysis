@@ -1,4 +1,3 @@
-from collections import deque
 from datetime import timedelta
 from typing import Dict, List
 
@@ -6,12 +5,12 @@ import numpy as np
 import telegram_send
 from intervaltree import IntervalTree
 
-from trazy_analysis.common.clock import Clock
-from trazy_analysis.indicators.indicators_manager import IndicatorsManager
+from trazy_analysis.indicators.bos import PoiTouch
+from trazy_analysis.indicators.indicator import CandleIndicator
+from trazy_analysis.models.candle import Candle
 from trazy_analysis.models.enums import Action, Direction
 from trazy_analysis.models.parameter import Discrete, Choice, Static
 from trazy_analysis.models.signal import Signal
-from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.strategy.context import Context
 from trazy_analysis.strategy.strategy import LOG, StrategyBase
 
@@ -45,18 +44,12 @@ class SmartMoneyConcept(StrategyBase):
     }
 
     def __init__(
-        self,
-        context: Context,
-        order_manager: OrderManager,
-        events: deque,
-        parameters: Dict[str, float],
-        indicators_manager: IndicatorsManager = IndicatorsManager(),
+        self, context: Context, data: CandleIndicator, parameters: Dict[str, float]
     ):
-        super().__init__(order_manager, events, parameters, indicators_manager)
+        super().__init__(data, parameters)
 
         self.poi_touch = {
-            asset: self.indicators_manager.PoiTouch(
-                asset,
+            asset: PoiTouch(
                 comparator=self.parameters["comparator"],
                 order=self.parameters["order"],
                 method=self.parameters["method"],
@@ -74,35 +67,23 @@ class SmartMoneyConcept(StrategyBase):
         self.current_extrema_val = None
         self.pois_touch = IntervalTree()
 
-    def current(self, context: Context, clock: Clock) -> List[Signal]:
-        signals = []
-        signal = None
-        for candle in context.get_last_candles():
-            if self.parameters["timeframe"] != candle.time_unit:
-                continue
-            if self.poi_touch[candle.asset].data:
-                LOG.info(f"Time to buy: {candle.time_unit}")
-                signal = Signal(
+    def current(self, candle: Candle) -> List[Signal]:
+        if self.poi_touch[candle.asset].data:
+            LOG.info(f"Time to buy: {candle.time_unit}")
+            self.add_signal(
+                Signal(
                     action=Action.BUY,
                     direction=Direction.LONG,
-                    confidence_level=1.0,
-                    strategy=self.name,
                     asset=candle.asset,
-                    root_candle_timestamp=context.current_timestamp,
-                    parameters={},
-                    clock=clock,
                 )
-                telegram_send.send(
-                    messages=[
-                        f"Signal generated!",
-                        f"BUY LONG {str(candle.asset)}",
-                        f"{candle.asset.exchange}: Strategy Smart money concepts results so far: "
-                        f"cash = {self.order_manager.broker_manager.get_broker(candle.asset.exchange).get_portfolio_cash_balance()}, "
-                        f"portfolio = {self.order_manager.broker_manager.get_broker(candle.asset.exchange).get_portfolio_as_dict()}, "
-                        f"total_equity = {self.order_manager.broker_manager.get_broker(candle.asset.exchange).get_portfolio_total_equity()}",
-                    ]
-                )
-
-        if signal is not None:
-            signals.append(signal)
-        return signals
+            )
+            telegram_send.send(
+                messages=[
+                    f"Signal generated!",
+                    f"BUY LONG {str(candle.asset)}",
+                    f"{candle.asset.exchange}: Strategy Smart money concepts results so far: "
+                    f"cash = {self.order_manager.broker_manager.get_broker(candle.asset.exchange).get_portfolio_cash_balance()}, "
+                    f"portfolio = {self.order_manager.broker_manager.get_broker(candle.asset.exchange).get_portfolio_as_dict()}, "
+                    f"total_equity = {self.order_manager.broker_manager.get_broker(candle.asset.exchange).get_portfolio_total_equity()}",
+                ]
+            )
