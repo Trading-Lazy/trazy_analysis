@@ -30,7 +30,7 @@ jobs:
             python3.8 -m pip install --upgrade pip
             python3.8 -m pip install -r requirements.txt
       - save_cache:
-          key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          key: deps-{{ .Branch }}-{{ checksum "trazy_analysis/requirements.txt" }}
           paths:
             - "venv"
       - run:
