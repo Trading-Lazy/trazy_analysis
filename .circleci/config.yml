@@ -39,8 +39,10 @@ jobs:
             cd trazy_analysis
             . venv/bin/activate
             cd ..
+            mkdir -p test/data
+            cp -R trazy_analysis/test/data/* test/data/
             mkdir trazy-analysis-test-reports
-            python3 -m pytest --vvs
+            python3 -m pytest -vvs
       - store_artifacts:
           path: /home/circleci/project/trazy_analysis/trazy-analysis-test-reports
 
