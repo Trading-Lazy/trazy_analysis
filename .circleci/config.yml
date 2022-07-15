@@ -40,13 +40,13 @@ jobs:
             . venv/bin/activate
             cd ..
             mkdir trazy-analysis-test-reports
-            python3 -m pytest
+            python3 -m pytest -vvs
       - store_artifacts:
           path: /home/circleci/project/trazy_analysis/trazy-analysis-test-reports
 
 workflows:
   version: 2.1
-  heroku_deploy:
+  build_and_test:
     jobs:
       - build:
-          context: heroku_analysis_dev
+          context: trazy_dev
