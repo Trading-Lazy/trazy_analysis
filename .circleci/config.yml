@@ -26,8 +26,9 @@ jobs:
             cd ..
             python3.8 -m venv venv
             . venv/bin/activate
-            pip3.8 install --upgrade pip
-            pip3.8 install -r requirements.txt
+            pwd
+            python3.8 -m pip install --upgrade pip
+            python3.8 -m pip install -r requirements.txt
       - save_cache:
           key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
