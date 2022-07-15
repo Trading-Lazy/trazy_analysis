@@ -32,8 +32,10 @@ jobs:
           name: Running tests
           command: |
             . venv/bin/activate
+            pwd
+            ls
             mkdir trazy-analysis-test-reports
-            python -m pytest &> trazy-analysis-test-reports/tests.log
+            python3 -m pytest &> trazy-analysis-test-reports/tests.log
       - store_artifacts:
           path: /home/circleci/project/trazy-analysis-test-reports
 
