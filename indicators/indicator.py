@@ -59,11 +59,18 @@ class Indicator:
         self.source_minimal_size = source_minimal_size
         self.size = size
         self.dtype = dtype
-        self.source_dtype = None
-        self.memoize = None
-        self.mode = None
-        self.first = None
-        self.indicators = None
+        self.source_dtype: Optional[type] = None
+        self.memoize: Optional[bool] = None
+        self.mode: Optional[ExecutionMode] = None
+        self.indicators: "ReactiveIndicators" = None
+        self.window: Optional[np.array] = None
+        self.input_window = None
+        self.insert = 0
+        self.index = -1
+        self.callback = lambda elt: self.handle_data(elt)
+        self.callbacks = deque()
+        self.subscribers = set()
+        self.data = None
 
     @classmethod
     def add_source_edge(cls, edge: Tuple["Indicator", "Indicator"]):
@@ -225,9 +232,6 @@ class Indicator:
         self.add_input_edge((self, input_window))
         self.input_window = input_window
 
-        self.insert = 0
-        self.index = -1
-
         self.window: np.array = None
         if self.input_window is not None and self.input_window.filled():
             self.transform = (
@@ -248,17 +252,12 @@ class Indicator:
             self.transform = (
                 (lambda data: data) if self.transform is None else self.transform
             )
-            if self.size is None or self.dtype is None:
-                self.window = None
-            else:
+            if self.size is not None and self.dtype is not None:
                 self.window = ma.masked_array(
                     [0] * self.size, mask=True, dtype=self.dtype
                 )
             self.data = None
 
-        self.callback = lambda new_elt: self.handle_data(new_elt)
-        self.callbacks = deque()
-        self.subscribers = set()
         self.observe(self.source)
 
     def count(self):
@@ -284,23 +283,24 @@ class Indicator:
             self.window = ma.masked_array(window, dtype=self.source_dtype, mask=False)
         self.insert = 0
         self.index = -1
-        self.data = None
+        self.data = None if self.mode == ExecutionMode.BATCH else self.window[-1]
 
     def subscribe(self, callback: Callable, subscriber: "Indicator"):
         self.callbacks.append(callback)
         self.subscribers.add(subscriber)
         self.add_source_edge((subscriber, self))
 
-    def on_next(self, value: Any):
+    def next(self, value: Any):
         for callback in self.callbacks:
             callback(value)
 
-    @staticmethod
-    def compute(data: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+    @classmethod
+    def compute(cls, data: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
         return data
 
     def initialize_batch(self):
-        self.fill(self.input_window.window)
+        window = self.compute(self.input_window.window, self.period)
+        self.fill(window)
 
     def initialize_stream(self):
         self.fill(self.input_window.window)
@@ -309,7 +309,7 @@ class Indicator:
     def handle_batch_data(self):
         self.index = (self.index + 1) % self.size
         self.data = self.window[self.index]
-        self.on_next(self.data)
+        self.next(self.data)
 
     def handle_stream_data(self, data: Any):
         transformed_data = self.transform(data)
@@ -319,7 +319,7 @@ class Indicator:
             self.window = ma.masked_array([0] * self.size, mask=True, dtype=self.dtype)
         self.window[self.insert] = transformed_data
         self.insert = (self.insert + 1) % self.size
-        self.on_next(transformed_data)
+        self.next(transformed_data)
 
     def handle_data(self, data: Any):
         self.dtype = type(data)
@@ -332,8 +332,8 @@ class Indicator:
         elif self.mode == ExecutionMode.BATCH:
             self.handle_batch_data()
 
-    def push(self, new_data: Any = None):
-        self.handle_data(new_data)
+    def push(self, data: Any = None):
+        self.handle_data(data)
 
     def filled(self) -> bool:
         if self.size is None:
@@ -384,12 +384,12 @@ class Indicator:
         else:
             raise TypeError("Invalid argument type: {}".format(type(key)))
 
-    def map(self, func: Callable) -> "Indicator":
+    def map(self, func: Callable, size: Optional[int] = None) -> "Indicator":
         rolling_window_stream = self.indicators.Indicator(
             source=self,
             transform=func,
             source_minimal_size=self.source_minimal_size,
-            size=self.size,
+            size=self.size if size is None else size,
         )
         if self.filled():
             rolling_window_stream.fill(self.window.tolist())
@@ -455,9 +455,7 @@ class Indicator:
         self, other, operation_function: Callable[[Any, Any], Any]
     ) -> "Indicator":
         transform = (
-            lambda new_data: (operation_function(new_data, other))
-            if new_data is not None
-            else None
+            lambda data: (operation_function(data, other)) if data is not None else None
         )
         indicator_data: Indicator = self.indicators.Indicator(
             source=self, transform=transform
@@ -754,15 +752,15 @@ class TimeFramedCandleIndicator(Indicator):
             return None
         return aggregated_df.get_candle(0)
 
-    def handle_data(self, new_data: Candle) -> None:
+    def handle_data(self, data: Candle) -> None:
         if self.mode == ExecutionMode.LIVE:
-            if self.time_unit == new_data.time_unit:
-                super().handle_stream_data(new_data)
+            if self.time_unit == data.time_unit:
+                super().handle_stream_data(data)
                 return
             next_aggregate_timestamp = self.aggregate_current_timestamp + self.time_unit
-            if new_data.timestamp < next_aggregate_timestamp:
-                self.aggregated_df.add_candle(new_data)
-                if new_data.timestamp == next_aggregate_timestamp - new_data.time_unit:
+            if data.timestamp < next_aggregate_timestamp:
+                self.aggregated_df.add_candle(data)
+                if data.timestamp == next_aggregate_timestamp - data.time_unit:
                     aggregated_candle = self.get_aggregated_candle()
                     if aggregated_candle is not None:
                         super().handle_stream_data(aggregated_candle)
@@ -774,13 +772,13 @@ class TimeFramedCandleIndicator(Indicator):
                     )
                     super().handle_stream_data(aggregated_candle)
                 self.aggregated_df = CandleDataFrame.from_candle_list(
-                    asset=new_data.asset, candles=np.array([new_data], dtype=Candle)
+                    asset=data.asset, candles=np.array([data], dtype=Candle)
                 )
                 self.aggregate_current_timestamp = round_time(
-                    new_data.timestamp, self.time_unit
+                    data.timestamp, self.time_unit
                 )
         else:
-            super().handle_data(new_data)
+            super().handle_data(data)
 
 
 class CandleData:
@@ -841,13 +839,13 @@ class ZipIndicator(Indicator):
         self.data = None
         self.callbacks = deque()
         self.source_indicator1.subscribe(
-            lambda new_data: self.handle_source1_data(new_data), self
+            lambda data: self.handle_source1_data(data), self
         )
         self.source_indicator2.subscribe(
-            lambda new_data: self.handle_source2_data(new_data), self
+            lambda data: self.handle_source2_data(data), self
         )
 
-    def handle_stream_data(self, new_data) -> None:
+    def handle_stream_data(self, data) -> None:
         data1 = self.data1_queue.popleft()
         data2 = self.data2_queue.popleft()
         if data1 is not None and data2 is not None:
@@ -856,14 +854,14 @@ class ZipIndicator(Indicator):
             self.data = None
         super().handle_stream_data(self.data)
 
-    def handle_source1_data(self, new_data: Any) -> None:
-        self.data1_queue.append(new_data)
+    def handle_source1_data(self, data: Any) -> None:
+        self.data1_queue.append(data)
         if self.count < 0:
-            self.handle_stream_data(new_data)
+            self.handle_stream_data(data)
         self.count += 1
 
-    def handle_source2_data(self, new_data: Any) -> None:
-        self.data2_queue.append(new_data)
+    def handle_source2_data(self, data: Any) -> None:
+        self.data2_queue.append(data)
         if self.count > 0:
-            self.handle_stream_data(new_data)
+            self.handle_stream_data(data)
         self.count -= 1

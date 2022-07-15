@@ -4,7 +4,7 @@ import inspect
 import os
 import uuid
 from pathlib import Path
-from typing import Callable, Set
+from typing import Callable, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -69,7 +69,7 @@ class ReactiveIndicators:
                         indicator_class._instances[key] = indicator_class(
                             *args, **kwargs
                         )
-                    indicator_class._instances[key].setup(self)
+                        indicator_class._instances[key].setup(self)
                     return indicator_class._instances[key]
 
                 return indicator_call_helper

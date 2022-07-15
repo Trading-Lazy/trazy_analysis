@@ -9,16 +9,16 @@ from trazy_analysis.models.enums import ExecutionMode
 indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
 
 
-def test_handle_new_data_default_transform():
+def test_handle_data_default_transform():
     indicator = indicators.Indicator(size=1)
 
-    new_data = 3
-    indicator.handle_data(new_data)
+    data = 3
+    indicator.handle_data(data)
 
-    assert indicator.data == new_data
+    assert indicator.data == data
 
 
-def test_handle_new_data_custom_transform():
+def test_handle_data_custom_transform():
     indicator = indicators.Indicator(size=1, transform=lambda x: x * 2)
 
     indicator.handle_data(5)
@@ -101,10 +101,10 @@ def test_observe_source_indicator_is_indicator_propagation():
     source_indicator = indicators.Indicator(size=1)
     indicator.observe(source_indicator)
 
-    source_indicator.on_next(3)
+    source_indicator.next(3)
     assert indicator.data == 6
 
-    source_indicator.on_next(-5)
+    source_indicator.next(-5)
     assert indicator.data == -10
 
 
@@ -690,10 +690,10 @@ def test_indicator_binary_operation_rolling_window():
     assert derived_indicator.data is None
 
     # the derived indicator is a "zip" meaning it pairs values 2 by 2
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data is None
 
-    other_indicator.on_next(7)
+    other_indicator.next(7)
     assert derived_indicator.data == 12
 
 
@@ -705,7 +705,7 @@ def test_indicator_binary_operation_data():
 
     assert derived_indicator.data is None
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == 11
 
 
@@ -713,13 +713,13 @@ def test_indicator_lt_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.lt(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == True
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == False
 
-    indicator.on_next(7)
+    indicator.next(7)
     assert derived_indicator.data == False
 
 
@@ -728,16 +728,16 @@ def test_indicator_lt_rolling_window():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.lt(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == True
 
-    indicator.on_next(5)
-    other_indicator.on_next(5)
+    indicator.next(5)
+    other_indicator.next(5)
     assert derived_indicator.data == False
 
-    indicator.on_next(8)
-    other_indicator.on_next(6)
+    indicator.next(8)
+    other_indicator.next(6)
     assert derived_indicator.data == False
 
 
@@ -745,13 +745,13 @@ def test_indicator_le_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.le(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == True
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == True
 
-    indicator.on_next(7)
+    indicator.next(7)
     assert derived_indicator.data == False
 
 
@@ -760,16 +760,16 @@ def test_indicator_le_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.le(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == True
 
-    indicator.on_next(5)
-    other_indicator.on_next(5)
+    indicator.next(5)
+    other_indicator.next(5)
     assert derived_indicator.data == True
 
-    indicator.on_next(8)
-    other_indicator.on_next(6)
+    indicator.next(8)
+    other_indicator.next(6)
     assert derived_indicator.data == False
 
 
@@ -777,10 +777,10 @@ def test_indicator_eq_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.eq(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == False
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == True
 
 
@@ -789,12 +789,12 @@ def test_indicator_eq_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.eq(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == False
 
-    indicator.on_next(5)
-    other_indicator.on_next(5)
+    indicator.next(5)
+    other_indicator.next(5)
     assert derived_indicator.data == True
 
 
@@ -802,10 +802,10 @@ def test_indicator_ne_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.ne(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == True
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == False
 
 
@@ -814,12 +814,12 @@ def test_indicator_ne_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.ne(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == True
 
-    indicator.on_next(5)
-    other_indicator.on_next(5)
+    indicator.next(5)
+    other_indicator.next(5)
     assert derived_indicator.data == False
 
 
@@ -827,13 +827,13 @@ def test_indicator_ge_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.ge(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == False
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == True
 
-    indicator.on_next(7)
+    indicator.next(7)
     assert derived_indicator.data == True
 
 
@@ -842,16 +842,16 @@ def test_indicator_ge_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.ge(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == False
 
-    indicator.on_next(5)
-    other_indicator.on_next(5)
+    indicator.next(5)
+    other_indicator.next(5)
     assert derived_indicator.data == True
 
-    indicator.on_next(8)
-    other_indicator.on_next(6)
+    indicator.next(8)
+    other_indicator.next(6)
     assert derived_indicator.data == True
 
 
@@ -859,13 +859,13 @@ def test_indicator_gt_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.gt(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == False
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == False
 
-    indicator.on_next(7)
+    indicator.next(7)
     assert derived_indicator.data == True
 
 
@@ -874,16 +874,16 @@ def test_indicator_gt_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.gt(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == False
 
-    indicator.on_next(5)
-    other_indicator.on_next(5)
+    indicator.next(5)
+    other_indicator.next(5)
     assert derived_indicator.data == False
 
-    indicator.on_next(8)
-    other_indicator.on_next(6)
+    indicator.next(8)
+    other_indicator.next(6)
     assert derived_indicator.data == True
 
 
@@ -891,10 +891,10 @@ def test_indicator_add_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.add(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == 7
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == 10
 
 
@@ -903,12 +903,12 @@ def test_indicator_add_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.add(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == 6
 
-    indicator.on_next(7)
-    other_indicator.on_next(2)
+    indicator.next(7)
+    other_indicator.next(2)
     assert derived_indicator.data == 9
 
 
@@ -917,10 +917,10 @@ def test_iadd_data():
     initial_indicator = indicator
     indicator += 5
 
-    initial_indicator.on_next(2)
+    initial_indicator.next(2)
     assert indicator.data == 7
 
-    initial_indicator.on_next(5)
+    initial_indicator.next(5)
     assert indicator.data == 10
 
 
@@ -930,12 +930,12 @@ def test_iadd_indicator():
     initial_indicator = indicator
     indicator += other_indicator
 
-    initial_indicator.on_next(2)
-    other_indicator.on_next(4)
+    initial_indicator.next(2)
+    other_indicator.next(4)
     assert indicator.data == 6
 
-    initial_indicator.on_next(7)
-    other_indicator.on_next(2)
+    initial_indicator.next(7)
+    other_indicator.next(2)
     assert indicator.data == 9
 
 
@@ -943,10 +943,10 @@ def test_indicator_sub_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.sub(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == -3
 
-    indicator.on_next(5)
+    indicator.next(5)
     assert derived_indicator.data == 0
 
 
@@ -955,12 +955,12 @@ def test_indicator_sub_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.sub(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == -2
 
-    indicator.on_next(7)
-    other_indicator.on_next(2)
+    indicator.next(7)
+    other_indicator.next(2)
     assert derived_indicator.data == 5
 
 
@@ -969,10 +969,10 @@ def test_isub_data():
     initial_indicator = indicator
     indicator -= 5
 
-    initial_indicator.on_next(2)
+    initial_indicator.next(2)
     assert indicator.data == -3
 
-    initial_indicator.on_next(5)
+    initial_indicator.next(5)
     assert indicator.data == 0
 
 
@@ -982,12 +982,12 @@ def test_isub_indicator():
     initial_indicator = indicator
     indicator -= other_indicator
 
-    initial_indicator.on_next(2)
-    other_indicator.on_next(4)
+    initial_indicator.next(2)
+    other_indicator.next(4)
     assert indicator.data == -2
 
-    initial_indicator.on_next(7)
-    other_indicator.on_next(2)
+    initial_indicator.next(7)
+    other_indicator.next(2)
     assert indicator.data == 5
 
 
@@ -995,10 +995,10 @@ def test_indicator_mul_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.mul(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == 10
 
-    indicator.on_next(-5)
+    indicator.next(-5)
     assert derived_indicator.data == -25
 
 
@@ -1007,12 +1007,12 @@ def test_indicator_mul_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.mul(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == 8
 
-    indicator.on_next(7)
-    other_indicator.on_next(-2)
+    indicator.next(7)
+    other_indicator.next(-2)
     assert derived_indicator.data == -14
 
 
@@ -1021,10 +1021,10 @@ def test_imul_data():
     initial_indicator = indicator
     indicator *= 5
 
-    initial_indicator.on_next(2)
+    initial_indicator.next(2)
     assert indicator.data == 10
 
-    initial_indicator.on_next(-5)
+    initial_indicator.next(-5)
     assert indicator.data == -25
 
 
@@ -1034,12 +1034,12 @@ def test_imul_indicator():
     initial_indicator = indicator
     indicator *= other_indicator
 
-    initial_indicator.on_next(2)
-    other_indicator.on_next(4)
+    initial_indicator.next(2)
+    other_indicator.next(4)
     assert indicator.data == 8
 
-    initial_indicator.on_next(7)
-    other_indicator.on_next(-2)
+    initial_indicator.next(7)
+    other_indicator.next(-2)
     assert indicator.data == -14
 
 
@@ -1047,10 +1047,10 @@ def test_indicator_truediv_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.truediv(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == 0.4
 
-    indicator.on_next(-5)
+    indicator.next(-5)
     assert derived_indicator.data == -1.0
 
 
@@ -1059,12 +1059,12 @@ def test_indicator_truediv_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.truediv(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == 0.5
 
-    indicator.on_next(7)
-    other_indicator.on_next(-2)
+    indicator.next(7)
+    other_indicator.next(-2)
     assert derived_indicator.data == -3.5
 
 
@@ -1073,10 +1073,10 @@ def test_itruediv_data():
     initial_indicator = indicator
     indicator /= 5
 
-    initial_indicator.on_next(2)
+    initial_indicator.next(2)
     assert indicator.data == 0.4
 
-    initial_indicator.on_next(-5)
+    initial_indicator.next(-5)
     assert indicator.data == -1.0
 
 
@@ -1086,12 +1086,12 @@ def test_itruediv_indicator():
     initial_indicator = indicator
     indicator /= other_indicator
 
-    initial_indicator.on_next(2)
-    other_indicator.on_next(4)
+    initial_indicator.next(2)
+    other_indicator.next(4)
     assert indicator.data == 0.5
 
-    initial_indicator.on_next(7)
-    other_indicator.on_next(-2)
+    initial_indicator.next(7)
+    other_indicator.next(-2)
     assert indicator.data == -3.5
 
 
@@ -1099,13 +1099,13 @@ def test_indicator_floordiv_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.floordiv(5)
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == 0
 
-    indicator.on_next(16)
+    indicator.next(16)
     assert derived_indicator.data == 3
 
-    indicator.on_next(-13)
+    indicator.next(-13)
     assert derived_indicator.data == -3
 
 
@@ -1114,16 +1114,16 @@ def test_indicator_floordiv_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.floordiv(other_indicator)
 
-    indicator.on_next(2)
-    other_indicator.on_next(4)
+    indicator.next(2)
+    other_indicator.next(4)
     assert derived_indicator.data == 0
 
-    indicator.on_next(16)
-    other_indicator.on_next(5)
+    indicator.next(16)
+    other_indicator.next(5)
     assert derived_indicator.data == 3
 
-    indicator.on_next(7)
-    other_indicator.on_next(-2)
+    indicator.next(7)
+    other_indicator.next(-2)
     assert derived_indicator.data == -4
 
 
@@ -1132,13 +1132,13 @@ def test_ifloordiv_data():
     initial_indicator = indicator
     indicator //= 5
 
-    initial_indicator.on_next(2)
+    initial_indicator.next(2)
     assert indicator.data == 0
 
-    initial_indicator.on_next(16)
+    initial_indicator.next(16)
     assert indicator.data == 3
 
-    initial_indicator.on_next(-14)
+    initial_indicator.next(-14)
     assert indicator.data == -3
 
 
@@ -1148,16 +1148,16 @@ def test_ifloordiv_indicator():
     initial_indicator = indicator
     indicator //= other_indicator
 
-    initial_indicator.on_next(2)
-    other_indicator.on_next(4)
+    initial_indicator.next(2)
+    other_indicator.next(4)
     assert indicator.data == 0
 
-    initial_indicator.on_next(16)
-    other_indicator.on_next(5)
+    initial_indicator.next(16)
+    other_indicator.next(5)
     assert indicator.data == 3
 
-    initial_indicator.on_next(7)
-    other_indicator.on_next(-2)
+    initial_indicator.next(7)
+    other_indicator.next(-2)
     assert indicator.data == -4
 
 
@@ -1165,10 +1165,10 @@ def test_indicator_neg():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.neg()
 
-    indicator.on_next(2)
+    indicator.next(2)
     assert derived_indicator.data == -2
 
-    indicator.on_next(-3)
+    indicator.next(-3)
     assert derived_indicator.data == 3
 
 
@@ -1176,18 +1176,18 @@ def test_indicator_and_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.sand(True)
 
-    indicator.on_next(True)
+    indicator.next(True)
     assert derived_indicator.data == True
 
-    indicator.on_next(False)
+    indicator.next(False)
     assert derived_indicator.data == False
 
     derived_indicator = indicator.sand(False)
 
-    indicator.on_next(True)
+    indicator.next(True)
     assert derived_indicator.data == False
 
-    indicator.on_next(False)
+    indicator.next(False)
     assert derived_indicator.data == False
 
 
@@ -1196,20 +1196,20 @@ def test_indicator_and_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.sand(other_indicator)
 
-    indicator.on_next(True)
-    other_indicator.on_next(True)
+    indicator.next(True)
+    other_indicator.next(True)
     assert derived_indicator.data == True
 
-    indicator.on_next(True)
-    other_indicator.on_next(False)
+    indicator.next(True)
+    other_indicator.next(False)
     assert derived_indicator.data == False
 
-    indicator.on_next(False)
-    other_indicator.on_next(True)
+    indicator.next(False)
+    other_indicator.next(True)
     assert derived_indicator.data == False
 
-    indicator.on_next(False)
-    other_indicator.on_next(False)
+    indicator.next(False)
+    other_indicator.next(False)
     assert derived_indicator.data == False
 
 
@@ -1218,19 +1218,19 @@ def test_iand_data():
     initial_indicator = indicator
     indicator &= True
 
-    initial_indicator.on_next(False)
+    initial_indicator.next(False)
     assert indicator.data == False
 
-    initial_indicator.on_next(True)
+    initial_indicator.next(True)
     assert indicator.data == True
 
     initial_indicator = indicator
     indicator &= False
 
-    initial_indicator.on_next(False)
+    initial_indicator.next(False)
     assert indicator.data == False
 
-    initial_indicator.on_next(True)
+    initial_indicator.next(True)
     assert indicator.data == False
 
 
@@ -1240,20 +1240,20 @@ def test_iand_indicator():
     initial_indicator = indicator
     indicator &= other_indicator
 
-    initial_indicator.on_next(True)
-    other_indicator.on_next(True)
+    initial_indicator.next(True)
+    other_indicator.next(True)
     assert indicator.data == True
 
-    initial_indicator.on_next(True)
-    other_indicator.on_next(False)
+    initial_indicator.next(True)
+    other_indicator.next(False)
     assert indicator.data == False
 
-    initial_indicator.on_next(False)
-    other_indicator.on_next(True)
+    initial_indicator.next(False)
+    other_indicator.next(True)
     assert indicator.data == False
 
-    initial_indicator.on_next(False)
-    other_indicator.on_next(False)
+    initial_indicator.next(False)
+    other_indicator.next(False)
     assert indicator.data == False
 
 
@@ -1261,18 +1261,18 @@ def test_indicator_or_data():
     indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.sor(True)
 
-    indicator.on_next(True)
+    indicator.next(True)
     assert derived_indicator.data == True
 
-    indicator.on_next(False)
+    indicator.next(False)
     assert derived_indicator.data == True
 
     derived_indicator = indicator.sor(False)
 
-    indicator.on_next(True)
+    indicator.next(True)
     assert derived_indicator.data == True
 
-    indicator.on_next(False)
+    indicator.next(False)
     assert derived_indicator.data == False
 
 
@@ -1281,20 +1281,20 @@ def test_indicator_or_indicator():
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.sor(other_indicator)
 
-    indicator.on_next(True)
-    other_indicator.on_next(True)
+    indicator.next(True)
+    other_indicator.next(True)
     assert derived_indicator.data == True
 
-    indicator.on_next(True)
-    other_indicator.on_next(False)
+    indicator.next(True)
+    other_indicator.next(False)
     assert derived_indicator.data == True
 
-    indicator.on_next(False)
-    other_indicator.on_next(True)
+    indicator.next(False)
+    other_indicator.next(True)
     assert derived_indicator.data == True
 
-    indicator.on_next(False)
-    other_indicator.on_next(False)
+    indicator.next(False)
+    other_indicator.next(False)
     assert derived_indicator.data == False
 
 
@@ -1303,19 +1303,19 @@ def test_ior_data():
     initial_indicator = indicator
     indicator |= True
 
-    initial_indicator.on_next(False)
+    initial_indicator.next(False)
     assert indicator.data == True
 
-    initial_indicator.on_next(True)
+    initial_indicator.next(True)
     assert indicator.data == True
 
     initial_indicator = indicator
     indicator |= False
 
-    initial_indicator.on_next(False)
+    initial_indicator.next(False)
     assert indicator.data == False
 
-    initial_indicator.on_next(True)
+    initial_indicator.next(True)
     assert indicator.data == True
 
 
@@ -1351,26 +1351,26 @@ def test_zip_indicator():
         operation_function=operator.__add__,
     )
 
-    other_indicator.on_next(None)
+    other_indicator.next(None)
     assert zip_indicator.data is None
-    indicator.on_next(None)
-    assert zip_indicator.data is None
-
-    indicator.on_next(2)
-    assert zip_indicator.data is None
-    indicator.on_next(3)
-    assert zip_indicator.data is None
-    indicator.on_next(4)
+    indicator.next(None)
     assert zip_indicator.data is None
 
-    other_indicator.on_next(5)
+    indicator.next(2)
+    assert zip_indicator.data is None
+    indicator.next(3)
+    assert zip_indicator.data is None
+    indicator.next(4)
+    assert zip_indicator.data is None
+
+    other_indicator.next(5)
     assert zip_indicator.data == 7
-    other_indicator.on_next(6)
+    other_indicator.next(6)
     assert zip_indicator.data == 9
-    other_indicator.on_next(7)
+    other_indicator.next(7)
     assert zip_indicator.data == 11
 
-    other_indicator.on_next(8)
+    other_indicator.next(8)
     assert zip_indicator.data == 11
 
 

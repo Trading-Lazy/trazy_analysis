@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 
 from trazy_analysis.feed.loader import CsvLoader
-from trazy_analysis.indicators.bos import CandleBOS, Imbalance, EngulfingCandle
 from trazy_analysis.indicators.indicator import Indicator
+from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
 from trazy_analysis.models.enums import CandleDirection, ExecutionMode
@@ -65,6 +65,7 @@ BIG_DATA = [
 ]
 
 ASSET = Asset(symbol="BTCUSDT", exchange="Binance")
+indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
 
 
 @pytest.mark.parametrize(
@@ -141,68 +142,33 @@ ASSET = Asset(symbol="BTCUSDT", exchange="Binance")
     ],
 )
 def test_imbalance(three_candles: List[Candle], expected: Tuple[bool, float]):
-    source = Indicator(size=1)
-    imbalance = Imbalance(source=source, mode=ExecutionMode.LIVE)
+    source = indicators.Indicator(size=1)
+    imbalance = indicators.Imbalance(source=source)
     for i in range(0, len(three_candles)):
         source.push(three_candles[i])
     assert imbalance.data == expected
 
-
-def test_bos_stream_handle_new_data_source_is_indicator_data():
-    source = Indicator(size=1)
-    bos = CandleBOS(
-        comparator=np.greater, order=1, source=source, size=1, mode=ExecutionMode.LIVE
-    )
-    source.push(7.2)
-    assert bos.data is False
-    source.push(6.1)
-    assert bos.data is False
-    source.push(6.3)
-    assert bos.data is False
-    source.push(7.2)
-    assert bos.data is False
-    source.push(6.9)
-    assert bos.data is False
-    source.push(6.8)
-    assert bos.data is True
+def get_non_pin_bar_candle(close: float) -> Candle:
+    open = close - 1
+    high = close + 0.1
+    low = open - 0.1
+    return Candle(asset=ASSET, open=open, high=high, low=low, close=close, volume=1)
 
 
-def test_bos_stream_handle_new_data_source_is_rolling_window_stream():
-    source = Indicator(size=1)
-    bos = CandleBOS(
-        comparator=np.greater, order=2, source=source, size=1, mode=ExecutionMode.LIVE
-    )
-    source.push(7.2)
-    assert bos.data is False
-    source.push(6.1)
-    assert bos.data is False
-    source.push(6.3)
-    assert bos.data is False
-    source.push(7.2)
-    assert bos.data is False
-    source.push(6.9)
-    assert bos.data is False
-    source.push(6.8)
-    assert bos.data is True
-
-
-def test_bos_stream_handle_new_data_source_is_filled():
-    indicator_data = Indicator(size=1)
+def test_candle_bos():
+    indicator_data = indicators.Indicator(size=1)
     loader = CsvLoader(
         csv_filenames={ASSET: {timedelta(minutes=1): "test/data/bos.csv"}}
     )
     loader.load()
-    candles = loader.candles[ASSET]
-    rolling_window_stream = Indicator(source=indicator_data, size=candles.size)
-    rolling_window_stream.fill(array=candles)
-    bos = CandleBOS(
-        comparator=np.greater,
-        order=1,
-        source=rolling_window_stream,
-        size=candles.size,
-        mode=ExecutionMode.LIVE,
-    )
-    # assert bos.window == expected_window
+    candles = loader.candles[ASSET][timedelta(minutes=1)]
+    bos = indicators.CandleBOS(comparator=np.greater, order=1, source=indicator_data, size=candles.size)
+    for candle in candles:
+        indicator_data.push(candle)
+    expected_window = [False] * len(candles)
+    expected_window[-2] = True
+    expected_window = np.array(expected_window, dtype=bool)
+    assert (bos.window == expected_window).all()
 
 
 @pytest.mark.parametrize(
@@ -249,8 +215,8 @@ def test_bos_stream_handle_new_data_source_is_filled():
 def test_engulfing_candle(
     two_candles: List[Candle], direction: CandleDirection, expected: bool
 ):
-    source = Indicator(size=1)
-    engulfing_candle = EngulfingCandle(direction=direction, source=source)
+    source = indicators.Indicator(size=1)
+    engulfing_candle = indicators.EngulfingCandle(direction=direction, source=source)
     for i in range(0, len(two_candles)):
         source.push(two_candles[i])
     assert engulfing_candle.data == expected

@@ -32,9 +32,9 @@ class Crossover(Indicator):
         check_type(source_stream_data2.data, [int, float, np.float64, Decimal])
         self.state = CrossoverState.IDLE
 
-    def handle_data(self, new_data: float) -> None:
+    def handle_data(self, data: float) -> None:
         Crossover.count += 1
-        new_state = get_state(new_data)
+        new_state = get_state(data)
         if (
             self.state == CrossoverState.NEG
             or self.state == CrossoverState.IDLE_NEG_TREND
@@ -58,4 +58,4 @@ class Crossover(Indicator):
         ) and new_state == CrossoverState.NEG:
             self.state = CrossoverState.NEG
         self.data = round(self.state.value)
-        self.on_next(self.data)
+        self.next(self.data)

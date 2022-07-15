@@ -158,9 +158,9 @@ TTR_CANDLES = [
 indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
 
 
-def test_peak_stream_handle_new_data_source_is_indicator_data():
+def test_peak_stream_handle_data_source_is_indicator_data():
     indicator_data = indicators.Indicator(size=1)
-    peak = Peak(comparator=np.greater, order=2, size=1, source=indicator_data)
+    peak = indicators.Peak(comparator=np.greater, order=2, size=1, source=indicator_data)
     indicator_data.push(7.2)
     assert peak.data is False
     indicator_data.push(6.1)
@@ -175,9 +175,9 @@ def test_peak_stream_handle_new_data_source_is_indicator_data():
     assert peak.data is True
 
 
-def test_peak_stream_handle_new_data_source_is_rolling_window_stream():
+def test_peak_stream_handle_data_source_is_rolling_window_stream():
     rolling_window_stream = indicators.Indicator(size=3)
-    peak = Peak(comparator=np.greater, order=2, size=1, source=rolling_window_stream)
+    peak = indicators.Peak(comparator=np.greater, order=2, size=1, source=rolling_window_stream)
     rolling_window_stream.push(7.2)
     assert peak.data is False
     rolling_window_stream.push(6.1)
@@ -192,19 +192,19 @@ def test_peak_stream_handle_new_data_source_is_rolling_window_stream():
     assert peak.data is True
 
 
-def test_peak_stream_handle_new_data_source_is_filled_small_data():
+def test_peak_stream_handle_data_source_is_filled_small_data():
     indicator_data = indicators.Indicator(size=1)
     rolling_window_stream = indicators.Indicator(source=indicator_data, size=3)
     rolling_window_stream.fill(array=[7.2, 7.5, 2.3])
-    peak = Peak(comparator=np.greater, order=1, size=1, source=rolling_window_stream)
+    peak = indicators.Peak(comparator=np.greater, order=1, size=1, source=rolling_window_stream)
     assert peak.data == True
 
 
-def test_peak_stream_handle_new_data_source_is_filled_big_data():
+def test_peak_stream_handle_data_source_is_filled_big_data():
     order = 2
     rolling_window_stream = indicators.Indicator(size=len(BIG_DATA))
     rolling_window_stream.fill(array=BIG_DATA)
-    peak = Peak(
+    peak = indicators.Peak(
         comparator=np.greater_equal,
         order=order,
         size=len(BIG_DATA),
@@ -232,9 +232,9 @@ def test_resistance():
     )
     df = feed.candle_dataframes[exchange_asset][timedelta(minutes=1)]
     candles = df.to_candles()
-    rolling_window_stream = indicators.Indicator(size=len(candles))
+    indicator = indicators.Indicator(size=len(candles))
 
-    r = ResistanceLevels(accuracy=2, order=2, size=1, source=rolling_window_stream)
+    resistance_levels = indicators.ResistanceLevels(accuracy=2, order=2, size=1, source=indicator)
 
     index = 0
     high_sum = 0
@@ -246,7 +246,7 @@ def test_resistance():
         low_sum += candle.low
         high_avg = high_sum / count
         low_avg = low_sum / count
-        rolling_window_stream.push(candle)
+        indicator.push(candle)
         index += 1
         if index == 60:
             break

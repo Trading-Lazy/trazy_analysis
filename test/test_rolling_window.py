@@ -148,11 +148,11 @@ def test_rolling_window_push():
 def test_rolling_window_filled():
     stream_data = indicators.Indicator(size=1)
     rolling_window = indicators.Indicator(source=stream_data, size=3)
-    stream_data.on_next(1)
+    stream_data.next(1)
     assert not rolling_window.filled()
-    stream_data.on_next(2)
+    stream_data.next(2)
     assert not rolling_window.filled()
-    stream_data.on_next(3)
+    stream_data.next(3)
     assert rolling_window.filled()
 
 
@@ -168,7 +168,7 @@ def test_rolling_window_map():
     assert mapped_rolling_window.insert == 0
     assert (mapped_rolling_window.window == np.array([2, 4, 6, 8, 10], dtype=int)).all()
 
-    stream_data.on_next(11)
+    stream_data.next(11)
     assert mapped_rolling_window.count() == 5
     assert mapped_rolling_window.insert == 1
     assert (
@@ -187,7 +187,7 @@ def test_rolling_window_map():
     assert mapped_rolling_window.insert == 0
     assert (mapped_rolling_window.window == np.array([-2, 0, 2, 4, 6], dtype=int)).all()
 
-    stream_data.on_next(11)
+    stream_data.next(11)
     assert mapped_rolling_window.count() == 5
     assert mapped_rolling_window.insert == 1
     assert (mapped_rolling_window.window == np.array([18, 0, 2, 4, 6], dtype=int)).all()
@@ -263,7 +263,7 @@ def test_rolling_window_get_item_not_live():
         rolling_window[(1, 3)]
 
 
-def test_time_framed_candle_rolling_window_handle_new_data_1_minute_data():
+def test_time_framed_candle_rolling_window_handle_data_1_minute_data():
     rolling_window = indicators.TimeFramedCandleIndicator(
         time_unit=timedelta(minutes=1), market_cal=MARKET_CAL, size=2
     )
@@ -275,7 +275,7 @@ def test_time_framed_candle_rolling_window_handle_new_data_1_minute_data():
     assert rolling_window.data == CANDLE3
 
 
-def test_time_framed_candle_rolling_window_handle_new_data_5_minute_data():
+def test_time_framed_candle_rolling_window_handle_data_5_minute_data():
     rolling_window = indicators.TimeFramedCandleIndicator(
         time_unit=timedelta(minutes=5), market_cal=MARKET_CAL, size=2
     )
@@ -310,7 +310,7 @@ def test_time_framed_candle_rolling_window_handle_new_data_5_minute_data():
     )
 
 
-def test_time_framed_candle_rolling_window_handle_new_data_1_day_data():
+def test_time_framed_candle_rolling_window_handle_data_1_day_data():
     rolling_window = indicators.TimeFramedCandleIndicator(
         time_unit=timedelta(days=1), market_cal=MARKET_CAL, size=2
     )

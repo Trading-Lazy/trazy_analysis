@@ -12,9 +12,8 @@ from trazy_analysis.indicators.indicator import (
     Indicator,
     get_price_selector_function,
 )
-from trazy_analysis.indicators.level import Peak
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import CandleDirection, ExecutionMode
+from trazy_analysis.models.enums import CandleDirection
 
 LOG = trazy_analysis.logger.get_root_logger(
     __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
@@ -30,6 +29,7 @@ class PreviousExtrema(Indicator):
                 current_extrema = self.input_window[index - self.order]
             extremas.append(current_extrema)
         self.fill(np.array(extremas, dtype=self.dtype))
+        self.data = self.window[-1]
 
     def __init__(
         self,
@@ -42,26 +42,28 @@ class PreviousExtrema(Indicator):
         self.comparator = comparator
         self.order = order
         self.method = method
-        self.peak = Peak(
+        self.peak = None
+        self.source = source
+        super().__init__(
+            source=self.source, size=size, source_minimal_size=(self.order + 1)
+        )
+
+    def setup(self, indicators: "ReactiveIndicators"):
+        self.peak = indicators.Peak(
             comparator=self.comparator,
             order=self.order,
             method=self.method,
-            size=size,
-            source=source,
+            size=self.size,
+            source=self.source,
         )
-        super().__init__(source=self.peak, size=size)
+        super().setup(indicators)
 
     def handle_stream_data(self, data: Any):
-        if self.peak.data is None:
-            self.data = None
-            self.on_next(self.data)
-            self.index += 1
-        else:
-            super().handle_stream_data(data)
-
-    def handle_batch_data(self):
-        if self.peak.data:
-            super().handle_batch_data()
+        if self.input_window.count() >= (self.order + 1) and self.peak.data:
+            current_extrema = self.input_window[-self.order]
+            super().handle_stream_data(current_extrema)
+            return
+        self.next(self.data)
 
 
 class ExtremaChange(Indicator):
@@ -99,20 +101,17 @@ class ExtremaChange(Indicator):
         self.input_window = self.previous_extrema.input_window
         super().__init__(source=self.input_window, size=size)
 
-        if self.previous_extrema.filled():
-            self.initialize_stream()
-
     def handle_stream_data(self, data: Any):
-        if self.previous_extrema.nb_elts != 0:
+        if self.previous_extrema.count() != 0:
             if self.current_extrema != self.previous_extrema.data:
                 self.current_extrema = self.previous_extrema.data
                 extrema_change = True
         super().handle_stream_data(extrema_change)
 
     def handle_batch_data(self):
-        if self.previous_extrema.nb_elts == 0:
+        if self.previous_extrema.count() == 0:
             self.data = None
-            self.on_next(self.data)
+            self.next(self.data)
             self.index += 1
         else:
             super().handle_batch_data()
@@ -125,8 +124,6 @@ class CandleBodyShape(Indicator):
         comparator: Callable = np.greater,
         source: Indicator = None,
         size: int = 1,
-        memoize: bool = True,
-        mode: ExecutionMode = ExecutionMode.LIVE,
     ):
         self.body_ratio = body_ratio
         self.comparator = comparator
@@ -150,11 +147,7 @@ class SmallerCandleBody(CandleBodyShape):
     ):
         self.body_ratio = body_ratio
         super().__init__(
-            body_ratio=body_ratio,
-            comparator=np.less,
-            source=source,
-            size=size,
-            mode=mode,
+            body_ratio=body_ratio, comparator=np.less, source=source, size=size
         )
 
 
@@ -167,11 +160,7 @@ class BiggerCandleBody(CandleBodyShape):
     ):
         self.body_ratio = body_ratio
         super().__init__(
-            body_ratio=body_ratio,
-            comparator=np.greater,
-            source=source,
-            size=size,
-            mode=mode,
+            body_ratio=body_ratio, comparator=np.greater, source=source, size=size
         )
 
 
@@ -183,18 +172,21 @@ class CandleBOS(Indicator):
         price_type=PriceType.BODY_HIGH,
     ):
         if base == "body":
-            return source_indicator.map(get_price_selector_function(price_type))
+            return source_indicator.map(
+                get_price_selector_function(price_type), self.size
+            )
         elif base == "candle":
             return source_indicator.map(
                 lambda candle: candle.high
                 if self.comparator(candle.high, candle.low)
-                else candle.low
+                else candle.low,
+                self.size,
             )
         else:
             raise Exception(f"base {base} is not a valid base")
 
     def breakout(self, index_to_check: int, extrema_broke: bool):
-        if self.input_window.nb_elts < 2:
+        if self.input_window.count() < 2:
             return False
         first: float = self.breakout_source[index_to_check - 1]
         second: float = self.breakout_source[index_to_check]
@@ -209,7 +201,7 @@ class CandleBOS(Indicator):
 
     def initialize_stream(self):
         data = self.input_window
-        len = data.nb_elts
+        len = data.count()
         start = -len + 2
         end = 1
         breaks = [False]
@@ -226,75 +218,66 @@ class CandleBOS(Indicator):
         breakout_base: str = "body",
         source: Optional[Indicator] = None,
         size: int = 1,
-        memoize: bool = True,
-        mode=ExecutionMode.LIVE,
     ):
         self.comparator = comparator
         self.order = order
         self.method = method
         self.extrema_base = extrema_base
         self.breakout_base = breakout_base
+        self.pois = []
+        self.previous_extrema = None
+        self.current_extrema = None
+        self.extrema_change = None
+        self.extrema_broke = False
+        self.breakout_source = None
         size = max(2, size)
+        super().__init__(source=source, size=size, source_minimal_size=size)
 
-        extrema_source = self.get_source_from_base(source, extrema_base)
-        self.previous_extrema = PreviousExtrema(
+    def setup(self, indicators: "ReactiveIndicators"):
+        extrema_source = self.get_source_from_base(self.source, self.extrema_base)
+        self.previous_extrema = indicators.PreviousExtrema(
             comparator=self.comparator,
             order=self.order,
             method=self.method,
             source=extrema_source,
-            size=size,
+            size=self.size,
         )
         self.current_extrema = self.previous_extrema.data
-
-        self.extrema_change = ExtremaChange(
+        self.extrema_change = indicators.ExtremaChange(
             comparator=self.comparator,
             order=self.order,
             method=self.method,
             source=extrema_source,
-            size=size,
-            mode=mode,
+            size=self.size,
         )
 
-        reverse_extrema_source = source.map(
+        reverse_extrema_source = self.source.map(
             get_price_selector_function(PriceType.BODY_LOW)
         )
-        self.reverse_extrema_change = ExtremaChange(
+        self.reverse_extrema_change = indicators.ExtremaChange(
             comparator=np.less_equal,
             order=self.order,
             method=self.method,
             source=reverse_extrema_source,
-            size=size,
-            mode=mode,
+            size=self.size,
         )
-        self.extrema_broke = False
 
         self.breakout_source = self.get_source_from_base(
-            source, breakout_base, PriceType.CLOSE
+            self.source, self.breakout_base, PriceType.CLOSE
         )
 
-        self.pin_bar = SmallerCandleBody(
+        self.pin_bar = indicators.SmallerCandleBody(
             body_ratio=0.3,
-            source=source,
-            size=max(2, size),
-            mode=mode,
+            source=self.source,
+            size=self.size,
         )
-        super().__init__(source=source, source_minimal_size=size, size=size)
+        super().setup(indicators)
 
-        self.pois = []
-
-    def handle_batch_data(self):
-        if self.previous_extrema.nb_elts == 0:
-            self.data = None
-            self.on_next(self.data)
-            self.index += 1
-        else:
-            super().handle_batch_data()
-
-    def handle_stream_data(self, new_data) -> None:
+    def handle_stream_data(self, data: Candle) -> None:
         if self.current_extrema != self.previous_extrema.data:
             self.current_extrema = self.previous_extrema.data
             self.extrema_broke = False
-        if self.previous_extrema.nb_elts != 0:
+        if self.previous_extrema.count() != 0:
             index_to_check = 0
             breakout = self.breakout(index_to_check, self.extrema_broke)
             super().handle_stream_data(breakout)
@@ -325,10 +308,10 @@ class Imbalance(Indicator):
     def explicit_gap(cls, first: Candle, second: Candle) -> bool:
         return first.high < second.low or first.low > second.high
 
-    def handle_stream_data(self, new_data: Candle) -> None:
+    def handle_stream_data(self, data: Candle) -> None:
         # remove previous imbalances
-        low = new_data.low
-        high = new_data.high
+        low = data.low
+        high = data.high
         for interval in self.imbalances[low:high]:
             self.imbalances.remove(interval)
             begin, end, imbalance_info = interval
@@ -351,12 +334,12 @@ class Imbalance(Indicator):
                 )
 
         # check new imbalances
-        if self.input_window.nb_elts < 2:
+        if self.input_window.count() < 2:
             imbalance = False
             diff = 0
-        elif self.input_window.nb_elts == 2:
+        elif self.input_window.count() == 2:
             first = self.input_window[-1]
-            second = new_data
+            second = data
             imbalance = self.explicit_gap(first, second)
             diff = (
                 max(second.low - first.high, first.low - second.high)
@@ -370,7 +353,7 @@ class Imbalance(Indicator):
         else:
             first = self.input_window[-2]
             second = self.input_window[-1]
-            third = new_data
+            third = data
             imbalance = self.explicit_gap(second, third) or self.explicit_gap(
                 first, third
             )
@@ -395,22 +378,22 @@ class EngulfingCandle(Indicator):
         self.direction = direction
         super().__init__(source=source, transform=transform, source_minimal_size=2)
 
-    def handle_stream_data(self, new_data: Candle) -> None:
-        if self.input_window.nb_elts < 2:
+    def handle_stream_data(self, data: Candle) -> None:
+        if self.input_window.count() < 2:
             super().handle_stream_data(False)
             return
 
         previous_candle = self.input_window[-1]
         engulfing = (
-            new_data.direction == self.direction
+            data.direction == self.direction
             and previous_candle.direction != self.direction
             and (
                 previous_candle.direction == CandleDirection.BEARISH
-                and previous_candle.close >= new_data.open
-                and previous_candle.open <= new_data.close
+                and previous_candle.close >= data.open
+                and previous_candle.open <= data.close
                 or previous_candle.direction == CandleDirection.BULLISH
-                and previous_candle.close <= new_data.open
-                and previous_candle.open >= new_data.close
+                and previous_candle.close <= data.open
+                and previous_candle.open >= data.close
             )
         )
         super().handle_stream_data(engulfing)
@@ -449,15 +432,15 @@ class PoiTouch(Indicator):
         self.current_extrema_val = None
         self.poi_touchs = IntervalTree()
 
-    def handle_stream_data(self, new_data: Candle) -> None:
-        low = new_data.low
-        high = new_data.high
+    def handle_stream_data(self, data: Candle) -> None:
+        low = data.low
+        high = data.high
 
         poi_is_touched = False
 
         time_to_buy = False
         for interval in self.poi_touchs[low:high]:
-            LOG.info("we reached and interesting poi %s", new_data.time_unit)
+            LOG.info("we reached and interesting poi %s", data.time_unit)
             begin, end, data = interval
             if (end - low) / (end - begin) >= 0.3:
                 time_to_buy = True
@@ -523,7 +506,7 @@ class PoiTouch(Indicator):
             self.candle_bos.previous_extrema.data is not None
             and self.candle_bos.reverse_extrema_change.data
         ):
-            LOG.info(f"Waiting for BOS {new_data.time_unit}")
+            LOG.info(f"Waiting for BOS {data.time_unit}")
             self.pending_bos = True
             self.bos_happened = False
             min_value = self.candle_bos.reverse_extrema_change.previous_extrema.data
@@ -532,8 +515,8 @@ class PoiTouch(Indicator):
                 self.pois = [] if poi.direction == CandleDirection.BULLISH else [poi]
                 self.min_value = min_value
         elif self.pending_bos:
-            if new_data.direction == CandleDirection.BEARISH:
-                self.pois.append(new_data)
+            if data.direction == CandleDirection.BEARISH:
+                self.pois.append(data)
             if self.candle_bos.data:
                 LOG.info(f"The pois are {[str(candle) for candle in self.pois]}")
                 LOG.info(f"This is a real bos and min_value is: {self.min_value}")

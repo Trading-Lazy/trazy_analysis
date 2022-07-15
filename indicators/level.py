@@ -1,17 +1,16 @@
 from collections import deque
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 import numpy as np
 from intervaltree import IntervalTree
+from numpy.ma.core import MaskedConstant
 
 from trazy_analysis.indicators.common import PriceType
 from trazy_analysis.indicators.indicator import (
     Indicator,
     get_price_selector_function,
 )
-from trazy_analysis.indicators.sma import Average
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import ExecutionMode
 
 
 class Peak(Indicator):
@@ -50,8 +49,8 @@ class Peak(Indicator):
 
     def initialize_stream(self):
         data = self.input_window
-        len = data.nb_elts
-        start = -len + self.order + 1
+        data_len = data.count()
+        start = -data_len + self.order + 1
         end = -self.order + 1
         peaks = [False] * self.order * 2
         for index_to_check in range(start, end):
@@ -72,23 +71,12 @@ class Peak(Indicator):
         super().__init__(source=source, source_minimal_size=self.peak_size, size=size)
         self.comparator = comparator
 
-    def handle_stream_data(self, new_data) -> None:
-        if self.mode == ExecutionMode.BATCH:
-            index_to_check = -self.order
-            if self.input_window.nb_elts < self.peak_size:
-                super().handle_stream_data(False)
-                return
-            super().handle_stream_data(self.is_peak(index_to_check))
-        else:
-            if self.index < self.peak_size:
-                self.data = None
-                self.on_next(self.data)
-                self.index += 1
-            else:
-                super().handle_stream_data(new_data)
-
-    def push(self, new_data: Any = None):
-        self.input_window.push(new_data)
+    def handle_stream_data(self, data) -> None:
+        index_to_check = -self.order
+        if self.input_window.count() < self.peak_size:
+            super().handle_stream_data(False)
+            return
+        super().handle_stream_data(self.is_peak(index_to_check))
 
 
 class Level:
@@ -141,45 +129,51 @@ class ResistanceLevels(Indicator):
         size: int = None,
         source: Indicator = None,
         transform: Callable = None,
-        memoize: bool = True,
     ):
+        self.accuracy = accuracy
         self.order = order
         self.peak_size = 2 * order + 1
-        self.size = size
         super().__init__(
             source=source,
             transform=transform,
             source_minimal_size=self.peak_size,
-            size=self.size,
+            size=size,
         )
-        self.highs = self.input_window.map(get_price_selector_function(PriceType.HIGH))
-        self.lows = self.input_window.map(get_price_selector_function(PriceType.LOW))
-        self.size = self.input_window.size
+        self.highs = None
+        self.lows = None
+        self.merge_dist = None
+        self.maximas = None
+        self.minimas = None
+        self.resistances = IntervalTree()
+        self.supports = IntervalTree()
+        self.levels = {}
+        self.candle_index = -1
+
+    def setup(self, indicators: "ReactiveIndicators"):
+        self.highs = self.source.map(get_price_selector_function(PriceType.HIGH), self.peak_size)
+        self.lows = self.source.map(get_price_selector_function(PriceType.LOW), self.peak_size)
         self.merge_dist = (
-            Average(size=self.size, source=self.highs).sub(
-                Average(size=self.size, source=self.lows)
+            indicators.Average(size=self.size, source=self.highs).sub(
+                indicators.Average(size=self.size, source=self.lows)
             )
-        ).truediv(accuracy)
-        self.maximas = Peak(
+        ).truediv(self.accuracy)
+        self.maximas = indicators.Peak(
             comparator=np.greater,
             order=self.order,
             method="local_extrema",
             size=self.size,
             source=self.highs,
         )
-        self.minimas = Peak(
+        self.minimas = indicators.Peak(
             comparator=np.less,
             order=self.order,
             method="local_extrema",
             size=self.size,
             source=self.highs,
         )
-        self.resistances = IntervalTree()
-        self.supports = IntervalTree()
-        self.levels = {}
-        self.candle_index = -1
+        super().setup(indicators)
 
-    def handle_data(self, new_data: Candle) -> None:
+    def handle_stream_data(self, data: Candle) -> None:
         self.candle_index += 1
         if self.maximas.data:
             last_peak = self.input_window[-self.order]
@@ -230,22 +224,24 @@ class ResistanceLevels(Indicator):
                 right = min_value + 0.0000001
             self.supports[left:right] = (level, level_info)
 
-        previous_candle = self.input_window[-1]
-        if previous_candle is not None and previous_candle.high < new_data.high:
-            for interval in self.resistances[previous_candle.low : new_data.high]:
-                level, level_info = interval.data
-                level.level_type = "support"
-                level_info.power -= 1
-                if level_info.power == 0:
-                    self.resistances.remove(interval)
-                    del self.levels[level]
-        if previous_candle is not None and previous_candle.low > new_data.low:
-            for interval in self.supports[new_data.low : previous_candle.high]:
-                level, level_info = interval.data
-                level_info.power -= 1
-                if level_info.power == 0:
-                    self.supports.remove(interval)
-                    del self.levels[level]
+        if self.input_window.count() > 1:
+            previous_candle = self.input_window[-1]
+            if previous_candle.high < data.high:
+                for interval in self.resistances[previous_candle.low : data.high]:
+                    level, level_info = interval.data
+                    level.level_type = "support"
+                    level_info.power -= 1
+                    if level_info.power == 0:
+                        self.resistances.remove(interval)
+                        del self.levels[level]
+            if previous_candle is not None and previous_candle.low > data.low:
+                for interval in self.supports[data.low : previous_candle.high]:
+                    level, level_info = interval.data
+                    level_info.power -= 1
+                    if level_info.power == 0:
+                        self.supports.remove(interval)
+                        del self.levels[level]
+        super().handle_stream_data(self.levels)
 
     def __hash__(self):
         return 0
@@ -276,7 +272,6 @@ class TightTradingRange(Indicator):
         min_overlaps: int,
         source: Indicator = None,
         transform: Callable = None,
-        memoize: bool = True,
     ):
         self.size = size
         self.min_overlaps = min_overlaps
@@ -330,7 +325,7 @@ class TightTradingRange(Indicator):
         # printing the maximum value
         return ans
 
-    def handle_data(self, new_data: Candle) -> None:
+    def handle_data(self, data: Candle) -> None:
         self.candle_index += 1
         recent_candles = self.input_window[-self.size + 1 :]
         intervals = []
