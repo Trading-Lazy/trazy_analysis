@@ -19,6 +19,7 @@ jobs:
             ./configure --prefix=/usr
             make
             sudo make install
+            cd ..
             python3.8 -m venv venv
             . venv/bin/activate
             pip3.8 install --upgrade pip
