@@ -26,7 +26,6 @@ jobs:
             cd ..
             python3.8 -m venv venv
             . venv/bin/activate
-            pwd
             python3.8 -m pip install --upgrade pip
             python3.8 -m pip install -r requirements.txt
       - save_cache:
@@ -36,13 +35,14 @@ jobs:
       - run:
           name: Running tests
           command: |
-            . venv/bin/activate
             pwd
-            ls
+            cd trazy_analysis
+            . venv/bin/activate
+            cd ..
             mkdir trazy-analysis-test-reports
             python3 -m pytest &> trazy-analysis-test-reports/tests.log
       - store_artifacts:
-          path: /home/circleci/project/trazy-analysis-test-reports
+          path: /home/circleci/project/trazy_analysis/trazy-analysis-test-reports
 
 workflows:
   version: 2.1
