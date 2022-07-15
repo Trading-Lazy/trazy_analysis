@@ -46,7 +46,7 @@ jobs:
 
 workflows:
   version: 2.1
-  heroku_deploy:
+  build_and_test:
     jobs:
       - build:
-          context: heroku_analysis_dev
+          context: trazy_dev
