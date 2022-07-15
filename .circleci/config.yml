@@ -13,6 +13,7 @@ jobs:
           key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
       - run:
           command: |
+            sudo apt-get install python3-dev
             python3.8 -m venv venv
             . venv/bin/activate
             pip3.8 install --upgrade pip
@@ -36,10 +37,3 @@ workflows:
     jobs:
       - build:
           context: heroku_analysis_dev
-      - heroku/deploy-via-git: # Use the pre-configured job, deploy-via-git
-          context: heroku_analysis
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
