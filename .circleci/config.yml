@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  heroku: circleci/heroku@1.0.1 # Invoke the Heroku orb
-
 jobs:
   build:
     docker:
@@ -41,6 +38,7 @@ jobs:
             cd ..
             mkdir -p test/data
             cp -R trazy_analysis/test/data/* test/data/
+            rm -rf trazy_analysis/test/test_influxdb.py
             mkdir trazy-analysis-test-reports
             python3 -m pytest -vvs
       - store_artifacts:
