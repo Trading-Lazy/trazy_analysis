@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  heroku: circleci/heroku@1.0.1 # Invoke the Heroku orb
-
 jobs:
   build:
     docker:
@@ -13,6 +10,7 @@ jobs:
           key: deps-{{ .Branch }}-{{ checksum "requirements.txt" }}
       - run:
           command: |
+            ps -p $$
             mkdir ../trazy_analysis
             mv * ../trazy_analysis
             mv ../trazy_analysis .
