@@ -114,7 +114,7 @@ class InfluxDbStorage(DbStorage):
         query: str,
         format_function: Callable[[dict], None],
         serializable_class: type,
-    ) -> np.array:  # [serializables]
+    ) -> np.ndarray:  # [serializables]
         result = self.client.query(query)
         points = list(result.get_points())
         if len(points) == 0:
@@ -133,7 +133,7 @@ class InfluxDbStorage(DbStorage):
             serializable_class=Candle,
         )
 
-    def execute_signal_query(self, signal_query: str) -> np.array:  # [Signal]
+    def execute_signal_query(self, signal_query: str) -> np.ndarray:  # [Signal]
         return self.execute_query(
             query=signal_query,
             format_function=self.format_signal_dict,
@@ -223,6 +223,7 @@ class InfluxDbStorage(DbStorage):
                 "tags": {
                     "symbol": signal.asset.symbol,
                     "exchange": signal.asset.exchange,
+                    "time_unit": str(signal.time_unit),
                     "strategy": signal.strategy,
                     "root_candle_timestamp": signal.root_candle_timestamp,
                 },
@@ -254,12 +255,16 @@ class InfluxDbStorage(DbStorage):
         return parameters
 
     def get_signal_by_identifier(
-        self, asset: Asset, strategy: str, root_candle_timestamp: datetime
+        self,
+        asset: Asset,
+        time_unit: timedelta,
+        strategy: str,
+        root_candle_timestamp: datetime,
     ) -> Signal:
         query = (
             f"select * from {SIGNALS_COLLECTION_NAME} "
             f"where root_candle_timestamp='{str(root_candle_timestamp)}' and "
-            f"symbol='{asset.symbol}' and exchange='{asset.exchange}'"
+            f"symbol='{asset.symbol}' and exchange='{asset.exchange}' and time_unit='{time_unit}'"
         )
         signals = self.execute_signal_query(query)
         if len(signals) == 0:
@@ -285,12 +290,13 @@ class InfluxDbStorage(DbStorage):
                 "fields": {
                     "symbol": order.asset.symbol,
                     "exchange": order.asset.exchange,
+                    "time_unit": str(order.time_unit),
                     "action": order.action.name,
                     "direction": order.direction.name,
                     "size": order.size,
                     "time_in_force": str(order.time_in_force),
                     "status": order.status.name,
-                    "type": order.type.name,
+                    "order_type": order.order_type.name,
                     "condition": order.condition.name,
                 },
             }

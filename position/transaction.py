@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 import pytz
@@ -5,6 +6,7 @@ import pytz
 from trazy_analysis.common.utils import generate_object_id
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.enums import Action, Direction
+from trazy_analysis.models.utils import is_closed_position
 
 
 class Transaction:
@@ -46,7 +48,7 @@ class Transaction:
         self.timestamp = timestamp
         self.price = price
         if transaction_id is None:
-            transaction_id = generate_object_id()
+            transaction_id = uuid.uuid4()
         self.transaction_id = transaction_id
         self.order_id = order_id
         self.commission = commission
@@ -104,3 +106,11 @@ class Transaction:
             return self.cost_without_commission
         else:
             return self.cost_without_commission + self.commission
+
+    @property
+    def is_entry_transaction(self):
+        return not self.is_exit_transaction
+
+    @property
+    def is_exit_transaction(self):
+        return is_closed_position(self.action, self.direction)

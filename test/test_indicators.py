@@ -44,14 +44,8 @@ def test_sma_crossover_strategy_preload_data():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10010.955

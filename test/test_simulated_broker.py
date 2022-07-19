@@ -211,14 +211,8 @@ def test_get_account_total_market_value():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update_time(timestamp)
-    order1 = Order(
-        asset=asset1,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=100,
-        signal_id="1",
-        clock=clock,
-    )
+    order1 = Order(asset=asset1, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG, size=100,
+                   signal_id="1", clock=clock)
     candle1 = Candle(
         asset=asset1,
         open=567.0,
@@ -236,14 +230,8 @@ def test_get_account_total_market_value():
     symbol2 = "BBB"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     clock.update_time(timestamp)
-    order2 = Order(
-        asset=asset2,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=100,
-        signal_id="1",
-        clock=clock,
-    )
+    order2 = Order(asset=asset2, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG, size=100,
+                   signal_id="1", clock=clock)
     candle2 = Candle(
         asset=asset2, open=123.0, high=123.0, low=123.0, close=123.0, volume=100
     )
@@ -369,14 +357,8 @@ def test_submit_order():
     sbwp.subscribe_funds_to_portfolio(100000.00)
     sbwp.update_price(candle)
     size = 1000
-    order = Order(
-        asset=asset,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=size,
-        signal_id="1",
-        clock=clock,
-    )
+    order = Order(asset=asset, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG, size=size,
+                  signal_id="1", clock=clock)
     sbwp.submit_order(order)
     sbwp.execute_open_orders()
 
@@ -394,14 +376,8 @@ def test_submit_order():
     sbwp.subscribe_funds_to_portfolio(100000.00)
     sbwp.update_price(candle)
     size = 1000
-    order = Order(
-        asset=asset,
-        action=Action.SELL,
-        direction=Direction.SHORT,
-        size=size,
-        signal_id="1",
-        clock=clock,
-    )
+    order = Order(asset=asset, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.SHORT, size=size,
+                  signal_id="1", clock=clock)
     sbwp.submit_order(order)
     sbwp.execute_open_orders()
 
@@ -427,14 +403,8 @@ def test_execute_market_order():
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     timestamp = datetime.strptime("2017-10-05 08:00:00+0000", "%Y-%m-%d %H:%M:%S%z")
     clock.update_time(timestamp)
-    order = Order(
-        asset=asset,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=100,
-        signal_id="1",
-        clock=clock,
-    )
+    order = Order(asset=asset, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG, size=100,
+                  signal_id="1", clock=clock)
     candle = Candle(
         asset=asset,
         open=567.0,
@@ -488,14 +458,8 @@ def test_execute_limit_order():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
 
     event_loop.loop()
 
@@ -533,14 +497,8 @@ def test_execute_stop_order():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
 
     event_loop.loop()
 
@@ -578,14 +536,8 @@ def test_execute_target_order():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
 
     event_loop.loop()
 
@@ -625,14 +577,8 @@ def test_execute_trailing_stop_order():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
 
     event_loop.loop()
 
@@ -670,14 +616,8 @@ def test_execute_cover_order():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
 
     event_loop.loop()
 
@@ -713,14 +653,8 @@ def test_execute_bracket_order():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
 
     event_loop.loop()
 

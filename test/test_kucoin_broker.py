@@ -1,5 +1,5 @@
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import call, patch
 
 import pytest
@@ -647,15 +647,8 @@ def test_execute_market_order(
     kucoin_broker = KucoinBroker(clock=clock, events=events)
 
     # test buy orders
-    buy_order = Order(
-        asset=ASSET3,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=2.5,
-        signal_id="1",
-        type=OrderType.MARKET,
-        clock=clock,
-    )
+    buy_order = Order(asset=ASSET3, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                      size=2.5, signal_id="1", order_type=OrderType.MARKET, clock=clock)
 
     assert kucoin_broker.currency_pairs_traded == {
         Asset(symbol="XRP/USDT", exchange=EXCHANGE),
@@ -674,15 +667,8 @@ def test_execute_market_order(
     kucoin_broker.execute_order(buy_order)
 
     # test sell orders
-    sell_order = Order(
-        asset=ASSET3,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=2.4,
-        signal_id="1",
-        type=OrderType.MARKET,
-        clock=clock,
-    )
+    sell_order = Order(asset=ASSET3, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                       size=2.4, signal_id="1", order_type=OrderType.MARKET, clock=clock)
 
     assert kucoin_broker.currency_pairs_traded == {
         Asset(symbol="XRP/USDT", exchange=EXCHANGE),
@@ -748,16 +734,8 @@ def test_execute_limit_order(
     kucoin_broker = KucoinBroker(clock=clock, events=events)
 
     # test buy orders
-    buy_order = Order(
-        asset=ASSET2,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=6.97654,
-        signal_id="1",
-        type=OrderType.LIMIT,
-        limit=0.3534,
-        clock=clock,
-    )
+    buy_order = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                      size=6.97654, signal_id="1", limit=0.3534, order_type=OrderType.LIMIT, clock=clock)
 
     assert kucoin_broker.currency_pairs_traded == {
         Asset(symbol="ETH/USDT", exchange=EXCHANGE),
@@ -776,16 +754,8 @@ def test_execute_limit_order(
     kucoin_broker.execute_order(buy_order)
 
     # test sell orders
-    sell_order = Order(
-        asset=ASSET2,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=6.77654,
-        signal_id="1",
-        type=OrderType.LIMIT,
-        limit=0.4534,
-        clock=clock,
-    )
+    sell_order = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                       size=6.77654, signal_id="1", limit=0.4534, order_type=OrderType.LIMIT, clock=clock)
 
     assert kucoin_broker.currency_pairs_traded == {
         Asset(symbol="ETH/USDT", exchange=EXCHANGE),
@@ -842,16 +812,8 @@ def test_execute_stop_order(
     kucoin_broker = KucoinBroker(clock=clock, events=events)
 
     # stop order sell
-    stop_order_sell = Order(
-        asset=ASSET2,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        stop=0.20,
-        type=OrderType.STOP,
-        clock=clock,
-    )
+    stop_order_sell = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                            size=1, signal_id="1", stop=0.20, order_type=OrderType.STOP, clock=clock)
     kucoin_broker.execute_order(stop_order_sell)
     assert len(kucoin_broker.open_orders) == 1
     assert kucoin_broker.open_orders.popleft() == stop_order_sell
@@ -861,16 +823,8 @@ def test_execute_stop_order(
     assert len(kucoin_broker.open_orders) == 0
 
     # stop order buy
-    stop_order_buy = Order(
-        asset=ASSET2,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        stop=0.45,
-        type=OrderType.STOP,
-        clock=clock,
-    )
+    stop_order_buy = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                           size=1, signal_id="1", stop=0.45, order_type=OrderType.STOP, clock=clock)
     kucoin_broker.execute_order(stop_order_buy)
     assert len(kucoin_broker.open_orders) == 1
     assert kucoin_broker.open_orders.popleft() == stop_order_buy
@@ -914,16 +868,9 @@ def test_execute_target_order(
     kucoin_broker = KucoinBroker(clock=clock, events=events)
 
     # target order sell
-    target_order_sell = Order(
-        asset=ASSET2,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        target=1.01,
-        type=OrderType.TARGET,
-        clock=clock,
-    )
+    target_order_sell = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.SELL,
+                              direction=Direction.LONG, size=1, signal_id="1", target=1.01, order_type=OrderType.TARGET,
+                              clock=clock)
     kucoin_broker.execute_order(target_order_sell)
     assert len(kucoin_broker.open_orders) == 1
     assert kucoin_broker.open_orders.popleft() == target_order_sell
@@ -933,16 +880,8 @@ def test_execute_target_order(
     assert len(kucoin_broker.open_orders) == 0
 
     # target order buy
-    target_order_buy = Order(
-        asset=ASSET2,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        target=1.01,
-        type=OrderType.TARGET,
-        clock=clock,
-    )
+    target_order_buy = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                             size=1, signal_id="1", target=1.01, order_type=OrderType.TARGET, clock=clock)
     kucoin_broker.last_prices[ASSET2] = 1.13
     kucoin_broker.execute_order(target_order_buy)
     assert len(kucoin_broker.open_orders) == 1
@@ -989,16 +928,9 @@ def test_execute_trailing_stop_order_sell(
     events = deque()
     kucoin_broker = KucoinBroker(clock=clock, events=events)
 
-    trailing_stop_order = Order(
-        asset=ASSET2,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        stop_pct=0.05,
-        type=OrderType.TRAILING_STOP,
-        clock=clock,
-    )
+    trailing_stop_order = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.SELL,
+                                direction=Direction.LONG, size=1, signal_id="1", stop_pct=0.05,
+                                order_type=OrderType.TRAILING_STOP, clock=clock)
     kucoin_broker.last_prices[ASSET2] = 1.11
     kucoin_broker.execute_order(trailing_stop_order)
     assert len(kucoin_broker.open_orders) == 1
@@ -1050,16 +982,9 @@ def test_execute_trailing_stop_order_buy(
     events = deque()
     kucoin_broker = KucoinBroker(clock=clock, events=events)
 
-    trailing_stop_order = Order(
-        asset=ASSET2,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        stop_pct=0.05,
-        type=OrderType.TRAILING_STOP,
-        clock=clock,
-    )
+    trailing_stop_order = Order(asset=ASSET2, time_unit=timedelta(minutes=1), action=Action.BUY,
+                                direction=Direction.LONG, size=1, signal_id="1", stop_pct=0.05,
+                                order_type=OrderType.TRAILING_STOP, clock=clock)
     kucoin_broker.last_prices[ASSET2] = 1.11
     kucoin_broker.execute_order(trailing_stop_order)
     assert len(kucoin_broker.open_orders) == 1

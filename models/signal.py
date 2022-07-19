@@ -5,7 +5,6 @@ import numpy as np
 import pytz
 
 from trazy_analysis.common.clock import Clock
-from trazy_analysis.common.helper import parse_timedelta_str
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.enums import Action, Direction
 from trazy_analysis.models.utils import is_closed_position
@@ -52,6 +51,7 @@ class Signal(SignalBase):
     def __init__(
         self,
         asset: Asset,
+        time_unit: timedelta,
         action: Action,
         direction: Direction,
         confidence_level: float = None,
@@ -70,6 +70,7 @@ class Signal(SignalBase):
         )
         self.root_candle_timestamp = root_candle_timestamp
         self.asset = asset
+        self.time_unit = time_unit
         self.clock = clock
         if generation_time is not None:
             self.generation_time = generation_time
@@ -92,55 +93,53 @@ class Signal(SignalBase):
         generation_time: datetime = None,
         confidence_level: float = None,
     ):
-        if confidence_level is None:
-            self.confidence_level = confidence_level
-        if root_candle_timestamp is None:
-            self.root_candle_timestamp = root_candle_timestamp
-        if parameters is None:
-            self.parameters = parameters
-        if clock is None:
-            self.clock = clock
-        if generation_time is None:
-            if self.clock is not None:
-                self.generation_time = self.clock.current_time()
-            else:
-                self.generation_time = datetime.now(pytz.UTC)
-        if (
-            self.signal_id is None
-            and strategy is not None
-            and root_candle_timestamp is not None
-        ):
+        self.strategy = strategy
+        self.confidence_level = confidence_level
+        self.root_candle_timestamp = root_candle_timestamp
+        self.parameters = parameters
+        self.clock = clock
+        if generation_time is not None:
+            self.generation_time = generation_time
+        if self.clock is not None:
+            self.generation_time = self.clock.current_time()
+        else:
+            self.generation_time = datetime.now(pytz.UTC)
+        if self.strategy is not None and root_candle_timestamp is not None:
             self.signal_id = (
                 self.asset.key() + "-" + strategy + "-" + str(root_candle_timestamp)
             )
 
     @staticmethod
     def from_serializable_dict(signal_dict: dict) -> "Signal":
+        from trazy_analysis.common.helper import parse_timedelta_str
+
         signal: Signal = Signal(
             asset=Asset.from_dict(signal_dict["asset"]),
+            time_unit=parse_timedelta_str(signal_dict["time_unit"]),
             action=Action[signal_dict["action"]],
             direction=Direction[signal_dict["direction"]],
             confidence_level=float(signal_dict["confidence_level"]),
             strategy=signal_dict["strategy"],
             root_candle_timestamp=signal_dict["root_candle_timestamp"],
             parameters=signal_dict["parameters"],
-            generation_time=signal_dict["generation_time"],
             time_in_force=parse_timedelta_str(signal_dict["time_in_force"]),
+            generation_time=signal_dict["generation_time"],
         )
         return signal
 
     def to_serializable_dict(self) -> dict:
-        dict = self.__dict__.copy()
-        dict["asset"] = dict["asset"].to_dict()
-        dict["action"] = dict["action"].name
-        dict["direction"] = dict["direction"].name
-        dict["confidence_level"] = str(dict["confidence_level"])
-        dict["root_candle_timestamp"] = str(dict["root_candle_timestamp"])
-        dict["generation_time"] = str(dict["generation_time"])
-        dict["time_in_force"] = str(dict["time_in_force"])
-        del dict["signal_id"]
-        del dict["clock"]
-        return dict
+        signal_dict = self.__dict__.copy()
+        signal_dict["asset"] = signal_dict["asset"].to_dict()
+        signal_dict["time_unit"] = str(signal_dict["time_unit"])
+        signal_dict["action"] = signal_dict["action"].name
+        signal_dict["direction"] = signal_dict["direction"].name
+        signal_dict["confidence_level"] = str(signal_dict["confidence_level"])
+        signal_dict["root_candle_timestamp"] = str(signal_dict["root_candle_timestamp"])
+        signal_dict["generation_time"] = str(signal_dict["generation_time"])
+        signal_dict["time_in_force"] = str(signal_dict["time_in_force"])
+        del signal_dict["signal_id"]
+        del signal_dict["clock"]
+        return signal_dict
 
     @property
     def expiration_time(self) -> datetime:

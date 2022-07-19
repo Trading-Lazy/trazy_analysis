@@ -1,13 +1,16 @@
-from typing import Any, Union
+import random
+from typing import Any, Union, Optional, List
 
 import numpy as np
 import pandas as pd
 import talib
+from pandas import DatetimeIndex
+from plotly.basedatatypes import BaseTraceType
 
 from trazy_analysis.indicators.indicator import (
-    Indicator,
+    Indicator, COLORS,
 )
-from trazy_analysis.models.enums import ExecutionMode
+import plotly.graph_objects as go
 
 
 class Sma(Indicator):
@@ -15,7 +18,7 @@ class Sma(Indicator):
         self,
         source: Indicator,
         period: int,
-        size: int = 1,
+        size: int = None,
     ):
         self.period = period
         self.sum: float = 0.0
@@ -32,6 +35,21 @@ class Sma(Indicator):
     @staticmethod
     def compute(data: Union[np.ndarray, pd.DataFrame], period: int) -> np.ndarray:
         return talib.SMA(data, timeperiod=period)
+
+    @staticmethod
+    def plotting_attributes() -> List[str]:
+        return ["x", "y"]
+
+    def get_trace(self, index: DatetimeIndex) -> Optional[BaseTraceType]:
+        x, y = self.get_trace_coordinates(index)
+        if y is None:
+            return None
+        return go.Scatter(
+            name=f"Sma {self.period}",
+            x=x,
+            y=y,
+            line=dict(color=random.choice(COLORS), width=2),
+        )
 
     def handle_stream_data(self, data: Any):
         self.sum += data - self.oldest
@@ -93,8 +111,8 @@ class Ema(Indicator):
         elif self.input_window.count() == self.period:
             self.data = self.previous_ema = self.initial_sum / self.period
         else:
-            self.data = self.previous_ema = (
-                data * self.factor + self.previous_ema * (1 - self.factor)
+            self.data = self.previous_ema = data * self.factor + self.previous_ema * (
+                1 - self.factor
             )
             super().handle_stream_data(self.data)
         self.next(self.data)

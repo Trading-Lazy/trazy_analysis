@@ -77,39 +77,17 @@ def test_arbitrage_strategy():
     # Binance
     candle = Candle(asset=BINANCE_ASSET, open=0, high=0, low=0, close=0, volume=0)
     binance_broker.update_price(candle)
-    order = Order(
-        asset=BINANCE_ASSET,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=initial_size,
-        signal_id="0",
-        limit=None,
-        stop=None,
-        target=None,
-        stop_pct=None,
-        type=OrderType.MARKET,
-        clock=clock,
-        time_in_force=timedelta(minutes=5),
-    )
+    order = Order(asset=BINANCE_ASSET, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                  size=initial_size, signal_id="0", limit=None, stop=None, target=None, stop_pct=None,
+                  order_type=OrderType.MARKET, clock=clock, time_in_force=timedelta(minutes=5))
     binance_broker.execute_market_order(order)
 
     # Kucoin
     candle = Candle(asset=KUCOIN_ASSET, open=0, high=0, low=0, close=0, volume=0)
     kucoin_broker.update_price(candle)
-    order = Order(
-        asset=KUCOIN_ASSET,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=initial_size,
-        signal_id="0",
-        limit=None,
-        stop=None,
-        target=None,
-        stop_pct=None,
-        type=OrderType.MARKET,
-        clock=clock,
-        time_in_force=timedelta(minutes=5),
-    )
+    order = Order(asset=KUCOIN_ASSET, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                  size=initial_size, signal_id="0", limit=None, stop=None, target=None, stop_pct=None,
+                  order_type=OrderType.MARKET, clock=clock, time_in_force=timedelta(minutes=5))
     kucoin_broker.execute_market_order(order)
 
     # prepare event loop parameters
@@ -131,16 +109,9 @@ def test_arbitrage_strategy():
 
     strategies_parameters = {ArbitrageStrategy: {"margin_factor": 1}}
     assets = {BINANCE_ASSET: time_unit, KUCOIN_ASSET: time_unit}
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies_parameters,
-        close_at_end_of_day=False,
-        close_at_end_of_data=False,
-        mode=ExecutionMode.BATCH,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies_parameters, mode=ExecutionMode.BATCH,
+                           close_at_end_of_day=False, close_at_end_of_data=False)
     event_loop.loop()
 
     assert binance_broker.get_portfolio_total_equity() == pytest.approx(

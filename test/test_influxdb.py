@@ -63,54 +63,26 @@ CANDLE3: Candle = Candle(
 clock = SimulatedClock()
 
 clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-SIGNAL1: Signal = Signal(
-    asset=AAPL_ASSET,
-    action=Action.BUY,
-    direction=Direction.LONG,
-    confidence_level=0.05,
-    strategy="SmaCrossover",
-    root_candle_timestamp=datetime.strptime(
+SIGNAL1: Signal = Signal(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                         confidence_level=0.05, strategy="SmaCrossover", root_candle_timestamp=datetime.strptime(
         "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
-    ),
-    parameters={},
-    clock=clock,
-)
+    ), parameters={}, clock=clock)
 
 clock = SimulatedClock()
 clock.update_time(datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-SIGNAL2: Signal = Signal(
-    asset=AAPL_ASSET,
-    action=Action.SELL,
-    direction=Direction.LONG,
-    confidence_level=0.05,
-    strategy="SmaCrossover",
-    root_candle_timestamp=datetime.strptime(
+SIGNAL2: Signal = Signal(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                         confidence_level=0.05, strategy="SmaCrossover", root_candle_timestamp=datetime.strptime(
         "2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"
-    ),
-    parameters={},
-    clock=clock,
-)
+    ), parameters={}, clock=clock)
 
 clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-ORDER1: Order = Order(
-    asset=AAPL_ASSET,
-    action=Action.BUY,
-    direction=Direction.LONG,
-    size=100,
-    signal_id="1",
-    clock=clock,
-)
+ORDER1: Order = Order(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                      size=100, signal_id="1", clock=clock)
 
 clock = SimulatedClock()
 clock.update_time(datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-ORDER2: Order = Order(
-    asset=AAPL_ASSET,
-    action=Action.SELL,
-    direction=Direction.LONG,
-    size=100,
-    signal_id="2",
-    clock=clock,
-)
+ORDER2: Order = Order(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                      size=100, signal_id="2", clock=clock)
 
 INFLUXDB_STORAGE = InfluxDbStorage(DATABASE_NAME, INFLUXDB_URL)
 
@@ -385,6 +357,7 @@ def test_add_signal(write_points_mocked):
             "tags": {
                 "symbol": SIGNAL1.asset.symbol,
                 "exchange": SIGNAL1.asset.exchange,
+                "time_unit": str(SIGNAL1.time_unit),
                 "strategy": SIGNAL1.strategy,
                 "root_candle_timestamp": SIGNAL1.root_candle_timestamp,
             },
@@ -412,9 +385,8 @@ def test_get_signal_by_identifier():
     INFLUXDB_STORAGE.clean_all_signals()
 
     INFLUXDB_STORAGE.add_signal(SIGNAL1)
-    signal: Signal = INFLUXDB_STORAGE.get_signal_by_identifier(
-        SIGNAL1.asset, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
-    )
+    signal: Signal = INFLUXDB_STORAGE.get_signal_by_identifier(SIGNAL1.asset, timedelta(minutes=1), SIGNAL1.strategy,
+                                                               SIGNAL1.root_candle_timestamp)
     assert signal == SIGNAL1
 
     INFLUXDB_STORAGE.clean_all_signals()
@@ -423,9 +395,8 @@ def test_get_signal_by_identifier():
 def test_get_signal_by_identifier_non_existing_signal():
     INFLUXDB_STORAGE.clean_all_signals()
 
-    signal: Signal = INFLUXDB_STORAGE.get_signal_by_identifier(
-        SIGNAL1.asset, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
-    )
+    signal: Signal = INFLUXDB_STORAGE.get_signal_by_identifier(SIGNAL1.asset, timedelta(minutes=1), SIGNAL1.strategy,
+                                                               SIGNAL1.root_candle_timestamp)
     assert signal is None
 
 
@@ -460,12 +431,13 @@ def test_add_order(write_points_mocked):
             "fields": {
                 "symbol": ORDER1.asset.symbol,
                 "exchange": ORDER1.asset.exchange,
+                "time_unit": str(ORDER1.time_unit),
                 "action": ORDER1.action.name,
                 "direction": ORDER1.direction.name,
                 "size": ORDER1.size,
                 "time_in_force": str(ORDER1.time_in_force),
                 "status": ORDER1.status.name,
-                "type": ORDER1.type.name,
+                "order_type": ORDER1.order_type.name,
                 "condition": ORDER1.condition.name,
             },
         }

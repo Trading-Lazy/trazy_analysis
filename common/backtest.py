@@ -314,17 +314,13 @@ class Backtest:
             order_creator=order_creator,
             clock=clock,
         )
-        self.event_loop = EventLoop(
-            events=self.events,
-            assets=self.backtest_config.assets,
-            feed=self.backtest_config.feed,
-            order_manager=order_manager,
-            strategies_parameters=strategies_parameters,
-            close_at_end_of_day=self.backtest_config.close_at_end_of_day,
-            close_at_end_of_data=self.backtest_config.close_at_end_of_data,
-            broker_isolation=self.backtest_config.isolation,
-            statistics_class=self.backtest_config.statistics_class,
-        )
+        self.event_loop = EventLoop(events=self.events, assets=self.backtest_config.assets,
+                                    feed=self.backtest_config.feed, order_manager=order_manager,
+                                    strategies_parameters=strategies_parameters,
+                                    close_at_end_of_day=self.backtest_config.close_at_end_of_day,
+                                    close_at_end_of_data=self.backtest_config.close_at_end_of_data,
+                                    broker_isolation=self.backtest_config.isolation,
+                                    statistics_class=self.backtest_config.statistics_class)
         self.event_loop.loop()
         return self.event_loop.statistics_df
 

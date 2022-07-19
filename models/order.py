@@ -2,6 +2,7 @@ import os
 from abc import ABC
 from datetime import datetime, timedelta
 from typing import Any, Callable, List, Tuple
+import uuid
 
 import pytz
 
@@ -73,6 +74,7 @@ class Order(OrderBase):
     def __init__(
         self,
         asset: Asset,
+        time_unit: timedelta,
         action: Action,
         direction: Direction,
         size: float,
@@ -81,7 +83,7 @@ class Order(OrderBase):
         stop: float = None,
         target: float = None,
         stop_pct: float = None,
-        type: OrderType = OrderType.MARKET,
+        order_type: OrderType = OrderType.MARKET,
         condition: OrderCondition = OrderCondition.GTC,
         clock: Clock = None,
         time_in_force: timedelta = timedelta(minutes=5),
@@ -90,6 +92,7 @@ class Order(OrderBase):
         order_id: str = None,
     ):
         self.asset = asset
+        self.time_unit = time_unit
         self.action = action
         self.direction = direction
         self.size = size
@@ -100,11 +103,11 @@ class Order(OrderBase):
         self.stop_pct = stop_pct
         self.clock = clock
         if order_id is None:
-            order_id = generate_object_id()
+            order_id = uuid.uuid4()
         self.order_id = order_id
         if self.clock is not None:
             generation_time = self.clock.current_time()
-        self.type: OrderType = type
+        self.order_type: OrderType = order_type
         self.condition: OrderCondition = condition
         super().__init__(
             status=status, generation_time=generation_time, time_in_force=time_in_force
@@ -114,7 +117,7 @@ class Order(OrderBase):
         if self.clock is not None:
             submission_time = self.clock.current_time()
         super().submit(submission_time)
-        LOG.info("Submitted order: %s, qty: %s", self.asset, self.size)
+        LOG.info("Submitted order: %s-%s, qty: %s", self.asset, str(self.time_unit), self.size)
 
     def in_force(self, timestamp: datetime = None) -> bool:
         if timestamp is None:
@@ -133,12 +136,13 @@ class Order(OrderBase):
     def from_serializable_dict(order_dict: dict) -> "Order":
         order: Order = Order(
             asset=Asset.from_dict(order_dict["asset"]),
+            time_unit=parse_timedelta_str(order_dict["time_unit"]),
             action=Action[order_dict["action"]],
             direction=Direction[order_dict["direction"]],
             size=int(order_dict["size"]),
-            type=OrderType[order_dict["type"]],
-            condition=OrderCondition[order_dict["condition"]],
             signal_id=order_dict["signal_id"],
+            order_type=OrderType[order_dict["order_type"]],
+            condition=OrderCondition[order_dict["condition"]],
             time_in_force=parse_timedelta_str(order_dict["time_in_force"]),
             status=OrderStatus[order_dict["status"]],
             generation_time=order_dict["generation_time"],
@@ -148,13 +152,14 @@ class Order(OrderBase):
     def to_serializable_dict(self, with_order_id=False) -> dict:
         dict = self.__dict__.copy()
         dict["asset"] = dict["asset"].to_dict()
+        dict["time_unit"] = str(dict["time_unit"])
         dict["action"] = dict["action"].name
         dict["direction"] = dict["direction"].name
         dict["signal_id"] = str(dict["signal_id"])
         dict["generation_time"] = str(dict["generation_time"])
         dict["time_in_force"] = str(dict["time_in_force"])
         dict["status"] = dict["status"].name
-        dict["type"] = dict["type"].name
+        dict["order_type"] = dict["order_type"].name
         dict["condition"] = dict["condition"].name
         if not with_order_id:
             del dict["order_id"]
@@ -174,6 +179,7 @@ class Order(OrderBase):
         return (
             "Order("
             "asset={},"
+            "time_unit={},"
             "action={},"
             "direction={},"
             "size={},"
@@ -190,6 +196,7 @@ class Order(OrderBase):
             "order_id={},"
             "submission_time={})".format(
                 self.asset,
+                self.time_unit,
                 self.action.name,
                 self.direction.name,
                 self.size,
@@ -198,7 +205,7 @@ class Order(OrderBase):
                 self.stop,
                 self.target,
                 self.stop_pct,
-                self.type.name,
+                self.order_type.name,
                 self.condition.name,
                 self.time_in_force,
                 self.status.name,

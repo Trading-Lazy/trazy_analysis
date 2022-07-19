@@ -79,13 +79,6 @@ if __name__ == "__main__":
         clock=clock,
         filter_at_end_of_day=False,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=[],
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-        close_at_end_of_day=False,
-    )
+    event_loop = EventLoop(events=events, assets=[], feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE, close_at_end_of_day=False)
     event_loop.loop()

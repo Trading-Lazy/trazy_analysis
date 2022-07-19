@@ -12,7 +12,7 @@ from trazy_analysis.models.multiple_order import (
     BracketOrder,
     CoverOrder,
 )
-from trazy_analysis.models.order import Order
+from trazy_analysis.models.order import Order, OrderBase
 from trazy_analysis.models.signal import ArbitragePairSignal, Signal
 
 LOG = trazy_analysis.logger.get_root_logger(
@@ -91,7 +91,7 @@ class OrderCreator:
     def find_best_order_type(self, signal: Signal) -> OrderType:
         return self.fixed_order_type
 
-    def create_order(self, signal: Signal, clock: Clock) -> Order:
+    def create_order(self, signal: Signal, clock: Clock) -> OrderBase:
         if isinstance(signal, Signal):
             if (
                 not self.with_cover
@@ -116,6 +116,7 @@ class OrderCreator:
 
                 return Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=signal.action,
                     direction=signal.direction,
                     size=0,
@@ -124,7 +125,7 @@ class OrderCreator:
                     stop=stop,
                     target=target,
                     stop_pct=stop_pct,
-                    type=order_type,
+                    order_type=order_type,
                     clock=clock,
                     time_in_force=signal.time_in_force,
                 )
@@ -134,22 +135,24 @@ class OrderCreator:
                 stop = self.find_best_stop(signal, action)
                 initiation_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=signal.action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
-                    type=OrderType.MARKET,
+                    order_type=OrderType.MARKET,
                     clock=clock,
                     time_in_force=signal.time_in_force,
                 )
                 stop_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
                     stop=stop,
-                    type=OrderType.STOP,
+                    order_type=OrderType.STOP,
                     clock=clock,
                     time_in_force=pd.offsets.Day(1),
                 )
@@ -166,33 +169,36 @@ class OrderCreator:
                 stop = self.find_best_stop(signal, action)
                 initiation_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=signal.action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
-                    type=OrderType.MARKET,
+                    order_type=OrderType.MARKET,
                     clock=clock,
                     time_in_force=signal.time_in_force,
                 )
                 target_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
                     target=target,
-                    type=OrderType.TARGET,
+                    order_type=OrderType.TARGET,
                     clock=clock,
                     time_in_force=pd.offsets.Day(1),
                 )
                 stop_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
                     stop=stop,
-                    type=OrderType.STOP,
+                    order_type=OrderType.STOP,
                     clock=clock,
                     time_in_force=pd.offsets.Day(1),
                 )
@@ -208,22 +214,24 @@ class OrderCreator:
                 stop_pct = self.find_best_trailing_stop(signal, action)
                 initiation_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=signal.action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
-                    type=OrderType.MARKET,
+                    order_type=OrderType.MARKET,
                     clock=clock,
                     time_in_force=signal.time_in_force,
                 )
                 trailing_stop_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
                     stop_pct=stop_pct,
-                    type=OrderType.TRAILING_STOP,
+                    order_type=OrderType.TRAILING_STOP,
                     clock=clock,
                     time_in_force=pd.offsets.Day(1),
                 )
@@ -239,33 +247,36 @@ class OrderCreator:
                 stop_pct = self.find_best_trailing_stop(signal, action)
                 initiation_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=signal.action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
-                    type=OrderType.MARKET,
+                    order_type=OrderType.MARKET,
                     clock=clock,
                     time_in_force=signal.time_in_force,
                 )
                 target_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
                     target=target,
-                    type=OrderType.TARGET,
+                    order_type=OrderType.TARGET,
                     clock=clock,
                     time_in_force=pd.offsets.Day(1),
                 )
                 trailing_stop_order = Order(
                     asset=signal.asset,
+                    time_unit=signal.time_unit,
                     action=action,
                     direction=signal.direction,
                     size=0,
                     signal_id=signal.signal_id,
                     stop_pct=stop_pct,
-                    type=OrderType.TRAILING_STOP,
+                    order_type=OrderType.TRAILING_STOP,
                     clock=clock,
                     time_in_force=pd.offsets.Day(1),
                 )
@@ -281,22 +292,24 @@ class OrderCreator:
             buy_signal = signal.buy_signal
             buy_order = Order(
                 asset=buy_signal.asset,
+                time_unit=buy_signal.time_unit,
                 action=buy_signal.action,
                 direction=buy_signal.direction,
                 size=0,
                 signal_id=buy_signal.signal_id,
-                type=OrderType.MARKET,
+                order_type=OrderType.MARKET,
                 clock=clock,
                 time_in_force=buy_signal.time_in_force,
             )
             sell_signal = signal.sell_signal
             sell_order = Order(
                 asset=sell_signal.asset,
+                time_unit=sell_signal.time_unit,
                 action=sell_signal.action,
                 direction=sell_signal.direction,
                 size=0,
                 signal_id=sell_signal.signal_id,
-                type=OrderType.MARKET,
+                order_type=OrderType.MARKET,
                 clock=clock,
                 time_in_force=sell_signal.time_in_force,
             )

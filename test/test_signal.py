@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
@@ -14,6 +14,7 @@ GOOGL_ASSET = Asset(symbol="GOOGL", exchange="IEX")
 clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
 SIGNAL1 = Signal(
     asset=IVV_ASSET,
+    time_unit=timedelta(minutes=1),
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level=0.05,
@@ -26,6 +27,7 @@ SIGNAL1 = Signal(
 )
 SIGNAL1_DICT = {
     "asset": {"symbol": "IVV", "exchange": "IEX"},
+    "time_unit": "0:01:00",
     "action": "BUY",
     "direction": "LONG",
     "confidence_level": "0.05",
@@ -38,6 +40,7 @@ SIGNAL1_DICT = {
 
 SIGNAL2 = Signal(
     asset=IVV_ASSET,
+    time_unit=timedelta(minutes=1),
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level="0.05",
@@ -51,6 +54,7 @@ SIGNAL2 = Signal(
 
 SIGNAL3 = Signal(
     asset=GOOGL_ASSET,
+    time_unit=timedelta(minutes=1),
     action=Action.BUY,
     direction=Direction.LONG,
     confidence_level="0.05",
@@ -66,6 +70,7 @@ SIGNAL3 = Signal(
 def test_no_clock_no_generation_time():
     signal = Signal(
         asset=GOOGL_ASSET,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         confidence_level="0.05",

@@ -1,5 +1,5 @@
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from trazy_analysis.broker.broker_manager import BrokerManager
@@ -34,16 +34,9 @@ def test_process_check_signals(
     order_manager = OrderManager(
         events, broker_manager, position_sizer, order_creator, clock
     )
-    signal = Signal(
-        asset=asset,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        confidence_level="0.05",
-        strategy="SmaCrossoverStrategy",
-        root_candle_timestamp=timestamp,
-        parameters={},
-        clock=clock,
-    )
+    signal = Signal(asset=asset, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                    confidence_level="0.05", strategy="SmaCrossoverStrategy", root_candle_timestamp=timestamp,
+                    parameters={}, clock=clock)
 
     order_manager.check_signal(signal)
 

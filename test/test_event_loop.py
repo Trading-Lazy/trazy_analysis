@@ -65,14 +65,8 @@ def test_init_live():
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    event_loop = EventLoop(
-        events=EVENTS,
-        assets=assets,
-        feed=FEED,
-        order_manager=order_manager,
-        strategies_parameters=strategies_classes,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
+                           strategies_parameters=strategies_classes, mode=ExecutionMode.LIVE)
 
     assert event_loop.assets == {AAPL_ASSET: [time_unit], GOOGL_ASSET: [time_unit]}
     assert event_loop.strategies_parameters == strategies_classes
@@ -101,14 +95,8 @@ def test_init_backtest():
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    event_loop = EventLoop(
-        events=EVENTS,
-        assets=assets,
-        feed=FEED,
-        order_manager=order_manager,
-        strategies_parameters=strategies_classes,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
+                           strategies_parameters=strategies_classes, mode=ExecutionMode.LIVE)
 
     assert event_loop.assets == {AAPL_ASSET: [time_unit], GOOGL_ASSET: [time_unit]}
     assert event_loop.strategies_parameters == strategies_classes
@@ -133,14 +121,8 @@ def test_run_strategy(process_context):
     position_sizer = PositionSizer(broker)
     order_creator = OrderCreator(broker_manager=broker)
     order_manager = OrderManager(EVENTS, broker, position_sizer, order_creator, CLOCK)
-    event_loop = EventLoop(
-        events=EVENTS,
-        assets=assets,
-        feed=FEED,
-        order_manager=order_manager,
-        strategies_parameters=strategies_classes,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
+                           strategies_parameters=strategies_classes, mode=ExecutionMode.LIVE)
     strategy_object = event_loop.strategy_instances[0]
     event_loop.run_strategy(strategy_object)
 
@@ -162,14 +144,8 @@ def test_run_strategies(run_strategy_mocked):
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    event_loop = EventLoop(
-        events=EVENTS,
-        assets=assets,
-        feed=FEED,
-        order_manager=order_manager,
-        strategies_parameters=strategies_classes,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
+                           strategies_parameters=strategies_classes, mode=ExecutionMode.LIVE)
 
     event_loop.run_strategies()
 
@@ -194,12 +170,6 @@ def test_run_backtest():
     order_manager = OrderManager(
         EVENTS, broker_manager, position_sizer, order_creator, CLOCK
     )
-    event_loop = EventLoop(
-        events=EVENTS,
-        assets=assets,
-        feed=FEED,
-        order_manager=order_manager,
-        strategies_parameters=strategies_classes,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=EVENTS, assets=assets, feed=FEED, order_manager=order_manager,
+                           strategies_parameters=strategies_classes, mode=ExecutionMode.LIVE)
     event_loop.loop()

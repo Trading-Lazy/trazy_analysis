@@ -60,6 +60,7 @@ class Candle:
     @staticmethod
     def from_serializable_dict(candle_dict: dict) -> "Candle":
         from trazy_analysis.common.utils import timestamp_to_utc
+        from trazy_analysis.common.helper import parse_timedelta_str
 
         timestamp = timestamp_to_utc(candle_dict["timestamp"])
         candle: Candle = Candle(
@@ -70,6 +71,7 @@ class Candle:
             close=float(candle_dict["close"]),
             volume=candle_dict["volume"],
             timestamp=timestamp,
+            time_unit=parse_timedelta_str(candle_dict["time_unit"])
         )
         return candle
 
@@ -95,18 +97,17 @@ class Candle:
         return Candle.from_serializable_dict(candle_dict)
 
     def to_serializable_dict(self) -> dict:
-        dict = self.__dict__.copy()
-        dict["asset"] = dict["asset"].to_dict()
-        dict["open"] = str(dict["open"])
-        dict["high"] = str(dict["high"])
-        dict["low"] = str(dict["low"])
-        dict["close"] = str(dict["close"])
-        dict["time_unit"] = str(dict["time_unit"])
-        return dict
+        candle_dict = self.__dict__.copy()
+        candle_dict["asset"] = candle_dict["asset"].to_dict()
+        candle_dict["open"] = str(candle_dict["open"])
+        candle_dict["high"] = str(candle_dict["high"])
+        candle_dict["low"] = str(candle_dict["low"])
+        candle_dict["close"] = str(candle_dict["close"])
+        candle_dict["time_unit"] = str(candle_dict["time_unit"])
+        return candle_dict
 
     def to_json(self) -> str:
         candle_dict = self.to_serializable_dict()
-        # candle_dict["asset"] = candle_dict["asset"].to_dict()
         candle_dict["timestamp"] = candle_dict["timestamp"].strftime(
             "%Y-%m-%d %H:%M:%S%z"
         )

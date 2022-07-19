@@ -71,11 +71,7 @@ class SmartMoneyConcept(StrategyBase):
         if self.poi_touch[candle.asset].data:
             LOG.info(f"Time to buy: {candle.time_unit}")
             self.add_signal(
-                Signal(
-                    action=Action.BUY,
-                    direction=Direction.LONG,
-                    asset=candle.asset,
-                )
+                Signal(asset=candle.asset, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG)
             )
             telegram_send.send(
                 messages=[

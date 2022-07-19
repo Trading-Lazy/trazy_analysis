@@ -2,14 +2,17 @@ import os
 from collections import deque
 from datetime import timedelta
 from threading import Thread
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Tuple
 
 import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 import trazy_analysis.logger
 import trazy_analysis.settings
 from trazy_analysis.common.constants import MAX_TIMESTAMP
 from trazy_analysis.common.helper import get_or_create_nested_dict, normalize_assets
+from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.feed.feed import Feed, LiveFeed
 from trazy_analysis.indicators.indicator import CandleData
 from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
@@ -29,7 +32,10 @@ from trazy_analysis.models.event import (
     MarketEodDataEvent,
     PendingSignalEvent,
 )
+from trazy_analysis.models.order import Order
+from trazy_analysis.models.signal import SignalBase, Signal, MultipleSignal
 from trazy_analysis.order_manager.order_manager import OrderManager
+from trazy_analysis.position.transaction import Transaction
 from trazy_analysis.statistics.statistics_manager import StatisticsManager
 from trazy_analysis.strategy.context import Context
 from trazy_analysis.strategy.strategy import StrategyBase, Strategy, MultiAssetsStrategy
@@ -101,12 +107,12 @@ class EventLoop:
                         strategy = strategy_class(
                             self.data(asset, time_unit),
                             parameters,
-                            self.indicatorsManager,
+                            self.indicators,
                         )
                         strategy.set_context(self.context)
                         self.strategy_instances.append(strategy)
         elif issubclass(strategy_class, MultiAssetsStrategy):
-            strategy = strategy_class(self.data, parameters, self.indicatorsManager)
+            strategy = strategy_class(self.data, parameters, self.indicators)
             strategy.set_context(self.context)
             self.strategy_instances.append(strategy)
 
@@ -181,13 +187,15 @@ class EventLoop:
         It takes the equity curves from the statistics manager and puts them into a dataframe
         """
         exchanges = {asset.exchange for asset in self.assets}
+        self.equity_dfs = {}
         LOG.info("exchanges = %s", exchanges)
         for exchange in exchanges:
             equity_df = pd.DataFrame(
                 list(self.statistics_manager.get_equity_curves(exchange)),
-                columns=["Date", "Equity"],
-            ).set_index("Date")
+                columns=["Timestamp", "Equity"],
+            ).set_index("Timestamp")
             self.statistics_manager.set_equity_dfs(equity_df, exchange)
+            self.equity_dfs[exchange] = equity_df
 
     def update_positions(self):
         """
@@ -216,47 +224,74 @@ class EventLoop:
             positions = []
             new_pos = False
             for asset in self.assets:
-                if asset.key() not in portfolio_dict:
-                    positions.append(0)
-                    continue
-                long_pos = (
-                    portfolio_dict[asset.key()][Direction.LONG]["market_value"]
-                    if Direction.LONG in portfolio_dict[asset.key()]
-                    else 0
-                )
-                short_pos = (
-                    portfolio_dict[asset.key()][Direction.SHORT]["market_value"]
-                    if Direction.SHORT in portfolio_dict[asset.key()]
-                    else 0
-                )
-                net_pos = long_pos + short_pos
-                if net_pos != 0:
-                    new_pos = True
-                positions.append(long_pos + short_pos)
+                for direction in Direction:
+                    if asset.key() not in portfolio_dict:
+                        positions.append(
+                            (
+                                asset.exchange,
+                                asset.symbol,
+                                direction.name,
+                                0,
+                                0,
+                            )
+                        )
+                        continue
+                    market_value = (
+                        portfolio_dict[asset.key()][direction]["market_value"]
+                        if direction in portfolio_dict[asset.key()]
+                        else 0
+                    )
+                    size = (
+                        portfolio_dict[asset.key()][direction]["size"]
+                        if direction in portfolio_dict[asset.key()]
+                        else 0
+                    )
+                    if size != 0:
+                        new_pos = True
+                        positions.append(
+                            (
+                                asset.exchange,
+                                asset.symbol,
+                                direction.name,
+                                market_value,
+                                size,
+                            )
+                        )
 
             if not new_pos:
                 continue
 
             cash = self.broker_manager.get_broker(exchange).get_portfolio_cash_balance()
-            self.statistics_manager.get_positions(exchange).append(
-                (
-                    current_time,
-                    *positions,
-                    cash,
+            for position in positions:
+                self.statistics_manager.get_positions(exchange).append(
+                    (
+                        current_time,
+                        *position,
+                        cash,
+                    )
                 )
-            )
 
     def update_positions_dfs(self):
         """
         > It takes the positions from the statistics manager and creates a dataframe for each exchange
         """
         exchanges = {asset.exchange for asset in self.assets}
+        self.positions_dfs = {}
         for exchange in exchanges:
             positions_df = pd.DataFrame(
                 self.statistics_manager.get_positions(exchange),
-                columns=["Date", *[asset.key() for asset in self.assets], "cash"],
-            ).set_index("Date")
+                columns=[
+                    "Timestamp",
+                    "Exchange",
+                    "Symbol",
+                    "Direction",
+                    "Market value",
+                    "Size",
+                    "Cash",
+                ],
+            ).set_index("Timestamp")
             self.statistics_manager.set_positions_dfs(positions_df, exchange)
+            self.positions_dfs[exchange] = positions_df
 
     def update_transactions(self):
         """
@@ -300,20 +335,23 @@ class EventLoop:
         It takes the transactions from the statistics manager and puts them into a dataframe
         """
         exchanges = {asset.exchange for asset in self.assets}
+        self.transactions_dfs = {}
         for exchange in exchanges:
             if self.statistics_manager.get_transactions(exchange) is not None:
                 transactions_df = pd.DataFrame(
                     self.statistics_manager.get_transactions(exchange),
-                    columns=["Date", "amount", "price", "symbol"],
-                ).set_index("Date")
+                    columns=["Timestamp", "amount", "price", "symbol"],
+                ).set_index("Timestamp")
                 self.statistics_manager.set_transactions_dfs(transactions_df, exchange)
             else:
+                transactions_df = pd.DataFrame(
+                    columns=["Timestamp", "amount", "price", "symbol"]
+                ).set_index("Timestamp")
                 self.statistics_manager.set_transactions_dfs(
-                    pd.DataFrame(
-                        columns=["Date", "amount", "price", "symbol"]
-                    ).set_index("Date"),
+                    transactions_df,
                     exchange,
                 )
+            self.transactions_dfs[exchange] = transactions_df
 
     def run_strategies(self):
         """
@@ -370,6 +408,13 @@ class EventLoop:
                 delayed_events.append(event)
         self.delayed_events = delayed_events
 
+    def add_signal(self, signal: SignalBase):
+        if isinstance(signal, Signal):
+            self.signals[signal.asset][signal.time_unit].append(signal)
+        elif isinstance(signal, MultipleSignal):
+            for signal_base in signal.signals:
+                self.add_signal(signal_base)
+
     def __init__(
         self,
         events: deque,
@@ -383,14 +428,15 @@ class EventLoop:
         strategy_parameters_isolation=StrategyParametersIsolation.STRATEGY,
         broker_isolation=BrokerIsolation.EXCHANGE,
         statistics_class: type = None,
+        real_time_plotting=False,
     ):
         self.events: deque = events
         self.asset_delayed_events = {}
         self.delayed_events = []
         self.assets = normalize_assets(assets)
         self.feed = feed
-        self.indicatorsManager = ReactiveIndicators(mode=mode, memoize=True)
-        self.data = CandleData(candles=feed.candles, indicators=self.indicatorsManager)
+        self.indicators = ReactiveIndicators(mode=mode, memoize=True)
+        self.data = CandleData(candles=feed.candles, indicators=self.indicators)
         self.order_manager = order_manager
         self.broker_manager = self.order_manager.broker_manager
         self.clock = self.order_manager.clock
@@ -416,7 +462,17 @@ class EventLoop:
         self.statistics_manager = StatisticsManager(isolation=self.broker_isolation)
         self.statistics_class = statistics_class
         self.statistics_df = None
-        # Indicator.plot_instances_graph()
+        self.signals = {
+            asset: {time_unit: [] for time_unit in self.assets[asset]}
+            for asset in self.assets
+        }
+        self.signals_df = {asset: {} for asset in self.assets}
+        self.orders = self.order_manager.orders
+        self.orders_df = None
+        self.real_time_plotting = real_time_plotting
+        self.figs = None
+        self.trading_event_trace_index = {}
+        self.indicator_trace_index = {}
 
     def loop(self):
         """
@@ -508,6 +564,8 @@ class EventLoop:
                         for candle in last_candles:
                             LOG.info("Process new candle: %s", candle.to_json())
                             self.data(candle.asset, candle.time_unit).push(candle)
+                            if live and self.real_time_plotting:
+                                self.real_time_plot(candle.asset, candle.time_unit)
                             self.broker_manager.get_broker(
                                 candle.asset.exchange
                             ).update_price(candle)
@@ -542,6 +600,7 @@ class EventLoop:
                 elif event.event_type == EventType.SIGNAL:
                     signals = event.signals
                     for signal in signals:
+                        self.add_signal(signal)
                         self.order_manager.check_signal(signal)
                 elif event.event_type == EventType.MARKET_DATA_END:
                     if self.close_at_end_of_data:
@@ -556,6 +615,9 @@ class EventLoop:
                     self.update_positions_dfs()
                     self.update_transactions()
                     self.update_transactions_dfs()
+                    self.update_signals_df()
+                    self.order_manager.update_orders_df()
+                    self.orders_df = self.order_manager.orders_df
 
                     exchanges = [asset.exchange for asset in self.assets]
                     if self.statistics_class is not None:
@@ -572,7 +634,496 @@ class EventLoop:
                                     exchange
                                 ),
                             ).get_tearsheet()
-                            print(self.statistics_manager.get_equity_dfs(exchange))
-                            print(self.statistics_df)
                     data_to_process = False
                     break
+
+    def plot_indicators_instances_graph(self):
+        self.indicators.plot_instances_graph()
+
+    def update_signals_df(self):
+        for asset in self.assets:
+            for time_unit in self.assets[asset]:
+                self.signals_df[asset][time_unit] = pd.DataFrame(
+                    [
+                        [
+                            signal.generation_time,
+                            signal.asset.exchange,
+                            signal.asset.symbol,
+                            str(signal.time_unit),
+                            signal.action.name,
+                            signal.direction.name,
+                            str(signal.time_in_force),
+                            signal.root_candle_timestamp,
+                        ]
+                        for signal in self.signals[asset][time_unit]
+                    ],
+                    columns=[
+                        "Generation time",
+                        "Exchange",
+                        "Symbol",
+                        "Time unit",
+                        "Action",
+                        "Direction",
+                        "Time in force",
+                        "Root candle timestamp",
+                    ],
+                ).set_index("Generation time")
+
+    @staticmethod
+    def get_volumes_data(
+        candle_dataframe: CandleDataFrame,
+    ) -> List[Tuple]:
+        green_candle_dataframe = candle_dataframe[
+            candle_dataframe["open"] < candle_dataframe["close"]
+        ]
+        red_candle_dataframe = candle_dataframe[
+            candle_dataframe["open"] > candle_dataframe["close"]
+        ]
+        grey_candle_dataframe = candle_dataframe[
+            candle_dataframe["open"] == candle_dataframe["close"]
+        ]
+
+        volumes_data = [
+            ("buying volume", green_candle_dataframe, "green"),
+            ("selling volume", red_candle_dataframe, "red"),
+            ("balanced volume", grey_candle_dataframe, "grey"),
+        ]
+        return volumes_data
+
+    def compute_trading_events_data(self, candle_dataframe: CandleDataFrame) -> Tuple:
+        last_timestamp = candle_dataframe.iloc[-1].name
+
+        # signals
+        if (
+            self.signals is not None
+            and candle_dataframe.asset in self.signals
+            and candle_dataframe.time_unit in self.signals[candle_dataframe.asset]
+        ):
+            buy_signals: List[Signal] = [
+                signal
+                for signal in self.signals[candle_dataframe.asset][
+                    candle_dataframe.time_unit
+                ]
+                if signal.is_entry_signal and signal.generation_time <= last_timestamp
+            ]
+            buy_signals_timestamps = [signal.generation_time for signal in buy_signals]
+            buy_signal_candle_dataframe = candle_dataframe.loc[buy_signals_timestamps]
+            buy_signal_candle_dataframe = 0.9985 * buy_signal_candle_dataframe[["low"]]
+            sell_signals: List[Signal] = [
+                signal
+                for signal in self.signals[candle_dataframe.asset][
+                    candle_dataframe.time_unit
+                ]
+                if signal.is_exit_signal and signal.generation_time <= last_timestamp
+            ]
+            sell_signals_timestamps = [
+                signal.generation_time for signal in sell_signals
+            ]
+            sell_signal_candle_dataframe = candle_dataframe.loc[sell_signals_timestamps]
+            sell_signal_candle_dataframe = (
+                1.0015 * sell_signal_candle_dataframe[["high"]]
+            )
+        else:
+            buy_signals = sell_signals = []
+            buy_signal_candle_dataframe = (
+                sell_signal_candle_dataframe
+            ) = CandleDataFrame(
+                asset=candle_dataframe.asset, time_unit=candle_dataframe.time_unit
+            )
+
+        # orders
+        if (
+            self.orders is not None
+            and candle_dataframe.asset in self.orders
+            and candle_dataframe.time_unit in self.orders[candle_dataframe.asset]
+        ):
+            buy_orders: List[Order] = [
+                order
+                for order in self.orders[candle_dataframe.asset][
+                    candle_dataframe.time_unit
+                ]
+                if order.is_entry_order and order.generation_time <= last_timestamp
+            ]
+            buy_orders_timestamps = [order.generation_time for order in buy_orders]
+            buy_order_candle_dataframe = candle_dataframe.loc[buy_orders_timestamps]
+            buy_order_candle_dataframe = 0.9975 * buy_order_candle_dataframe[["low"]]
+            sell_orders: List[Order] = [
+                order
+                for order in self.orders[candle_dataframe.asset][
+                    candle_dataframe.time_unit
+                ]
+                if order.is_exit_order and order.generation_time <= last_timestamp
+            ]
+            sell_orders_timestamps = [order.generation_time for order in sell_orders]
+            sell_order_candle_dataframe = candle_dataframe.loc[sell_orders_timestamps]
+            sell_order_candle_dataframe = 1.0025 * sell_order_candle_dataframe[["high"]]
+        else:
+            buy_orders = sell_orders = []
+            buy_order_candle_dataframe = sell_order_candle_dataframe = CandleDataFrame(
+                asset=candle_dataframe.asset, time_unit=candle_dataframe.time_unit
+            )
+
+        # transactions
+        portfolio = self.broker_manager.get_broker(
+            candle_dataframe.asset.exchange
+        ).portfolio
+        transactions: List[Transaction] = portfolio.transactions
+        buy_transactions = [
+            transaction
+            for transaction in transactions
+            if transaction.is_entry_transaction
+            and transaction.timestamp <= last_timestamp
+        ]
+        buy_transactions_timestamps = [
+            transaction.timestamp for transaction in buy_transactions
+        ]
+        buy_transaction_candle_dataframe = candle_dataframe.loc[
+            buy_transactions_timestamps
+        ]
+        buy_transaction_candle_dataframe = (
+            1.002 * buy_transaction_candle_dataframe[["low"]]
+        )
+        sell_transactions = [
+            transaction
+            for transaction in transactions
+            if transaction.is_exit_transaction
+            and transaction.timestamp <= last_timestamp
+        ]
+        sell_transactions_timestamps = [
+            transaction.timestamp for transaction in sell_transactions
+        ]
+        sell_transaction_candle_dataframe = candle_dataframe.loc[
+            sell_transactions_timestamps
+        ]
+        sell_transaction_candle_dataframe = (
+            0.998 * sell_transaction_candle_dataframe[["high"]]
+        )
+
+        return (
+            buy_signal_candle_dataframe,
+            buy_signals,
+            sell_signal_candle_dataframe,
+            sell_signals,
+            buy_order_candle_dataframe,
+            buy_orders,
+            sell_order_candle_dataframe,
+            sell_orders,
+            buy_transaction_candle_dataframe,
+            buy_transactions,
+            sell_transaction_candle_dataframe,
+            sell_transactions,
+        )
+
+    def get_trading_events_data(self, candle_dataframe: CandleDataFrame) -> List[Tuple]:
+        (
+            buy_signal_candle_dataframe,
+            buy_signals,
+            sell_signal_candle_dataframe,
+            sell_signals,
+            buy_order_candle_dataframe,
+            buy_orders,
+            sell_order_candle_dataframe,
+            sell_orders,
+            buy_transaction_candle_dataframe,
+            buy_transactions,
+            sell_transaction_candle_dataframe,
+            sell_transactions,
+        ) = self.compute_trading_events_data(candle_dataframe)
+
+        def signal_text(signal: Signal):
+            return (
+                f"signal<br>"
+                f"root candle timestamp: {signal.root_candle_timestamp}<br>"
+                f"strategy: {signal.strategy}<br>"
+                f"time in force: {signal.time_in_force}"
+            )
+
+        def order_text(order: Order):
+            return (
+                f"order<br>"
+                f"size: {order.size}<br>"
+                f"type: {order.order_type.name}<br>"
+                f"condition: {order.condition.name}<br>"
+                f"time in force: {order.time_in_force}<br>"
+                f"status: {order.status.name}<br>"
+                f"order_id: {order.order_id}<br>"
+                f"signal id: {order.signal_id}<br>"
+            )
+
+        def transaction_text(transaction: Transaction):
+            return (
+                f"transaction<br>"
+                f"size: {transaction.size}<br>"
+                f"price: {transaction.price}<br>"
+                f"commission: {transaction.commission}<br>"
+                f"order_id: {transaction.order_id}<br>"
+                f"transaction_id: {transaction.transaction_id}<br>"
+            )
+
+        trading_events_data = [
+            (
+                "buy signal",
+                buy_signal_candle_dataframe,
+                "triangle-up-dot",
+                "green",
+                signal_text,
+                buy_signals,
+                "low",
+            ),
+            (
+                "sell signal",
+                sell_signal_candle_dataframe,
+                "triangle-down-dot",
+                "red",
+                signal_text,
+                sell_signals,
+                "high",
+            ),
+            (
+                "buy order",
+                buy_order_candle_dataframe,
+                "circle-dot",
+                "green",
+                order_text,
+                buy_orders,
+                "low",
+            ),
+            (
+                "sell order",
+                sell_order_candle_dataframe,
+                "circle-dot",
+                "red",
+                order_text,
+                sell_orders,
+                "high",
+            ),
+            (
+                "buy transaction",
+                buy_transaction_candle_dataframe,
+                "hexagram-dot",
+                "green",
+                transaction_text,
+                buy_transactions,
+                "low",
+            ),
+            (
+                "sell transaction",
+                sell_transaction_candle_dataframe,
+                "hexagram-dot",
+                "red",
+                transaction_text,
+                sell_transactions,
+                "high",
+            ),
+        ]
+        return trading_events_data
+
+    def plot_base_chart(
+        self, candle_dataframe: CandleDataFrame, volumes_data, trading_events_data
+    ):
+        fig: go.Figure = self.figs[candle_dataframe.asset][candle_dataframe.time_unit]
+        fig.add_trace(
+            go.Candlestick(
+                name="candles",
+                x=candle_dataframe.index,
+                open=candle_dataframe["open"],
+                high=candle_dataframe["high"],
+                low=candle_dataframe["low"],
+                close=candle_dataframe["close"],
+            ),
+            row=1,
+            col=1,
+        )
+
+        # volumes
+        for name, volume_dataframe, color in volumes_data:
+            fig.add_trace(
+                go.Bar(
+                    name=name,
+                    x=volume_dataframe.index,
+                    y=volume_dataframe["volume"],
+                    marker={
+                        "color": color,
+                    },
+                ),
+                row=2,
+                col=1,
+            )
+
+        for (
+            name,
+            trading_event_dataframe,
+            symbol,
+            color,
+            text_function,
+            values,
+            column,
+        ) in trading_events_data:
+            if not trading_event_dataframe.empty:
+                fig.add_trace(
+                    go.Scatter(
+                        name=name,
+                        x=trading_event_dataframe.index,
+                        y=trading_event_dataframe[column],
+                        mode="markers",
+                        marker=dict(symbol=symbol, size=12, color=color),
+                        hovertemplate="%{text}",
+                        text=[text_function(value) for value in values],
+                    ),
+                    row=1,
+                    col=1,
+                )
+
+        # # set title
+        fig.update_layout(
+            hoverlabel_align="right",
+            title=f"{candle_dataframe.asset.key()} chart and signals",
+            yaxis1_title="OHLC",
+            yaxis2_title="Volume",
+            xaxis2_title="Time",
+            xaxis1_rangeslider_visible=False,
+            xaxis2_rangeslider_visible=False,
+        )
+
+    def init_figs(self):
+        if self.figs is None:
+            self.figs = {
+                asset: {
+                    time_unit: go.FigureWidget(
+                        make_subplots(
+                            rows=2,
+                            cols=1,
+                            shared_xaxes=True,
+                            vertical_spacing=0.02,
+                            row_width=[0.2, 0.7],
+                        )
+                    )
+                    for time_unit in self.assets[asset]
+                }
+                for asset in self.assets
+            }
+
+    def real_time_plot(self, asset: Asset, time_unit: timedelta):
+        self.init_figs()
+        if asset not in self.figs or time_unit not in self.figs[asset]:
+            return
+        candle_indicator = self.data(asset, time_unit)
+        candle_dataframe: CandleDataFrame = CandleDataFrame.from_candle_list(
+            asset, candle_indicator.get_ordered_window()
+        )
+        if candle_dataframe.empty:
+            return
+        candle_dataframe["open"] = pd.to_numeric(candle_dataframe["open"])
+        candle_dataframe["high"] = pd.to_numeric(candle_dataframe["high"])
+        candle_dataframe["low"] = pd.to_numeric(candle_dataframe["low"])
+        candle_dataframe["close"] = pd.to_numeric(candle_dataframe["close"])
+
+        volumes_data = self.get_volumes_data(candle_dataframe)
+        trading_events_data = self.get_trading_events_data(candle_dataframe)
+
+        fig = self.figs[asset][time_unit]
+
+        if len(fig.data) == 0:
+            # chart
+            self.plot_base_chart(candle_dataframe, volumes_data, trading_events_data)
+            # add indicators
+            for instance in self.indicators.instances:
+                instance_trace = instance.get_trace(candle_dataframe.index)
+                if instance_trace is not None:
+                    fig.add_trace(instance_trace)
+        else:
+            fig.data[0].x = candle_dataframe.index
+            fig.data[0].open = candle_dataframe["open"]
+            fig.data[0].high = candle_dataframe["high"]
+            fig.data[0].low = candle_dataframe["low"]
+            fig.data[0].close = candle_dataframe["close"]
+
+            for index, volume_stats in enumerate(volumes_data):
+                name, volume_dataframe, color = volume_stats
+                fig.data[index + 1].x = volume_dataframe.index
+                fig.data[index + 1].y = volume_dataframe["volume"]
+
+            for index, trading_event_datum in enumerate(trading_events_data):
+                (
+                    name,
+                    trading_event_dataframe,
+                    symbol,
+                    color,
+                    text_function,
+                    values,
+                    column,
+                ) = trading_event_datum
+                if (
+                    name not in self.trading_event_trace_index
+                    and not trading_event_dataframe.empty
+                ):
+                    self.trading_event_trace_index[name] = len(fig.data)
+                    fig.add_trace(
+                        go.Scatter(
+                            name=name,
+                            x=trading_event_dataframe.index,
+                            y=trading_event_dataframe[column],
+                            mode="markers",
+                            marker=dict(symbol=symbol, size=12, color=color),
+                            hovertemplate="%{text}",
+                            text=[text_function(value) for value in values],
+                        ),
+                        row=1,
+                        col=1,
+                    )
+                elif name in self.trading_event_trace_index:
+                    fig.data[
+                        self.trading_event_trace_index[name]
+                    ].x = trading_event_dataframe.index
+                    fig.data[
+                        self.trading_event_trace_index[name]
+                    ].y = trading_event_dataframe[column]
+                    fig.data[self.trading_event_trace_index[name]].text = [
+                        text_function(value) for value in values
+                    ]
+
+                # indicators
+                for instance in self.indicators.instances:
+                    instance_trace = instance.get_trace(candle_dataframe.index)
+                    if instance.id not in self.indicator_trace_index:
+                        if instance_trace is not None:
+                            self.indicator_trace_index[instance.id] = len(fig.data)
+                            fig.add_trace(instance_trace)
+                    else:
+                        if instance_trace is not None:
+                            fig_instance_trace = fig.data[
+                                self.indicator_trace_index[instance.id]
+                            ]
+                            for attribute in instance.plotting_attributes():
+                                setattr(
+                                    fig_instance_trace,
+                                    attribute,
+                                    getattr(instance_trace, attribute),
+                                )
+
+    def plot(self, asset: Asset, time_unit: timedelta):
+        self.init_figs()
+        if asset not in self.figs or time_unit not in self.figs[asset]:
+            return
+        candle_dataframe: CandleDataFrame = self.feed.candle_dataframes[asset][
+            time_unit
+        ]
+        if candle_dataframe.empty:
+            return
+        candle_dataframe["open"] = pd.to_numeric(candle_dataframe["open"])
+        candle_dataframe["high"] = pd.to_numeric(candle_dataframe["high"])
+        candle_dataframe["low"] = pd.to_numeric(candle_dataframe["low"])
+        candle_dataframe["close"] = pd.to_numeric(candle_dataframe["close"])
+        volumes_data = self.get_volumes_data(candle_dataframe)
+        trading_events_data = self.get_trading_events_data(candle_dataframe)
+
+        self.plot_base_chart(candle_dataframe, volumes_data, trading_events_data)
+        fig = self.figs[asset][time_unit]
+
+        # add indicators
+        for instance in self.indicators.instances:
+            instance_trace = instance.get_trace(candle_dataframe.index)
+            if instance_trace is not None:
+                fig.add_trace(instance_trace)
+
+        fig.show()

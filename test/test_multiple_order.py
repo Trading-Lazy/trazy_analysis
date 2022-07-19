@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -24,6 +24,7 @@ def test_multiple_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -34,6 +35,7 @@ def test_multiple_order():
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -85,6 +87,7 @@ def test_sequential_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -95,6 +98,7 @@ def test_sequential_order():
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -138,6 +142,7 @@ def test_oco_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -148,6 +153,7 @@ def test_oco_order():
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -192,22 +198,24 @@ def test_homogeneous_sequential_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     orders = [order1, order2]
@@ -249,33 +257,36 @@ def test_homogeneous_sequential_order_multiple_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     order3 = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     multiple_order = MultipleOrder(orders=[order2, order3])
@@ -318,22 +329,24 @@ def test_homogeneous_sequential_order_different_symbols():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     orders = [order1, order2]
@@ -351,33 +364,36 @@ def test_homogeneous_sequential_order_different_symbols_multiple_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol3 = "BBB"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     order3 = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     multiple_order = MultipleOrder(orders=[order2, order3])
@@ -392,22 +408,24 @@ def test_cover_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     orders = [initiation_order, stop_order]
@@ -449,22 +467,24 @@ def test_cover_order_wrong_initiation_order_type():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
 
@@ -485,22 +505,24 @@ def test_cover_order_wrong_initiation_order_action():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
 
@@ -521,22 +543,24 @@ def test_cover_order_wrong_stop_order_type():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.LIMIT,
+        order_type=OrderType.LIMIT,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
 
@@ -557,22 +581,24 @@ def test_cover_order_wrong_stop_order_action():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.LIMIT,
+        order_type=OrderType.LIMIT,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
 
@@ -593,33 +619,36 @@ def test_bracket_order():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.TARGET,
+        order_type=OrderType.TARGET,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol = "AAA"
@@ -672,33 +701,36 @@ def test_bracket_order_wrong_initiation_order_type():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.LIMIT,
+        order_type=OrderType.LIMIT,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol = "AAA"
@@ -719,33 +751,36 @@ def test_bracket_order_wrong_initiation_order_action():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.TARGET,
+        order_type=OrderType.TARGET,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol = "AAA"
@@ -766,33 +801,36 @@ def test_bracket_order_wrong_target_order_type():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol = "AAA"
@@ -813,33 +851,36 @@ def test_bracket_order_wrong_target_order_action():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.TARGET,
+        order_type=OrderType.TARGET,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol = "AAA"
@@ -860,33 +901,36 @@ def test_bracket_order_wrong_stop_order_type():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.TARGET,
+        order_type=OrderType.TARGET,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol = "AAA"
@@ -907,33 +951,36 @@ def test_bracket_order_wrong_stop_order_action():
     asset1 = Asset(symbol=symbol1, exchange=EXCHANGE)
     initiation_order = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
     symbol2 = "AAA"
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     target_order = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.TARGET,
+        order_type=OrderType.TARGET,
         clock=clock,
     )
     symbol3 = "AAA"
     asset3 = Asset(symbol=symbol3, exchange=EXCHANGE)
     stop_order = Order(
         asset=asset3,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     symbol = "AAA"

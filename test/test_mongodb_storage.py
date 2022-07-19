@@ -78,54 +78,26 @@ CANDLE3: Candle = Candle(
 clock = SimulatedClock()
 
 clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-SIGNAL1: Signal = Signal(
-    asset=AAPL_ASSET,
-    action=Action.BUY,
-    direction=Direction.LONG,
-    confidence_level=0.05,
-    strategy="SmaCrossover",
-    root_candle_timestamp=datetime.strptime(
+SIGNAL1: Signal = Signal(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                         confidence_level=0.05, strategy="SmaCrossover", root_candle_timestamp=datetime.strptime(
         "2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"
-    ),
-    parameters={},
-    clock=clock,
-)
+    ), parameters={}, clock=clock)
 
 clock = SimulatedClock()
 clock.update_time(datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-SIGNAL2: Signal = Signal(
-    asset=AAPL_ASSET,
-    action=Action.SELL,
-    direction=Direction.LONG,
-    confidence_level=0.05,
-    strategy="SmaCrossover",
-    root_candle_timestamp=datetime.strptime(
+SIGNAL2: Signal = Signal(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                         confidence_level=0.05, strategy="SmaCrossover", root_candle_timestamp=datetime.strptime(
         "2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"
-    ),
-    parameters={},
-    clock=clock,
-)
+    ), parameters={}, clock=clock)
 
 clock.update_time(datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-ORDER1: Order = Order(
-    asset=AAPL_ASSET,
-    action=Action.BUY,
-    direction=Direction.LONG,
-    size=100,
-    signal_id="1",
-    clock=clock,
-)
+ORDER1: Order = Order(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                      size=100, signal_id="1", clock=clock)
 
 clock = SimulatedClock()
 clock.update_time(datetime.strptime("2020-05-08 15:19:00+0000", "%Y-%m-%d %H:%M:%S%z"))
-ORDER2: Order = Order(
-    asset=AAPL_ASSET,
-    action=Action.SELL,
-    direction=Direction.LONG,
-    size=100,
-    signal_id="2",
-    clock=clock,
-)
+ORDER2: Order = Order(asset=AAPL_ASSET, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                      size=100, signal_id="2", clock=clock)
 
 MONGODB_STORAGE = MongoDbStorage(DATABASE_NAME, MONGODB_URL)
 
@@ -620,9 +592,8 @@ def test_get_signal_by_identifier():
     MONGODB_STORAGE.clean_all_signals()
 
     MONGODB_STORAGE.add_signal(SIGNAL1)
-    signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(
-        SIGNAL1.asset, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
-    )
+    signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(SIGNAL1.asset, timedelta(minutes=1), SIGNAL1.strategy,
+                                                              SIGNAL1.root_candle_timestamp)
     assert signal == SIGNAL1
 
     MONGODB_STORAGE.clean_all_signals()
@@ -631,9 +602,8 @@ def test_get_signal_by_identifier():
 def test_get_signal_by_identifier_non_existing_signal():
     MONGODB_STORAGE.clean_all_signals()
 
-    signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(
-        SIGNAL1.asset, SIGNAL1.strategy, SIGNAL1.root_candle_timestamp
-    )
+    signal: Signal = MONGODB_STORAGE.get_signal_by_identifier(SIGNAL1.asset, timedelta(minutes=1), SIGNAL1.strategy,
+                                                              SIGNAL1.root_candle_timestamp)
     assert signal is None
 
 

@@ -1,5 +1,5 @@
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from unittest.mock import call, patch
 
@@ -950,11 +950,12 @@ def test_execute_market_order(
     # test buy orders
     buy_order = Order(
         asset=ASSET3,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=26.97654,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
 
@@ -979,11 +980,12 @@ def test_execute_market_order(
     # test sell orders
     sell_order = Order(
         asset=ASSET3,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=26.77654,
         signal_id="1",
-        type=OrderType.MARKET,
+        order_type=OrderType.MARKET,
         clock=clock,
     )
 
@@ -1049,12 +1051,13 @@ def test_execute_limit_order(
     # test buy orders
     buy_order = Order(
         asset=ASSET1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=26.97654,
         signal_id="1",
-        type=OrderType.LIMIT,
         limit=0.3534,
+        order_type=OrderType.LIMIT,
         clock=clock,
     )
 
@@ -1076,12 +1079,13 @@ def test_execute_limit_order(
     # test sell orders
     sell_order = Order(
         asset=ASSET1,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=26.77654,
         signal_id="1",
-        type=OrderType.LIMIT,
         limit=0.4534,
+        order_type=OrderType.LIMIT,
         clock=clock,
     )
 
@@ -1137,12 +1141,13 @@ def test_execute_stop_order(
     # stop order sell
     stop_order_sell = Order(
         asset=ASSET2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
         signal_id="1",
         stop=0.20,
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     binance_broker.execute_order(stop_order_sell)
@@ -1156,12 +1161,13 @@ def test_execute_stop_order(
     # stop order buy
     stop_order_buy = Order(
         asset=ASSET2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
         signal_id="1",
         stop=0.45,
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     binance_broker.execute_order(stop_order_buy)
@@ -1203,12 +1209,13 @@ def test_execute_target_order(
     # target order sell
     target_order_sell = Order(
         asset=ASSET2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
         signal_id="1",
         target=1.01,
-        type=OrderType.TARGET,
+        order_type=OrderType.TARGET,
         clock=clock,
     )
     binance_broker.execute_order(target_order_sell)
@@ -1222,12 +1229,13 @@ def test_execute_target_order(
     # target order buy
     target_order_buy = Order(
         asset=ASSET2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
         signal_id="1",
         target=1.01,
-        type=OrderType.TARGET,
+        order_type=OrderType.TARGET,
         clock=clock,
     )
     binance_broker.last_prices[ASSET2] = 1.13
@@ -1271,12 +1279,13 @@ def test_execute_trailing_stop_order_sell(
 
     trailing_stop_order = Order(
         asset=ASSET2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.LONG,
         size=1,
         signal_id="1",
         stop_pct=0.05,
-        type=OrderType.TRAILING_STOP,
+        order_type=OrderType.TRAILING_STOP,
         clock=clock,
     )
     binance_broker.last_prices[ASSET2] = 1.11
@@ -1325,12 +1334,13 @@ def test_execute_trailing_stop_order_buy(
 
     trailing_stop_order = Order(
         asset=ASSET2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=1,
         signal_id="1",
         stop_pct=0.05,
-        type=OrderType.TRAILING_STOP,
+        order_type=OrderType.TRAILING_STOP,
         clock=clock,
     )
     binance_broker.last_prices[ASSET2] = 1.11

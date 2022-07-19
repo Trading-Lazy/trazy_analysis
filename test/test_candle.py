@@ -92,7 +92,7 @@ def test_from_dict():
 
 def test_from_json():
     str_json = (
-        '{"asset":{"symbol": "ANX.PA", "exchange": "EURONEXT", "time_unit": "0:01:00"},'
+        '{"asset":{"symbol": "ANX.PA", "exchange": "EURONEXT"},"time_unit":"0:01:00",'
         '"open":"91.92","high":"92.0","low":"91.0","close":"92.0","volume":20, "timestamp":"2020-04-30 15:30:00+0000"}'
     )
     candle: Candle = Candle.from_json(str_json)

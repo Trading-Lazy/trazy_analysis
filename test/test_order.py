@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.models.asset import Asset
@@ -14,6 +14,7 @@ def test_add_on_complete_callback():
     clock = SimulatedClock()
     order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -65,6 +66,7 @@ def test_submit_order():
     clock.update(timestamp)
     order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -76,7 +78,7 @@ def test_submit_order():
 
     assert order.submission_time == timestamp
     assert order.status == OrderStatus.SUBMITTED
-    assert order.type == OrderType.MARKET
+    assert order.order_type == OrderType.MARKET
 
 
 def test_cancel_order_base():
@@ -129,6 +131,7 @@ def test_time_in_force_order():
     clock.update(timestamp)
     order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -141,7 +144,7 @@ def test_time_in_force_order():
 
     assert order.submission_time == timestamp
     assert order.status == OrderStatus.SUBMITTED
-    assert order.type == OrderType.MARKET
+    assert order.order_type == OrderType.MARKET
 
     assert order.in_force()
     assert order.in_force(
@@ -159,6 +162,7 @@ def test_is_entry_or_exit_order():
     asset = Asset(symbol=symbol, exchange=EXCHANGE)
     order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -171,12 +175,13 @@ def test_is_entry_or_exit_order():
 
 def test_from_serializable_dict():
     serializable_dict = {
-        "asset": {"symbol": "AAA", "exchange": "IEX", "time_unit": "0:01:00"},
+        "asset": {"symbol": "AAA", "exchange": "IEX"},
+        "time_unit": "0:01:00",
         "signal_id": "1",
         "action": "BUY",
         "direction": "LONG",
         "size": 100,
-        "type": "MARKET",
+        "order_type": "MARKET",
         "condition": "GTC",
         "status": "SUBMITTED",
         "generation_time": "2017-10-05 08:00:00+00:00",
@@ -193,6 +198,7 @@ def test_from_serializable_dict():
     clock.update(timestamp)
     expected_order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -211,6 +217,7 @@ def test_to_serializable_dict():
     clock.update(timestamp)
     order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -242,6 +249,7 @@ def test_eq_ne():
     clock.update(timestamp)
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -250,6 +258,7 @@ def test_eq_ne():
     )
     order2 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -261,6 +270,7 @@ def test_eq_ne():
     asset2 = Asset(symbol=symbol2, exchange=EXCHANGE)
     order3 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.SELL,
         direction=Direction.SHORT,
         size=200,
@@ -279,16 +289,17 @@ def test_limit_order():
     limit = 15
     limit_order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
         limit=limit,
-        type=OrderType.LIMIT,
+        order_type=OrderType.LIMIT,
         clock=clock,
     )
     assert limit_order.limit == limit
-    assert limit_order.type == OrderType.LIMIT
+    assert limit_order.order_type == OrderType.LIMIT
 
 
 def test_stop_order():
@@ -298,16 +309,17 @@ def test_stop_order():
     stop = 15
     stop_order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
         stop=stop,
-        type=OrderType.STOP,
+        order_type=OrderType.STOP,
         clock=clock,
     )
     assert stop_order.stop == stop
-    assert stop_order.type == OrderType.STOP
+    assert stop_order.order_type == OrderType.STOP
 
 
 def test_trailing_stop_order():
@@ -317,16 +329,17 @@ def test_trailing_stop_order():
     stop_pct = 0.01
     trailing_stop_order = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
         stop_pct=stop_pct,
-        type=OrderType.TRAILING_STOP,
+        order_type=OrderType.TRAILING_STOP,
         clock=clock,
     )
     assert trailing_stop_order.stop_pct == stop_pct
-    assert trailing_stop_order.type == OrderType.TRAILING_STOP
+    assert trailing_stop_order.order_type == OrderType.TRAILING_STOP
 
 
 def test_trailing_stop_order_eq():
@@ -336,22 +349,24 @@ def test_trailing_stop_order_eq():
     stop_pct = 0.01
     trailing_stop_order1 = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
         stop_pct=stop_pct,
-        type=OrderType.TRAILING_STOP,
+        order_type=OrderType.TRAILING_STOP,
         clock=clock,
     )
     trailing_stop_order2 = Order(
         asset=asset,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
         signal_id="1",
         stop_pct=stop_pct,
-        type=OrderType.TRAILING_STOP,
+        order_type=OrderType.TRAILING_STOP,
         clock=clock,
     )
     assert trailing_stop_order1 == trailing_stop_order2

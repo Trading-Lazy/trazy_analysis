@@ -1,17 +1,20 @@
 import os
 from collections import deque
 
+import pandas as pd
+
 import trazy_analysis.settings
 from trazy_analysis.broker.broker_manager import BrokerManager
 from trazy_analysis.common.clock import Clock
+from trazy_analysis.common.helper import get_or_create_nested_dict
 from trazy_analysis.logger import logger
 from trazy_analysis.models.event import PendingSignalEvent
 from trazy_analysis.models.multiple_order import (
     ArbitragePairOrder,
     BracketOrder,
-    CoverOrder,
+    CoverOrder, MultipleOrder,
 )
-from trazy_analysis.models.order import Order
+from trazy_analysis.models.order import Order, OrderBase
 from trazy_analysis.models.signal import ArbitragePairSignal, Signal
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -38,10 +41,60 @@ class OrderManager:
         self.pending_signals = deque()
         self.clock = clock
         self.filter_at_end_of_day = filter_at_end_of_day
+        self.orders = {}
+        self.orders_df = {}
+
+    def update_orders_df(self):
+        for asset in self.orders:
+            for time_unit in self.orders[asset]:
+                get_or_create_nested_dict(self.orders_df, asset)
+                self.orders_df[asset][time_unit] = pd.DataFrame(
+                    [
+                        [
+                            order.generation_time,
+                            order.asset.exchange,
+                            order.asset.symbol,
+                            str(order.time_unit),
+                            order.action.name,
+                            order.direction.name,
+                            order.size,
+                            str(order.time_in_force),
+                            order.order_type.name,
+                            order.submission_time,
+                            order.signal_id,
+                        ]
+                        for order in self.orders[asset][time_unit]
+                    ],
+                    columns=[
+                        "Generation time",
+                        "Exchange",
+                        "Symbol",
+                        "Time unit",
+                        "Action",
+                        "Direction",
+                        "Size",
+                        "Time in force",
+                        "Order type",
+                        "Submission time",
+                        "Signal id",
+                    ],
+                ).set_index("Generation time")
+
+    def add_order(self, order: OrderBase):
+        if isinstance(order, Order):
+            get_or_create_nested_dict(self.orders, order.asset)
+            if order.time_unit not in self.orders[order.asset]:
+                self.orders[order.asset][order.time_unit] = []
+            self.orders[order.asset][order.time_unit].append(order)
+        elif isinstance(order, MultipleOrder):
+            for order_base in order.orders:
+                self.add_order(order_base)
+
 
     def process_pending_signal(self, signal: Signal) -> None:
         LOG.info("Processing %s", str(signal))
         order = self.order_creator.create_order(signal, self.clock)
+        self.add_order(order)
         if order is not None:
             LOG.info("Order has been created and can be dispatched to the broker")
             self.position_sizer.size_order(order)

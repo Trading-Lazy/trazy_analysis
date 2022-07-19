@@ -77,7 +77,7 @@ class DbStorage:
 
     @abc.abstractmethod
     def get_signal_by_identifier(
-        self, asset: str, strategy: str, root_candle_timestamp: datetime
+        self, asset: str, time_unit: timedelta, strategy: str, root_candle_timestamp: datetime
     ) -> Candle:  # pragma: no cover
         raise NotImplementedError
 

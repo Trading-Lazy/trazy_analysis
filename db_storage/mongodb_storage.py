@@ -222,9 +222,7 @@ class MongoDbStorage(DbStorage):
             return None
         return Signal.from_serializable_dict(signal_dict)
 
-    def get_signal_by_identifier(
-        self, asset: Asset, strategy: str, root_candle_timestamp: datetime
-    ) -> Signal:
+    def get_signal_by_identifier(self, asset: Asset, time_unit, strategy: str, root_candle_timestamp: datetime) -> Signal:
         query = {
             "asset": asset.to_dict(),
             "strategy": strategy,

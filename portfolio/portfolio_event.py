@@ -41,7 +41,7 @@ class PortfolioEvent:
         self.credit = credit
         self.balance = balance
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "PortfolioEvent") -> bool:
         return (
             self.timestamp == other.timestamp
             and self.type == other.type

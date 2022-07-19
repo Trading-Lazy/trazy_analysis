@@ -485,20 +485,9 @@ def ccxt_arbitrage_strategy(**kwargs):
         asset=assets_dict[exchange2], open=0, high=0, low=0, close=0, volume=0
     )
     exchange2_broker.update_price(candle)
-    order = Order(
-        asset=assets_dict[exchange2],
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=initial_size,
-        signal_id="0",
-        limit=None,
-        stop=None,
-        target=None,
-        stop_pct=None,
-        type=OrderType.MARKET,
-        clock=clock,
-        time_in_force=timedelta(minutes=5),
-    )
+    order = Order(asset=assets_dict[exchange2], time_unit=timedelta(minutes=1), action=Action.BUY,
+                  direction=Direction.LONG, size=initial_size, signal_id="0", limit=None, stop=None, target=None,
+                  stop_pct=None, order_type=OrderType.MARKET, clock=clock, time_in_force=timedelta(minutes=5))
     exchange2_broker.execute_market_order(order)
 
     # prepare event loop parameters
@@ -517,15 +506,8 @@ def ccxt_arbitrage_strategy(**kwargs):
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        close_at_end_of_day=False,
-        close_at_end_of_data=False,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, close_at_end_of_day=False, close_at_end_of_data=False)
 
     # get initial state of portfolio for stats computation total_market_value
     exchange1_broker.update_price(exchange1_first_candle)

@@ -252,17 +252,11 @@ class Live:
             order_creator=order_creator,
             clock=clock,
         )
-        self.event_loop = EventLoop(
-            events=self.events,
-            assets=self.live_config.assets,
-            feed=self.live_config.feed,
-            order_manager=order_manager,
-            strategies_parameters=strategies_parameters,
-            close_at_end_of_day=self.live_config.close_at_end_of_day,
-            close_at_end_of_data=False,
-            broker_isolation=self.live_config.isolation,
-            statistics_class=self.live_config.statistics_class,
-        )
+        self.event_loop = EventLoop(events=self.events, assets=self.live_config.assets, feed=self.live_config.feed,
+                                    order_manager=order_manager, strategies_parameters=strategies_parameters,
+                                    close_at_end_of_day=self.live_config.close_at_end_of_day,
+                                    close_at_end_of_data=False, broker_isolation=self.live_config.isolation,
+                                    statistics_class=self.live_config.statistics_class)
         self.event_loop.loop()
         return self.event_loop.statistics_df
 

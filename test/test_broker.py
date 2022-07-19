@@ -137,6 +137,7 @@ def test_submit_order_single_order():
     asset1 = Asset(symbol=symbol1, exchange="BINANCE")
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -161,6 +162,7 @@ def test_submit_order_multiple_order():
     asset1 = Asset(symbol=symbol1, exchange="BINANCE")
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -171,6 +173,7 @@ def test_submit_order_multiple_order():
     asset2 = Asset(symbol=symbol2, exchange="BINANCE")
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -199,6 +202,7 @@ def test_submit_order_sequential_order():
     asset1 = Asset(symbol=symbol1, exchange="BINANCE")
     order1 = Order(
         asset=asset1,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=100,
@@ -209,6 +213,7 @@ def test_submit_order_sequential_order():
     asset2 = Asset(symbol=symbol2, exchange="BINANCE")
     order2 = Order(
         asset=asset2,
+        time_unit=timedelta(minutes=1),
         action=Action.BUY,
         direction=Direction.LONG,
         size=150,
@@ -254,14 +259,8 @@ def test_close_all_open_positions_at_end_of_day():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10016.415
@@ -297,14 +296,8 @@ def test_close_all_open_positions_at_end_of_feed_data():
         order_creator=order_creator,
         clock=clock,
     )
-    event_loop = EventLoop(
-        events=events,
-        assets=assets,
-        feed=feed,
-        order_manager=order_manager,
-        strategies_parameters=strategies,
-        mode=ExecutionMode.LIVE,
-    )
+    event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
+                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10014.35

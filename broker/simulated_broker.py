@@ -336,13 +336,13 @@ class SimulatedBroker(Broker):
         order : `Order`
             The Order instance to execute.
         """
-        if order.type == OrderType.LIMIT:
+        if order.order_type == OrderType.LIMIT:
             self.execute_limit_order(order)
-        elif order.type == OrderType.STOP:
+        elif order.order_type == OrderType.STOP:
             self.execute_stop_order(order)
-        elif order.type == OrderType.TARGET:
+        elif order.order_type == OrderType.TARGET:
             self.execute_target_order(order)
-        elif order.type == OrderType.TRAILING_STOP:
+        elif order.order_type == OrderType.TRAILING_STOP:
             self.execute_trailing_stop_order(order)
-        elif order.type == OrderType.MARKET:
+        elif order.order_type == OrderType.MARKET:
             self.execute_market_order(order)

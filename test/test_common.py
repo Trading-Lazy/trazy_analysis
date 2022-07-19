@@ -222,14 +222,7 @@ def test_get_state():
 
 def test_get_rejected_order_error_message():
     clock = LiveClock()
-    order = Order(
-        asset=Asset(symbol="IFMK", exchange="IEX"),
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        type=OrderType.MARKET,
-        clock=clock,
-    )
+    order = Order(asset=Asset(symbol="IFMK", exchange="IEX"), time_unit=timedelta(minutes=1), action=Action.BUY,
+                  direction=Direction.LONG, size=1, signal_id="1", order_type=OrderType.MARKET, clock=clock)
     expected_error_message = "MARKET order (asset=IEX-IFMK, action=BUY, direction=LONG, size=1) could not be executed."
     assert get_rejected_order_error_message(order) == expected_error_message

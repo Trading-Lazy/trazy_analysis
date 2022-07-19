@@ -44,9 +44,19 @@ class SmaCrossoverStrategy(Strategy):
         LOG.info("crossover state = %s", self.crossover.state.name)
         if self.crossover > 0:
             self.add_signal(
-                Signal(asset=candle.asset, action=Action.BUY, direction=Direction.LONG)
+                Signal(
+                    asset=candle.asset,
+                    time_unit=candle.time_unit,
+                    action=Action.BUY,
+                    direction=Direction.LONG,
+                )
             )
         elif self.crossover < 0:
             self.add_signal(
-                Signal(asset=candle.asset, action=Action.SELL, direction=Direction.LONG)
+                Signal(
+                    asset=candle.asset,
+                    time_unit=candle.time_unit,
+                    action=Action.SELL,
+                    direction=Direction.LONG,
+                )
             )

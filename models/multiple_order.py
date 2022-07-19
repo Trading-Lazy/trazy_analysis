@@ -168,16 +168,16 @@ class CoverOrder(HomogeneousSequentialOrder):
     ):
         # check allowed orders types
         initiation_order_allowed_types = [OrderType.MARKET, OrderType.LIMIT]
-        if initiation_order.type not in initiation_order_allowed_types:
+        if initiation_order.order_type not in initiation_order_allowed_types:
             raise Exception(
                 f"A cover order initiation order type should be either MARKET or LIMIT not "
-                f"{initiation_order.type.name}"
+                f"{initiation_order.order_type.name}"
             )
         stop_order_allowed_types = [OrderType.STOP, OrderType.TRAILING_STOP]
-        if stop_order.type not in stop_order_allowed_types:
+        if stop_order.order_type not in stop_order_allowed_types:
             raise Exception(
                 f"A cover order stop order type should be either STOP or TRAILING_STOP not "
-                f"{stop_order.type.name}"
+                f"{stop_order.order_type.name}"
             )
 
         # check positions types
@@ -214,22 +214,22 @@ class BracketOrder(HomogeneousSequentialOrder):
     ):
         # check allowed orders
         initiation_order_allowed_types = [OrderType.MARKET, OrderType.LIMIT]
-        if initiation_order.type not in initiation_order_allowed_types:
+        if initiation_order.order_type not in initiation_order_allowed_types:
             raise Exception(
                 f"A bracket order initiation order type should be either MARKET or LIMIT not "
-                f"{initiation_order.type.name}"
+                f"{initiation_order.order_type.name}"
             )
         target_order_allowed_types = [OrderType.TARGET]
-        if target_order.type not in target_order_allowed_types:
+        if target_order.order_type not in target_order_allowed_types:
             raise Exception(
                 f"A bracket order target order type should be TARGET not "
-                f"{target_order.type.name}"
+                f"{target_order.order_type.name}"
             )
         stop_order_allowed_types = [OrderType.STOP, OrderType.TRAILING_STOP]
-        if stop_order.type not in stop_order_allowed_types:
+        if stop_order.order_type not in stop_order_allowed_types:
             raise Exception(
                 f"A bracket order stop order type should be either STOP or TRAILING_STOP not "
-                f"{stop_order.type.name}"
+                f"{stop_order.order_type.name}"
             )
 
         # check positions types

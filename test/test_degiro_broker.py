@@ -1,5 +1,5 @@
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import call, patch
 
 import pytest
@@ -646,15 +646,8 @@ def test_execute_market_order(
     events = deque()
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
-    buy_order = Order(
-        asset=ASSET1,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        type=OrderType.MARKET,
-        clock=clock,
-    )
+    buy_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG, size=1,
+                      signal_id="1", order_type=OrderType.MARKET, clock=clock)
     buyorder_id = ORDER_ID2
     buyorder_mocked.side_effect = [buyorder_id, Exception()]
     degiro_broker.execute_order(buy_order)
@@ -669,15 +662,8 @@ def test_execute_market_order(
     # test degiro buyorder Exception
     degiro_broker.execute_order(buy_order)
 
-    sell_order = Order(
-        asset=ASSET1,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        type=OrderType.MARKET,
-        clock=clock,
-    )
+    sell_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                       size=1, signal_id="1", order_type=OrderType.MARKET, clock=clock)
     sellorder_id = ORDER_ID3
     sellorder_mocked.return_value = sellorder_id
     degiro_broker.execute_order(sell_order)
@@ -755,16 +741,8 @@ def test_execute_limit_order(
     events = deque()
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
-    buy_order = Order(
-        asset=ASSET1,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        limit=1.5,
-        type=OrderType.LIMIT,
-        clock=clock,
-    )
+    buy_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG, size=1,
+                      signal_id="1", limit=1.5, order_type=OrderType.LIMIT, clock=clock)
     buyorder_id = ORDER_ID2
     buyorder_mocked.side_effect = [buyorder_id, Exception()]
     degiro_broker.execute_order(buy_order)
@@ -784,16 +762,8 @@ def test_execute_limit_order(
     # test degiro buyorder Exception
     degiro_broker.execute_order(buy_order)
 
-    sell_order = Order(
-        asset=ASSET1,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        limit=1.5,
-        type=OrderType.LIMIT,
-        clock=clock,
-    )
+    sell_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                       size=1, signal_id="1", limit=1.5, order_type=OrderType.LIMIT, clock=clock)
     sellorder_id = ORDER_ID3
     sellorder_mocked.return_value = sellorder_id
     degiro_broker.execute_order(sell_order)
@@ -877,16 +847,8 @@ def test_execute_stop_order(
     events = deque()
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
-    buy_order = Order(
-        asset=ASSET1,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        stop=1.5,
-        type=OrderType.STOP,
-        clock=clock,
-    )
+    buy_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG, size=1,
+                      signal_id="1", stop=1.5, order_type=OrderType.STOP, clock=clock)
     buyorder_id = ORDER_ID2
     buyorder_mocked.side_effect = [buyorder_id, Exception()]
     degiro_broker.execute_order(buy_order)
@@ -906,16 +868,8 @@ def test_execute_stop_order(
     # test degiro buyorder Exception
     degiro_broker.execute_order(buy_order)
 
-    sell_order = Order(
-        asset=ASSET1,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        stop=1.5,
-        type=OrderType.STOP,
-        clock=clock,
-    )
+    sell_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                       size=1, signal_id="1", stop=1.5, order_type=OrderType.STOP, clock=clock)
     sellorder_id = ORDER_ID3
     sellorder_mocked.return_value = sellorder_id
     degiro_broker.execute_order(sell_order)
@@ -994,16 +948,8 @@ def test_execute_target_order(
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
     # target order sell
-    target_order = Order(
-        asset=ASSET1,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        target=3.01,
-        type=OrderType.TARGET,
-        clock=clock,
-    )
+    target_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.SELL, direction=Direction.LONG,
+                         size=1, signal_id="1", target=3.01, order_type=OrderType.TARGET, clock=clock)
     candle = Candle(
         asset=ASSET1,
         open=1.105,
@@ -1032,16 +978,8 @@ def test_execute_target_order(
     assert len(degiro_broker.open_orders) == 0
 
     # target order buy
-    target_order = Order(
-        asset=ASSET1,
-        action=Action.BUY,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        target=0.51,
-        type=OrderType.TARGET,
-        clock=clock,
-    )
+    target_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.BUY, direction=Direction.LONG,
+                         size=1, signal_id="1", target=0.51, order_type=OrderType.TARGET, clock=clock)
     candle = Candle(
         asset=ASSET1,
         open=1.105,
@@ -1134,16 +1072,9 @@ def test_execute_trailing_stop_order_sell(
     events = deque()
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
-    trailing_stop_order = Order(
-        asset=ASSET1,
-        action=Action.SELL,
-        direction=Direction.LONG,
-        size=1,
-        signal_id="1",
-        stop_pct=0.05,
-        type=OrderType.TRAILING_STOP,
-        clock=clock,
-    )
+    trailing_stop_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.SELL,
+                                direction=Direction.LONG, size=1, signal_id="1", stop_pct=0.05,
+                                order_type=OrderType.TRAILING_STOP, clock=clock)
     candle = Candle(
         asset=ASSET1,
         open=1.105,
@@ -1264,16 +1195,9 @@ def test_execute_trailing_stop_order_buy(
     events = deque()
     degiro_broker = DegiroBroker(clock=clock, events=events)
 
-    trailing_stop_order = Order(
-        asset=ASSET1,
-        action=Action.BUY,
-        direction=Direction.SHORT,
-        size=1,
-        signal_id="1",
-        stop_pct=0.05,
-        type=OrderType.TRAILING_STOP,
-        clock=clock,
-    )
+    trailing_stop_order = Order(asset=ASSET1, time_unit=timedelta(minutes=1), action=Action.BUY,
+                                direction=Direction.SHORT, size=1, signal_id="1", stop_pct=0.05,
+                                order_type=OrderType.TRAILING_STOP, clock=clock)
     candle = Candle(
         asset=ASSET1,
         open=1.145,

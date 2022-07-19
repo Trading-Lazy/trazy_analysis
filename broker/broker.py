@@ -2,6 +2,7 @@ import os
 import queue
 from abc import ABCMeta, abstractmethod
 from collections import deque
+from datetime import timedelta
 from typing import List, Union
 
 import numpy as np
@@ -389,11 +390,12 @@ class Broker:
             position = positions[asset][direction]
             order = Order(
                 asset=asset,
+                time_unit=timedelta(minutes=1),
                 action=Action.SELL if direction == Direction.LONG else Action.BUY,
                 direction=direction,
                 size=position.net_size,
                 signal_id=f"SimulatedBroker-{asset}",
-                type=OrderType.MARKET,
+                order_type=OrderType.MARKET,
                 clock=self.clock,
             )
             order.submit()

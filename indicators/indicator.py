@@ -4,12 +4,13 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Callable, Dict, Optional, List, Union, Tuple
 
-import networkx as nx
 import numpy as np
 import numpy.ma as ma
 import pandas as pd
-from matplotlib import pyplot as plt
+from pandas import DatetimeIndex
 from pandas_market_calendars import MarketCalendar
+from plotly.basedatatypes import BaseTraceType
+import plotly as plt
 
 from trazy_analysis.common.helper import (
     round_time,
@@ -40,10 +41,14 @@ def get_price_selector_function(price_type: PriceType) -> Callable[[Candle], flo
         raise Exception("Invalid price_type {}".format(price_type.name))
 
 
+COLORS = []
+for color_class, colors in plt.colors.PLOTLY_SCALES.items():
+    for color in colors:
+        COLORS.append(color[1])
+
+
 class Indicator:
-    instances = set()
-    source_edges = []
-    input_edges = []
+    PLOTTING_ATTRIBUTES = []
 
     def __init__(
         self,
@@ -53,7 +58,6 @@ class Indicator:
         size: int = 1,
         dtype: Optional[type] = None,
     ):
-        Indicator.instances.add(self)
         self.source = source
         self.transform = transform
         self.source_minimal_size = source_minimal_size
@@ -71,97 +75,7 @@ class Indicator:
         self.callbacks = deque()
         self.subscribers = set()
         self.data = None
-
-    @classmethod
-    def add_source_edge(cls, edge: Tuple["Indicator", "Indicator"]):
-        if edge[0] is not None and edge[1] is not None:
-            cls.source_edges.append(edge)
-
-    @classmethod
-    def add_input_edge(cls, edge: Tuple["Indicator", "Indicator"]):
-        if edge[0] is not None and edge[1] is not None:
-            cls.input_edges.append(edge)
-
-    @classmethod
-    def plot_instances_graph(cls):
-        instances_graph = nx.MultiDiGraph()
-        instances_graph.add_edges_from(cls.source_edges)
-        graph_nodes = list(instances_graph.nodes)
-        node_from_ind = {i: graph_nodes[i] for i in range(0, len(graph_nodes))}
-        topological_levels = list(nx.topological_generations(instances_graph))
-        instances_graph.add_edges_from(cls.input_edges)
-
-        # set the position according to column (x-coord)
-        pos = {}
-        n = len(topological_levels)
-        for i in range(0, n):
-            topological_level = topological_levels[i]
-            pos.update({node: (j, i) for j, node in enumerate(topological_level)})
-
-        fig, ax = plt.subplots()
-        nodes = nx.draw_networkx_nodes(instances_graph, pos=pos, ax=ax)
-        nx.draw_networkx_edges(
-            instances_graph,
-            edgelist=cls.source_edges,
-            pos=pos,
-            ax=ax,
-            edge_color="b",
-            connectionstyle="arc3,rad=-0.2",
-        )
-        nx.draw_networkx_edges(
-            instances_graph,
-            edgelist=cls.input_edges,
-            pos=pos,
-            ax=ax,
-            edge_color="r",
-            style="--",
-            connectionstyle="arc3,rad=0.2",
-        )
-        annot = ax.annotate(
-            "",
-            xy=(0, 0),
-            xytext=(20, 20),
-            textcoords="offset points",
-            bbox=dict(boxstyle="round", fc="w"),
-            arrowprops=dict(arrowstyle="->"),
-        )
-        annot.set_visible(False)
-
-        def update_annot(ind):
-            node = node_from_ind[ind["ind"][0]]
-            xy = pos[node]
-            annot.xy = xy
-            node_attr = {
-                "node": node,
-                "input_window": node.input_window,
-                "source_minimal_size": node.source_minimal_size,
-                "size": node.size,
-                "dtype": node.dtype,
-                "memoize": node.memoize,
-                "mode": node.mode.name,
-            }
-            node_attr.update(instances_graph.nodes[node])
-            text = "\n".join(f"{k}: {v}" for k, v in node_attr.items())
-            annot.set_text(text)
-
-        def hover(event):
-            vis = annot.get_visible()
-            if event.inaxes == ax:
-                cont, ind = nodes.contains(event)
-                if cont:
-                    update_annot(ind)
-                    annot.set_visible(True)
-                    fig.canvas.draw_idle()
-                else:
-                    if vis:
-                        annot.set_visible(False)
-                        fig.canvas.draw_idle()
-
-        fig.canvas.mpl_connect("motion_notify_event", hover)
-        ax.margins(0.20)
-        plt.axis("off")
-        plt.ion()
-        plt.show()
+        self.id = None
 
     def setup(self, indicators: "ReactiveIndicators"):
         self.indicators = indicators
@@ -229,7 +143,7 @@ class Indicator:
                         else self.source_minimal_size
                     )
 
-        self.add_input_edge((self, input_window))
+        self.indicators.add_input_edge((self, input_window))
         self.input_window = input_window
 
         self.window: np.array = None
@@ -288,7 +202,7 @@ class Indicator:
     def subscribe(self, callback: Callable, subscriber: "Indicator"):
         self.callbacks.append(callback)
         self.subscribers.add(subscriber)
-        self.add_source_edge((subscriber, self))
+        self.indicators.add_source_edge((subscriber, self))
 
     def next(self, value: Any):
         for callback in self.callbacks:
@@ -297,6 +211,14 @@ class Indicator:
     @classmethod
     def compute(cls, data: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
         return data
+
+    @property
+    @classmethod
+    def plotting_attributes(cls) -> List[str]:
+        return []
+
+    def get_trace(self, candle_dataframe: CandleDataFrame) -> Optional[BaseTraceType]:
+        return None
 
     def initialize_batch(self):
         window = self.compute(self.input_window.window, self.period)
@@ -384,6 +306,20 @@ class Indicator:
         else:
             raise TypeError("Invalid argument type: {}".format(type(key)))
 
+    def get_ordered_window(self) -> Optional[np.ndarray]:
+        if self.window.count() == 0:
+            return None
+        if ma.is_masked(self.window):
+            window = self[-self.window.count() + 1 :]
+        else:
+            window = self[:]
+        return window
+
+    def get_trace_coordinates(self, index: DatetimeIndex) -> Tuple[DatetimeIndex, Any]:
+        x = list(index)[-self.window.count() :]
+        y = self.get_ordered_window()
+        return x, y
+
     def map(self, func: Callable, size: Optional[int] = None) -> "Indicator":
         rolling_window_stream = self.indicators.Indicator(
             source=self,
@@ -413,18 +349,11 @@ class Indicator:
         except KeyError:
             pass
 
-    def remove_edges(self, node: "Indicator"):
-        self.source_edges = [
-            edge
-            for edge in self.source_edges
-            if id(edge[0]) != id(node) and id(edge[1]) != id(node)
-        ]
-
     def ignore(self):
         if self.source is not None:
             self.source.remove_callback(self.callback)
             self.source.remove_subscriber(self)
-            self.source.remove_edges(self)
+            self.indicators.remove_edges(self.source, self)
             self.source = None
 
     def __hash__(self):
