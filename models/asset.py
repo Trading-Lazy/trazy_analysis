@@ -41,7 +41,7 @@ class Asset:
     def from_dict(asset_dict: dict):
         return Asset(symbol=asset_dict["symbol"], exchange=asset_dict["exchange"])
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return {
             "symbol": self.symbol,
             "exchange": self.exchange,

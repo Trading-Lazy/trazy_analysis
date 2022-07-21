@@ -108,12 +108,8 @@ class OrderManager:
                 )
             elif isinstance(order, ArbitragePairOrder):
                 if order.buy_order.size != 0:
-                    self.broker_manager.get_broker(
-                        order.buy_order.asset.exchange
-                    ).submit_order(order.buy_order)
-                    self.broker_manager.get_broker(
-                        order.sell_order.asset.exchange
-                    ).submit_order(order.sell_order)
+                    self.broker_manager.get_broker(order.buy_order.asset.exchange).submit_order(order.buy_order)
+                    self.broker_manager.get_broker(order.sell_order.asset.exchange).submit_order(order.sell_order)
 
     def process_pending_signals(self) -> None:
         # Create an order from the signal
@@ -136,9 +132,7 @@ class OrderManager:
             LOG.info("now = %s", now)
             if not signal.in_force(now):
                 return
-            opened_position = self.broker_manager.get_broker(
-                signal.asset.exchange
-            ).has_opened_position(signal.asset, signal.direction)
+            opened_position = self.broker_manager.get_broker(signal.asset.exchange).has_opened_position(signal.asset, signal.direction)
             LOG.info("opened position = %s", opened_position)
             if not (
                 (signal.is_entry_signal and not opened_position)
@@ -153,14 +147,12 @@ class OrderManager:
             sell_signal: Signal = signal.sell_signal
             if sell_signal.is_exit_signal:
                 opened_position = self.broker_manager.get_broker(
-                    sell_signal.asset.exchange
-                ).has_opened_position(sell_signal.asset, sell_signal.direction)
+                    sell_signal.asset.exchange).has_opened_position(sell_signal.asset, sell_signal.direction)
                 if not opened_position:
                     return
             if buy_signal.is_exit_signal:
                 opened_position = self.broker_manager.get_broker(
-                    buy_signal.asset.exchange
-                ).has_opened_position(buy_signal.asset, buy_signal.direction)
+                    buy_signal.asset.exchange).has_opened_position(buy_signal.asset, buy_signal.direction)
                 if not opened_position:
                     return
 

@@ -17,7 +17,7 @@ class BinanceLiveDataHandler(BinanceDataHandler, LiveDataHandler):
     )
 
     @classmethod
-    def parse_ticker_latest_data(cls, symbol: str, data: str) -> List[Candle]:
+    def parse_ticker_latest_data(cls, symbol: str, data: str) -> list[Candle]:
         candle_df = cls.ticker_data_to_dataframe(symbol, data)
         return candle_df.to_candles()
 

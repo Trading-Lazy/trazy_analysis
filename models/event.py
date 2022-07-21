@@ -24,7 +24,7 @@ class DataEvent(Event):
     def __init__(
         self,
         event_type: EventType,
-        assets: Dict[Asset, List[timedelta]],
+        assets: dict[Asset, list[timedelta]],
         timestamp: datetime,
         bars_delay: int = 0,
     ):
@@ -37,7 +37,7 @@ class DataEvent(Event):
 class MarketDataEvent(DataEvent):
     def __init__(
         self,
-        candles: Dict[Asset, Dict[timedelta, SortedSet]],
+        candles: dict[Asset, dict[timedelta, SortedSet]],
         timestamp: datetime,
         bars_delay: int = 0,
     ):
@@ -47,13 +47,13 @@ class MarketDataEvent(DataEvent):
             timestamp,
             bars_delay,
         )
-        self.candles: Dict[Asset, Dict[timedelta, SortedSet]] = candles
+        self.candles: dict[Asset, dict[timedelta, SortedSet]] = candles
 
 
 class MarketEodDataEvent(DataEvent):
     def __init__(
         self,
-        assets: Dict[Asset, List[timedelta]],
+        assets: dict[Asset, list[timedelta]],
         timestamp: datetime,
         bars_delay: int = 0,
     ):
@@ -63,7 +63,7 @@ class MarketEodDataEvent(DataEvent):
 class MarketDataEndEvent(DataEvent):
     def __init__(
         self,
-        assets: Dict[Asset, List[timedelta]],
+        assets: dict[Asset, list[timedelta]],
         timestamp: datetime,
         bars_delay: int = 0,
     ):
@@ -71,7 +71,7 @@ class MarketDataEndEvent(DataEvent):
 
 
 class SignalEvent(Event):
-    def __init__(self, signals: List[SignalBase], bars_delay: int = 0):
+    def __init__(self, signals: list[SignalBase], bars_delay: int = 0):
         super().__init__(EventType.SIGNAL)
         self.signals = signals
         self.bars_delay = bars_delay

@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from datetime import datetime, timedelta
+from typing import TypeVar
 
 import numpy as np
 import pytz
@@ -9,6 +10,7 @@ from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.enums import Action, Direction
 from trazy_analysis.models.utils import is_closed_position
 
+TSignalBase = TypeVar("TSignalBase", bound="SignalBase")
 
 class SignalBase:
     def __init__(
@@ -22,7 +24,7 @@ class SignalBase:
         self.time_in_force = time_in_force
 
     @abstractmethod
-    def from_serializable_dict(signal_dict: dict) -> "SignalBase":
+    def from_serializable_dict(signal_dict: dict) -> TSignalBase:
         raise NotImplementedError("Should implement from_serializable_dict()")
 
     @abstractmethod
@@ -45,6 +47,9 @@ class SignalBase:
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+TSignal = TypeVar("TSignal", bound="Signal")
 
 
 class Signal(SignalBase):
@@ -110,7 +115,7 @@ class Signal(SignalBase):
             )
 
     @staticmethod
-    def from_serializable_dict(signal_dict: dict) -> "Signal":
+    def from_serializable_dict(signal_dict: dict) -> TSignal:
         from trazy_analysis.common.helper import parse_timedelta_str
 
         signal: Signal = Signal(

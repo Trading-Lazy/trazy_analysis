@@ -53,7 +53,7 @@ class HistoricalDataPipeline:
                 group_df.to_csv(),
             )
 
-    def get_todo_dates(self, date_today: date) -> List[str]:
+    def get_todo_dates(self, date_today: date) -> list[str]:
         dirs_list = self.file_storage.ls(DATASETS_DIR)
         dates = [
             name
@@ -93,7 +93,7 @@ class HistoricalDataPipeline:
         return todo_dates
 
     def write_tickers_list_in_file_storage(
-        self, date_today: date, tickers: List[Asset]
+        self, date_today: date, tickers: list[Asset]
     ) -> None:
         tickers_df = pd.DataFrame()
         tickers_df["tickers"] = [ticker.key() for ticker in tickers]
@@ -110,9 +110,9 @@ class HistoricalDataPipeline:
 
     def handle_states(
         self,
-        period_dates: List[date],
-        none_tickers: List[str],
-        errors: List[Tuple[str, str]],
+        period_dates: list[date],
+        none_tickers: list[str],
+        errors: list[Tuple[str, str]],
     ) -> None:
         for date in period_dates:
             date_str = date.strftime(DATE_DIR_FORMAT)
@@ -133,7 +133,7 @@ class HistoricalDataPipeline:
                         error_message,
                     )
 
-    def get_period_dates(self, period: Tuple[date, date]) -> List[date]:
+    def get_period_dates(self, period: Tuple[date, date]) -> list[date]:
         period_start_date = period[0]
         period_end_date = period[1]
         period_dates = [
@@ -145,10 +145,10 @@ class HistoricalDataPipeline:
         return period_dates
 
     def get_all_tickers_for_all_periods(
-        self, periods: List[Tuple[date, date]], tickers: List[str]
+        self, periods: list[Tuple[date, date]], tickers: list[str]
     ) -> None:
-        none_tickers_per_period: Dict[Tuple[date, date], List[str]] = {}
-        errors_per_period: Dict[Tuple[date, date], List[Tuple[str, str]]] = {}
+        none_tickers_per_period: dict[Tuple[date, date], list[str]] = {}
+        errors_per_period: dict[Tuple[date, date], list[Tuple[str, str]]] = {}
         for ticker in tickers:
             (
                 candle_dataframe,
@@ -193,7 +193,7 @@ class HistoricalDataPipeline:
         end_date = datetime.strptime(todo_dates[-1], DATE_DIR_FORMAT).date()
         start = datetime.combine(start_date, datetime.min.time())
         end = datetime.combine(end_date, datetime.max.time())
-        periods: List[Tuple[date, date]] = get_periods(
+        periods: list[Tuple[date, date]] = get_periods(
             self.historical_data_handler.MAX_DOWNLOAD_FRAME, start, end
         )
         LOG.info("Periods: %s", periods)

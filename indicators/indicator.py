@@ -2,7 +2,7 @@ import operator
 from collections import deque
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Callable, Dict, Optional, List, Union, Tuple
+from typing import Any, Callable, Dict, Optional, List, Union, Tuple, TypeVar
 
 import numpy as np
 import numpy.ma as ma
@@ -25,20 +25,21 @@ from trazy_analysis.models.enums import IndicatorMode
 
 
 def get_price_selector_function(price_type: PriceType) -> Callable[[Candle], float]:
-    if price_type == PriceType.OPEN:
-        return lambda candle: candle.open
-    elif price_type == PriceType.HIGH:
-        return lambda candle: candle.high
-    elif price_type == PriceType.LOW:
-        return lambda candle: candle.low
-    elif price_type == PriceType.CLOSE:
-        return lambda candle: candle.close
-    elif price_type == PriceType.BODY_HIGH:
-        return lambda candle: max(candle.open, candle.close)
-    elif price_type == PriceType.BODY_LOW:
-        return lambda candle: min(candle.open, candle.close)
-    else:
-        raise Exception("Invalid price_type {}".format(price_type.name))
+    match price_type:
+        case PriceType.OPEN:
+            return lambda candle: candle.open
+        case PriceType.HIGH:
+            return lambda candle: candle.high
+        case PriceType.LOW:
+            return lambda candle: candle.low
+        case PriceType.CLOSE:
+            return lambda candle: candle.close
+        case PriceType.BODY_HIGH:
+            return lambda candle: max(candle.open, candle.close)
+        case PriceType.BODY_LOW:
+            return lambda candle: min(candle.open, candle.close)
+        case _:
+            raise Exception("Invalid price_type {}".format(price_type.name))
 
 
 COLORS = []
@@ -46,13 +47,14 @@ for color_class, colors in plt.colors.PLOTLY_SCALES.items():
     for color in colors:
         COLORS.append(color[1])
 
+TIndicator = TypeVar('TIndicator', bound='Indicator')
 
 class Indicator:
     PLOTTING_ATTRIBUTES = []
 
     def __init__(
         self,
-        source: Union["Indicator", np.ndarray, List[Any]] = None,
+        source: TIndicator | np.ndarray | list[Any] = None,
         transform: Optional[Callable] = None,
         source_minimal_size: Optional[int] = None,
         size: int = 1,
@@ -199,7 +201,7 @@ class Indicator:
         self.index = -1
         self.data = None if self.mode == IndicatorMode.BATCH else self.window[-1]
 
-    def subscribe(self, callback: Callable, subscriber: "Indicator"):
+    def subscribe(self, callback: Callable, subscriber: TIndicator):
         self.callbacks.append(callback)
         self.subscribers.add(subscriber)
         self.indicators.add_source_edge((subscriber, self))
@@ -208,13 +210,13 @@ class Indicator:
         for callback in self.callbacks:
             callback(value)
 
-    @classmethod
-    def compute(cls, data: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+    @staticmethod
+    def compute(cls, data: np.ndarray | pd.DataFrame) -> np.ndarray:
         return data
 
     @property
     @classmethod
-    def plotting_attributes(cls) -> List[str]:
+    def plotting_attributes(cls) -> list[str]:
         return []
 
     def get_trace(self, candle_dataframe: CandleDataFrame) -> Optional[BaseTraceType]:
@@ -249,10 +251,11 @@ class Indicator:
             if self.size is None:
                 self.size = 1
             self.window = ma.masked_array([0] * self.size, mask=True, dtype=self.dtype)
-        if self.mode == IndicatorMode.LIVE:
-            self.handle_stream_data(data)
-        elif self.mode == IndicatorMode.BATCH:
-            self.handle_batch_data()
+        match self.mode:
+            case IndicatorMode.LIVE:
+                self.handle_stream_data(data)
+            case IndicatorMode.BATCH:
+                self.handle_batch_data()
 
     def push(self, data: Any = None):
         self.handle_data(data)
@@ -320,7 +323,7 @@ class Indicator:
         y = self.get_ordered_window()
         return x, y
 
-    def map(self, func: Callable, size: Optional[int] = None) -> "Indicator":
+    def map(self, func: Callable, size: Optional[int] = None) -> TIndicator:
         indicator_stream = self.indicators.Indicator(
             source=self,
             transform=func,
@@ -331,7 +334,7 @@ class Indicator:
             indicator_stream.fill(self.window.tolist())
         return indicator_stream
 
-    def observe(self, indicator_data: "Indicator"):
+    def observe(self, indicator_data: TIndicator):
         self.ignore()
         self.source = indicator_data
         if self.source is not None:
@@ -343,7 +346,7 @@ class Indicator:
         except ValueError:
             pass
 
-    def remove_subscriber(self, subscriber: "Indicator"):
+    def remove_subscriber(self, subscriber: TIndicator):
         try:
             self.subscribers.remove(subscriber)
         except KeyError:
@@ -362,8 +365,8 @@ class Indicator:
     def indicator_unary_operation(
         self,
         operation_function: Callable[[Any], Any],
-        allowed_types: List[type],
-    ) -> "Indicator":
+        allowed_types: list[type],
+    ) -> TIndicator:
         check_type(self.data, allowed_types)
         indicator_data: Indicator = self.indicators.Indicator(
             source=self, transform=operation_function
@@ -371,8 +374,8 @@ class Indicator:
         return indicator_data
 
     def indicator_binary_operation_indicator(
-        self, other: "Indicator", operation_function: Callable[[Any, Any], Any]
-    ) -> "Indicator":
+        self, other: TIndicator, operation_function: Callable[[Any, Any], Any]
+    ) -> TIndicator:
         indicator_zip_data = self.indicators.ZipIndicator(
             source_indicator1=self,
             source_indicator2=other,
@@ -382,7 +385,7 @@ class Indicator:
 
     def indicator_binary_operation_data(
         self, other, operation_function: Callable[[Any, Any], Any]
-    ) -> "Indicator":
+    ) -> TIndicator:
         transform = (
             lambda data: (operation_function(data, other)) if data is not None else None
         )
@@ -395,8 +398,8 @@ class Indicator:
         self,
         other,
         operation_function: Callable[[Any, Any], Any],
-        allowed_types: List[type],
-    ) -> "Indicator":
+        allowed_types: list[type],
+    ) -> TIndicator:
         check_type(self.data, allowed_types)
 
         other_is_indicator = isinstance(other, Indicator)
@@ -411,8 +414,8 @@ class Indicator:
     def unary_operation(
         self,
         operation_function: Callable[[Any], Any],
-        allowed_types: List[type],
-    ) -> Optional[Union[int, bool, float, Decimal]]:
+        allowed_types: list[type],
+    ) -> Optional[int | bool | float | Decimal]:
         if self.data is None:
             return None
         check_type(self.data, allowed_types)
@@ -422,8 +425,8 @@ class Indicator:
         self,
         other,
         operation_function: Callable[[Any, Any], Any],
-        allowed_types: List[type],
-    ) -> Optional[Union[int, bool, float, Decimal]]:
+        allowed_types: list[type],
+    ) -> Optional[int | bool | float | Decimal]:
         if self.data is None:
             return None
         check_type(self.data, allowed_types)
@@ -468,75 +471,71 @@ class Indicator:
             decimal_or_indicator, operator.__gt__, [int, float, np.float64, Decimal]
         )
 
-    def __add__(self, decimal_or_indicator) -> Union[int, float, np.float64, Decimal]:
+    def __add__(self, decimal_or_indicator) -> int | float | np.float64 | Decimal:
         return self.binary_operation(
             decimal_or_indicator, operator.__add__, [int, float, np.float64, Decimal]
         )
 
-    def __iadd__(self, decimal_or_indicator) -> "Indicator":
+    def __iadd__(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__iadd__, [int, float, np.float64, Decimal]
         )
 
-    def __sub__(self, decimal_or_indicator) -> Union[int, float, np.float64, Decimal]:
+    def __sub__(self, decimal_or_indicator) -> int | float | np.float64 | Decimal:
         return self.binary_operation(
             decimal_or_indicator, operator.__sub__, [int, float, np.float64, Decimal]
         )
 
-    def __isub__(self, decimal_or_indicator) -> "Indicator":
+    def __isub__(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__isub__, [int, float, np.float64, Decimal]
         )
 
-    def __mul__(self, decimal_or_indicator) -> Union[int, float, np.float64, Decimal]:
+    def __mul__(self, decimal_or_indicator) -> int | float | np.float64 | Decimal:
         return self.binary_operation(
             decimal_or_indicator, operator.__mul__, [int, float, np.float64, Decimal]
         )
 
-    def __imul__(self, decimal_or_indicator) -> "Indicator":
+    def __imul__(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__imul__, [int, float, np.float64, Decimal]
         )
 
-    def __truediv__(
-        self, decimal_or_indicator
-    ) -> Union[int, float, np.float64, Decimal]:
+    def __truediv__(self, decimal_or_indicator) -> int | float | np.float64 | Decimal:
         return self.binary_operation(
             decimal_or_indicator,
             operator.__truediv__,
             [int, float, np.float64, Decimal],
         )
 
-    def __itruediv__(self, decimal_or_indicator) -> "Indicator":
+    def __itruediv__(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator,
             operator.__itruediv__,
             [int, float, np.float64, Decimal],
         )
 
-    def __floordiv__(
-        self, decimal_or_indicator
-    ) -> Union[int, float, np.float64, Decimal]:
+    def __floordiv__(self, decimal_or_indicator) -> int | float | np.float64 | Decimal:
         return self.binary_operation(
             decimal_or_indicator,
             operator.__floordiv__,
             [int, float, np.float64, Decimal],
         )
 
-    def __ifloordiv__(self, decimal_or_indicator) -> "Indicator":
+    def __ifloordiv__(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator,
             operator.__ifloordiv__,
             [int, float, np.float64, Decimal],
         )
 
-    def __neg__(self) -> Union[int, float, np.float64, Decimal]:
+    def __neg__(self) -> int | float | np.float64 | Decimal:
         return self.unary_operation(operator.__neg__, [int, float, np.float64, Decimal])
 
     def __and__(self, bool_or_bool_indicator) -> bool:
         return self.binary_operation(bool_or_bool_indicator, operator.__and__, [bool])
 
-    def __iand__(self, bool_or_bool_indicator) -> "Indicator":
+    def __iand__(self, bool_or_bool_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             bool_or_bool_indicator, operator.__iand__, [bool]
         )
@@ -544,7 +543,7 @@ class Indicator:
     def __or__(self, bool_or_bool_indicator) -> bool:
         return self.binary_operation(bool_or_bool_indicator, operator.__or__, [bool])
 
-    def __ior__(self, bool_or_bool_indicator) -> "Indicator":
+    def __ior__(self, bool_or_bool_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             bool_or_bool_indicator, operator.__ior__, [bool]
         )
@@ -552,76 +551,76 @@ class Indicator:
     def __bool__(self) -> bool:
         return self.data
 
-    def lt(self, decimal_or_indicator) -> "Indicator":
+    def lt(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__lt__, [int, float, np.float64, Decimal]
         )
 
-    def le(self, decimal_or_indicator) -> "Indicator":
+    def le(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__le__, [int, float, np.float64, Decimal]
         )
 
-    def eq(self, decimal_or_indicator) -> "Indicator":
+    def eq(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__eq__, [int, float, np.float64, Decimal]
         )
 
-    def ne(self, decimal_or_indicator) -> "Indicator":
+    def ne(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__ne__, [int, float, np.float64, Decimal]
         )
 
-    def ge(self, decimal_or_indicator) -> "Indicator":
+    def ge(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__ge__, [int, float, np.float64, Decimal]
         )
 
-    def gt(self, decimal_or_indicator) -> "Indicator":
+    def gt(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__gt__, [int, float, np.float64, Decimal]
         )
 
-    def add(self, decimal_or_indicator) -> "Indicator":
+    def add(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__add__, [int, float, np.float64, Decimal]
         )
 
-    def sub(self, decimal_or_indicator) -> "Indicator":
+    def sub(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__sub__, [int, float, np.float64, Decimal]
         )
 
-    def mul(self, decimal_or_indicator) -> "Indicator":
+    def mul(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator, operator.__mul__, [int, float, np.float64, Decimal]
         )
 
-    def truediv(self, decimal_or_indicator) -> "Indicator":
+    def truediv(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator,
             operator.__truediv__,
             [int, float, np.float64, Decimal],
         )
 
-    def floordiv(self, decimal_or_indicator) -> "Indicator":
+    def floordiv(self, decimal_or_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             decimal_or_indicator,
             operator.__floordiv__,
             [int, float, np.float64, Decimal],
         )
 
-    def neg(self) -> "Indicator":
+    def neg(self) -> TIndicator:
         return self.indicator_unary_operation(
             operator.__neg__, [int, float, np.float64, Decimal]
         )
 
-    def sand(self, bool_or_bool_indicator) -> "Indicator":
+    def sand(self, bool_or_bool_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             bool_or_bool_indicator, operator.__and__, [bool]
         )
 
-    def sor(self, bool_or_bool_indicator) -> "Indicator":
+    def sor(self, bool_or_bool_indicator) -> TIndicator:
         return self.indicator_binary_operation(
             bool_or_bool_indicator, operator.__or__, [bool]
         )
@@ -632,7 +631,7 @@ class CandleIndicator(Indicator):
         self,
         asset: Asset = None,
         time_unit: timedelta = None,
-        source: Union[Indicator, np.ndarray, list] = None,
+        source: Indicator | np.ndarray | list = None,
         source_minimal_size: int = None,
         size: int = None,
     ):
@@ -714,7 +713,7 @@ class CandleData:
     def __init__(
         self,
         indicators: "ReactiveIndicators",
-        candles: Dict[Asset, Dict[timedelta, np.array]] = None,
+        candles: dict[Asset, dict[timedelta, np.array]] = None,
     ):
         self.indicators = indicators
         self.mode = self.indicators.mode

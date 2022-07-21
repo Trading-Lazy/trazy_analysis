@@ -187,15 +187,16 @@ def calc_required_history_start_timestamp(
     interval_unit = "day" if time_unit.name == "D" else "minute"
     interval = TimeInterval(interval_unit, time_unit.n)
 
-    if interval_unit == "day":
-        start_timestamp = find_start_interval_business_date(
-            end_timestamp, business_calendar, interval, period
-        )
-
-    elif interval_unit == "minute":
-        start_timestamp = find_start_interval_business_minute(
-            end_timestamp, business_calendar, interval, period - 1
-        )
+    start_timestamp = None
+    match interval_unit:
+        case "day":
+            start_timestamp = find_start_interval_business_date(
+                end_timestamp, business_calendar, interval, period
+            )
+        case "minute":
+            start_timestamp = find_start_interval_business_minute(
+                end_timestamp, business_calendar, interval, period - 1
+            )
     return start_timestamp
 
 
@@ -298,7 +299,7 @@ def get_or_create_nested_dict(nested_dict: dict, *keys) -> None:
             _nested_dict = _nested_dict[key]
 
 
-def check_type(object_or_type: Union[object, type], allowed_types: List[type]):
+def check_type(object_or_type: object | type, allowed_types: list[type]):
     if object_or_type is None:
         return
     object_type = type(object_or_type)
@@ -362,8 +363,8 @@ def datetime_to_epoch(timestamp: datetime, unit_multiplicator: int) -> int:
 
 
 def normalize_assets(
-    assets: Dict[Asset, Union[timedelta, List[timedelta]]]
-) -> Dict[Asset, List[timedelta]]:
+    assets: dict[Asset, timedelta | list[timedelta]]
+) -> dict[Asset, list[timedelta]]:
     assets_copy = assets.copy()
     assets_to_normalize = set()
     for asset, time_units in assets_copy.items():

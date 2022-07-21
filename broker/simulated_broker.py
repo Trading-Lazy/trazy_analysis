@@ -41,9 +41,9 @@ class SimulatedBroker(Broker):
         clock: Clock,
         events: deque,
         base_currency: str = "EUR",
-        supported_currencies: List[str] = ["EUR", "USD"],
+        supported_currencies: list[str] = ["EUR", "USD"],
         initial_funds: float = 0.0,
-        fee_models: Union[FeeModel, Dict[Asset, FeeModel]] = FixedFeeModel(),
+        fee_models: FeeModel | dict[Asset, FeeModel] = FixedFeeModel(),
         exchange: str = "universal",
     ) -> None:
         self._check_initial_funds(initial_funds)
@@ -81,7 +81,7 @@ class SimulatedBroker(Broker):
                 "negative." % initial_funds
             )
 
-    def _set_cash_balances(self, initial_funds: float) -> Dict[str, float]:
+    def _set_cash_balances(self, initial_funds: float) -> dict[str, float]:
         """
         Set the appropriate cash balances in the various
         supported currencies, depending upon the availability
@@ -142,7 +142,7 @@ class SimulatedBroker(Broker):
         self.cash_balances[self.base_currency] -= amount
         LOG.info("Withdrawal: %s withdrawn from broker", amount)
 
-    def get_cash_balance(self, currency: str = None) -> Union[dict, float]:
+    def get_cash_balance(self, currency: str = None) -> dict | float:
         """
         Retrieve the cash dictionary of the account, or
         if a currency is provided, the cash value itself.
@@ -313,13 +313,14 @@ class SimulatedBroker(Broker):
         order : `Order`
             The Order instance to execute.
         """
-        if order.order_type == OrderType.LIMIT:
-            self.execute_limit_order(order)
-        elif order.order_type == OrderType.STOP:
-            self.execute_stop_order(order)
-        elif order.order_type == OrderType.TARGET:
-            self.execute_target_order(order)
-        elif order.order_type == OrderType.TRAILING_STOP:
-            self.execute_trailing_stop_order(order)
-        elif order.order_type == OrderType.MARKET:
-            self.execute_market_order(order)
+        match order.order_type:
+            case OrderType.LIMIT:
+                self.execute_limit_order(order)
+            case OrderType.STOP:
+                self.execute_stop_order(order)
+            case OrderType.TARGET:
+                self.execute_target_order(order)
+            case OrderType.TRAILING_STOP:
+                self.execute_trailing_stop_order(order)
+            case OrderType.MARKET:
+                self.execute_market_order(order)

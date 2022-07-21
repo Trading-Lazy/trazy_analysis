@@ -2,7 +2,6 @@ import binascii
 import os
 import time
 from datetime import datetime
-from typing import Union
 
 import pandas as pd
 import pytz
@@ -22,7 +21,7 @@ def validate_dataframe_columns(df: DataFrame, required_columns: list) -> None:
         )
 
 
-def timestamp_to_utc(timestamp: Union[pd.Timestamp, pd.DatetimeIndex, datetime]):
+def timestamp_to_utc(timestamp: pd.Timestamp | pd.DatetimeIndex | datetime):
     if isinstance(timestamp, pd.Timestamp) or isinstance(timestamp, pd.DatetimeIndex):
         if timestamp.tz is None:
             timestamp = timestamp.tz_localize("UTC")

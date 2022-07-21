@@ -31,7 +31,7 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingleton):
     @abc.abstractmethod
     def parse_ticker_latest_data(
         cls, symbol: Asset, data: str
-    ) -> List[Candle]:  # pragma: no cover
+    ) -> list[Candle]:  # pragma: no cover
         raise NotImplementedError
 
     @classmethod
@@ -55,7 +55,7 @@ class LiveDataHandler(DataHandler, metaclass=RateLimitedSingleton):
     @classmethod
     def request_ticker_lastest_candles(
         cls, ticker: Asset, nb_candles: int = 1
-    ) -> List[Candle]:
+    ) -> list[Candle]:
         try:
             response = cls.request_ticker_latest_data(ticker)
         except Exception as e:

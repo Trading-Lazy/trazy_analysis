@@ -17,13 +17,13 @@ class ArbitrageStrategy(MultiAssetsStrategy):
     def __init__(
         self,
         data: CandleData,
-        parameters: Dict[str, float],
+        parameters: dict[str, float],
         indicators: ReactiveIndicators,
     ):
         super().__init__(data, parameters, indicators)
         self.commission = 0.001
 
-    def current(self, candles: List[Candle]) -> None:  # pragma: no cover
+    def current(self, candles: list[Candle]) -> None:  # pragma: no cover
         margin_factor = self.parameters["margin_factor"]
         for i in range(0, len(candles)):
             candle1 = candles[i]

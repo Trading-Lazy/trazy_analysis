@@ -27,16 +27,16 @@ class Optimizer(ABC):
     def maximize(
         self,
         func: Callable,
-        space: Dict[str, Parameter],
+        space: dict[str, Parameter],
         nb_iter: int = 54,
         max_evals: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         raise NotImplementedError("Should implement maximize()")
 
     def minimize(
         self,
         func: Callable,
-        space: Dict[str, Parameter],
+        space: dict[str, Parameter],
         nb_iter: int,
         max_evals: int = 52,
     ):
@@ -50,10 +50,10 @@ class BlackBoxOptimizer(Optimizer):
     def maximize(
         self,
         func: Callable,
-        space: Dict[str, Parameter],
+        space: dict[str, Parameter],
         nb_iter: int = 54,
         max_evals: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         domain = []
         map_index_to_param_key = {}
         index = 0
@@ -74,7 +74,7 @@ class BlackBoxOptimizer(Optimizer):
 
         global bb_func
 
-        def bb_func(params: List[Any]):
+        def bb_func(params: list[Any]):
             kwargs = {}
             for index in range(0, len(params)):
                 param_key = map_index_to_param_key[index]
@@ -111,10 +111,10 @@ class BlackBoxOptimizer(Optimizer):
 #     def maximize(
 #         self,
 #         func: Callable,
-#         space: Dict[str, Parameter],
+#         space: dict[str, Parameter],
 #         nb_iter: int = 54,
 #         max_evals: int = 1,
-#     ) -> Dict[str, Any]:
+#     ) -> dict[str, Any]:
 #         skopt_space = []
 #         map_index_to_param_key = {}
 #         index = 0
@@ -154,7 +154,7 @@ class BlackBoxOptimizer(Optimizer):
 #
 #         global skopt_func
 #
-#         def skopt_func(params: List[Any]):
+#         def skopt_func(params: list[Any]):
 #             kwargs = {}
 #             for index in range(0, len(params)):
 #                 param_key = map_index_to_param_key[index]
@@ -186,10 +186,10 @@ class HyperOptimizer(Optimizer):
     def maximize(
         self,
         func: Callable,
-        space: Dict[str, Parameter],
+        space: dict[str, Parameter],
         nb_iter: int = 54,
         max_evals: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         hyperopt_space = {}
         for param_key, param_value in space.items():
             if (
@@ -220,7 +220,7 @@ class HyperOptimizer(Optimizer):
 
         global hyperopt_func
 
-        def hyperopt_func(params: Dict[str, Any]):
+        def hyperopt_func(params: dict[str, Any]):
             return -func(**params)
 
         trials = Trials()
@@ -248,10 +248,10 @@ class HyperOptimizer(Optimizer):
 #     def maximize(
 #         self,
 #         func: Callable,
-#         space: Dict[str, Parameter],
+#         space: dict[str, Parameter],
 #         nb_iter: int = 54,
 #         max_evals: int = 1,
-#     ) -> Dict[str, Any]:
+#     ) -> dict[str, Any]:
 #         for param_key, param_value in space.items():
 #             if (
 #                 not isinstance(param_value, Continuous)
@@ -302,10 +302,10 @@ class HyperOptimizer(Optimizer):
 #     def maximize(
 #         self,
 #         func: Callable,
-#         space: Dict[str, Parameter],
+#         space: dict[str, Parameter],
 #         nb_iter: int = 54,
 #         max_evals: int = 1,
-#     ) -> Dict[str, Any]:
+#     ) -> dict[str, Any]:
 #         pbounds = {}
 #         for param_key, param_value in space.items():
 #             if not isinstance(param_value, Continuous) and not isinstance(
@@ -349,10 +349,10 @@ class HyperOptimizer(Optimizer):
 #     def maximize(
 #         self,
 #         func: Callable,
-#         space: Dict[str, Parameter],
+#         space: dict[str, Parameter],
 #         nb_iter: int = 54,
 #         max_evals: int = 1,
-#     ) -> Dict[str, Any]:
+#     ) -> dict[str, Any]:
 #         sherpaopt_space = []
 #         for param_key, param_value in space.items():
 #             if (
@@ -410,10 +410,10 @@ class GPyOptimizer(Optimizer):
     def maximize(
         self,
         func: Callable,
-        space: Dict[str, Parameter],
+        space: dict[str, Parameter],
         nb_iter: int = 54,
         max_evals: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         gpyopt_space = []
         for param_key, param_value in space.items():
             if (

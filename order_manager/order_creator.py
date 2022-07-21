@@ -46,9 +46,7 @@ class OrderCreator:
         self.with_trailing_bracket = with_trailing_bracket
 
     def find_best_limit(self, signal: Signal, action: Action) -> float:
-        current_price = self.broker_manager.get_broker(
-            exchange=signal.asset.exchange
-        ).current_price(signal.asset)
+        current_price = self.broker_manager.get_broker(exchange=signal.asset.exchange).current_price(signal.asset)
         if action == Action.BUY:
             best_limit = current_price - self.limit_order_pct * current_price
         else:
@@ -58,9 +56,7 @@ class OrderCreator:
         return best_limit
 
     def find_best_stop(self, signal: Signal, action: Action) -> float:
-        current_price = self.broker_manager.get_broker(
-            exchange=signal.asset.exchange
-        ).current_price(signal.asset)
+        current_price = self.broker_manager.get_broker(exchange=signal.asset.exchange).current_price(signal.asset)
         if action == Action.BUY:
             best_stop_or_target = current_price + self.stop_order_pct * current_price
         else:
@@ -74,9 +70,7 @@ class OrderCreator:
         signal: Signal,
         action: Action,
     ) -> float:
-        current_price = self.broker_manager.get_broker(
-            exchange=signal.asset.exchange
-        ).current_price(signal.asset)
+        current_price = self.broker_manager.get_broker(exchange=signal.asset.exchange).current_price(signal.asset)
         if action == Action.BUY:
             best_stop_or_target = current_price - self.target_order_pct * current_price
         else:
@@ -105,14 +99,15 @@ class OrderCreator:
                 stop_pct = None
 
                 order_type = self.find_best_order_type(signal)
-                if order_type == OrderType.LIMIT:
-                    limit = self.find_best_limit(signal, signal.action)
-                elif order_type == OrderType.STOP:
-                    stop = self.find_best_stop(signal, signal.action)
-                elif order_type == OrderType.TARGET:
-                    target = self.find_best_target(signal, signal.action)
-                elif order_type == OrderType.TRAILING_STOP:
-                    stop_pct = self.find_best_trailing_stop(signal, signal.action)
+                match order_type:
+                    case OrderType.LIMIT:
+                        limit = self.find_best_limit(signal, signal.action)
+                    case OrderType.STOP:
+                        stop = self.find_best_stop(signal, signal.action)
+                    case OrderType.TARGET:
+                        target = self.find_best_target(signal, signal.action)
+                    case OrderType.TRAILING_STOP:
+                        stop_pct = self.find_best_trailing_stop(signal, signal.action)
 
                 return Order(
                     asset=signal.asset,

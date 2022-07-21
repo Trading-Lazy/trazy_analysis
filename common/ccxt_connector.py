@@ -33,9 +33,9 @@ class CcxtConnector:
 
     def __init__(
         self,
-        exchanges_api_keys: Dict[str, Dict[str, Any]],
-        parsers: Optional[Dict[str, Type[Parser]]] = None,
-        fee_models: Optional[Union[FeeModel, Dict[Asset, FeeModel]]] = None,
+        exchanges_api_keys: dict[str, dict[str, Any]],
+        parsers: Optional[dict[str, Type[Parser]]] = None,
+        fee_models: Optional[FeeModel | dict[Asset, FeeModel]] = None,
     ):
         self.exchanges_api_keys = exchanges_api_keys
         self.exchanges = list(exchanges_api_keys.keys())
@@ -95,7 +95,7 @@ class CcxtConnector:
     def format_symbol(self, exchange: str, symbol: str) -> str:
         return CcxtConnector.FORMAT_FUNC[exchange](symbol)
 
-    def fetch_fees(self, exchange: str) -> Optional[Dict[Asset, FeeModel]]:
+    def fetch_fees(self, exchange: str) -> Optional[dict[Asset, FeeModel]]:
         # Get fees
         exchange_to_lower = exchange.lower()
         exchange_instance = self.get_exchange_instance(exchange_to_lower)

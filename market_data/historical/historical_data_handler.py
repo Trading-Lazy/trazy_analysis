@@ -52,7 +52,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingleton):
     @abc.abstractmethod
     def TICKER_DATA_RESPONSE_USED_COLUMNS_DTYPE(
         cls,
-    ) -> Dict[str, type]:  # pragma: no cover
+    ) -> dict[str, type]:  # pragma: no cover
         pass
 
     @property
@@ -86,7 +86,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingleton):
         ticker: Asset,
         period: np.array,  # [date]
         none_response_periods: Set[Tuple[date, date]] = set(),
-        error_response_periods: Dict[Tuple[date, date], str] = {},
+        error_response_periods: dict[Tuple[date, date], str] = {},
     ) -> CandleDataFrame:
         try:
             response = cls.request_ticker_data(ticker, period)
@@ -128,13 +128,13 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingleton):
 
     @classmethod
     def request_ticker_data_from_periods(
-        cls, ticker: Asset, periods: List[Tuple[datetime, datetime]]
-    ) -> Tuple[CandleDataFrame, Set[Tuple[date, date]], Dict[Tuple[date, date], str]]:
+        cls, ticker: Asset, periods: list[Tuple[datetime, datetime]]
+    ) -> Tuple[CandleDataFrame, Set[Tuple[date, date]], dict[Tuple[date, date], str]]:
         candle_dataframes: np.array = np.empty(
             shape=periods.shape[0], dtype=CandleDataFrame
         )  # np.array[CandleDataFrame]
         none_response_periods: Set[Tuple[date, date]] = set()
-        error_response_periods: Dict[Tuple[date, date], str] = {}
+        error_response_periods: dict[Tuple[date, date], str] = {}
         index = 0
         for period in periods:
             candle_dataframe = cls.request_ticker_data_for_period(
@@ -179,7 +179,7 @@ class HistoricalDataHandler(DataHandler, metaclass=RateLimitedSingleton):
         ticker: Asset,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-    ) -> Tuple[CandleDataFrame, Set[Tuple[date, date]], Dict[Tuple[date, date], str]]:
+    ) -> Tuple[CandleDataFrame, Set[Tuple[date, date]], dict[Tuple[date, date], str]]:
         periods = get_periods(cls.MAX_DOWNLOAD_FRAME, start, end)
         (
             candle_dataframe,

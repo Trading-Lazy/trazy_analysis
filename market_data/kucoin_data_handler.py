@@ -46,7 +46,7 @@ class KucoinDataHandler(DataHandler):
         return len(raw_candles) == 0
 
     @classmethod
-    def parse_get_tickers_response(cls, tickers_response: str) -> List[str]:
+    def parse_get_tickers_response(cls, tickers_response: str) -> list[str]:
         symbols_dict = json.loads(tickers_response)
         symbols_info = symbols_dict["data"]
         symbols_with_hyphen = [symbol_info["symbol"] for symbol_info in symbols_info]

@@ -70,20 +70,20 @@ class FeeModel:
 
 
 class FeeModelManager:
-    def __init__(self, fee_models: Union[FeeModel, Dict[Asset, FeeModel]]):
+    def __init__(self, fee_models: FeeModel | dict[Asset, FeeModel]):
         if issubclass(type(fee_models), FeeModel):
             self.default_fee_model = fee_models
-            self.fee_models: Dict[Asset, FeeModel] = {}
+            self.fee_models: dict[Asset, FeeModel] = {}
         elif isinstance(fee_models, dict):
             self.default_fee_model = None
-            self.fee_models: Dict[Asset, FeeModel] = fee_models
+            self.fee_models: dict[Asset, FeeModel] = fee_models
         else:
             self.default_fee_model = self.fee_models = None
 
     def update(self, asset: Asset, fee_model: FeeModel):
         self.fee_models[asset] = fee_model
 
-    def multi_update(self, fee_models: Dict[Asset, FeeModel]):
+    def multi_update(self, fee_models: dict[Asset, FeeModel]):
         self.fee_models.update(fee_models)
 
     def __getitem__(self, asset: Asset) -> FeeModel:

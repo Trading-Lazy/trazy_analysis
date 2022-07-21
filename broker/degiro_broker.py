@@ -44,7 +44,7 @@ class DegiroBroker(Broker):
         clock: Clock,
         events: deque,
         base_currency: str = "EUR",
-        supported_currencies: List[str] = ["EUR", "USD"],
+        supported_currencies: list[str] = ["EUR", "USD"],
     ):
         exchange = "DEGIRO"
         super().__init__(
@@ -523,16 +523,17 @@ class DegiroBroker(Broker):
         order : `Order`
             The Order instance to execute.
         """
-        if order.order_type == OrderType.LIMIT:
-            self.execute_limit_order(order)
-        elif order.order_type == OrderType.STOP:
-            self.execute_stop_order(order)
-        elif order.order_type == OrderType.TARGET:
-            self.execute_target_order(order)
-        elif order.order_type == OrderType.TRAILING_STOP:
-            self.execute_trailing_stop_order(order)
-        elif order.order_type == OrderType.MARKET:
-            self.execute_market_order(order)
+        match order.order_type:
+            case OrderType.LIMIT:
+                self.execute_limit_order(order)
+            case OrderType.STOP:
+                self.execute_stop_order(order)
+            case OrderType.TARGET:
+                self.execute_target_order(order)
+            case OrderType.TRAILING_STOP:
+                self.execute_trailing_stop_order(order)
+            case OrderType.MARKET:
+                self.execute_market_order(order)
 
     def synchronize(self) -> None:
         self.update_cash_balances()

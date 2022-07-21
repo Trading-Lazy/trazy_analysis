@@ -141,7 +141,7 @@ indicators = ReactiveIndicators(memoize=False, mode=IndicatorMode.LIVE)
         ),
     ],
 )
-def test_imbalance(three_candles: List[Candle], expected: Tuple[bool, float]):
+def test_imbalance(three_candles: list[Candle], expected: Tuple[bool, float]):
     source = indicators.Indicator(size=1)
     imbalance = indicators.Imbalance(source=source)
     for i in range(0, len(three_candles)):
@@ -213,7 +213,7 @@ def test_candle_bos():
     ],
 )
 def test_engulfing_candle(
-    two_candles: List[Candle], direction: CandleDirection, expected: bool
+    two_candles: list[Candle], direction: CandleDirection, expected: bool
 ):
     source = indicators.Indicator(size=1)
     engulfing_candle = indicators.EngulfingCandle(direction=direction, source=source)

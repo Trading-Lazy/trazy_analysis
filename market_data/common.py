@@ -72,7 +72,7 @@ def get_periods(
     download_frame: timedelta,
     start: datetime,
     end: datetime = datetime.now(pytz.UTC),
-) -> List[Tuple[datetime, datetime]]:
+) -> list[Tuple[datetime, datetime]]:
     if download_frame >= timedelta(days=1):
         download_frame = timedelta(days=download_frame.days)
         return get_daily_periods(download_frame, start, end)

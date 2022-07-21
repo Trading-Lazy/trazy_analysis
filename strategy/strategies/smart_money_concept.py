@@ -44,7 +44,7 @@ class SmartMoneyConcept(Strategy):
     def __init__(
         self,
         data: CandleIndicator,
-        parameters: Dict[str, float],
+        parameters: dict[str, float],
         indicators: ReactiveIndicators,
     ):
         super().__init__(data, parameters, indicators)

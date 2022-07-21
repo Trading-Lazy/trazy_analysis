@@ -19,7 +19,7 @@ class StatisticsManager:
 
     def set_statistics(
         self,
-        statistics_dict: Dict[Any, Any],
+        statistics_dict: dict[Any, Any],
         value: Any,
         exchange: str = None,
         symbol: str = None,
@@ -97,11 +97,11 @@ class StatisticsManager:
 
     def get_statistics(
         self,
-        statistics_dict: Dict[Any, Any],
+        statistics_dict: dict[Any, Any],
         exchange: str = None,
         symbol: str = None,
         strategy_name: str = None,
-    ) -> Dict[Any, Any]:
+    ) -> dict[Any, Any]:
         if self.isolation == BrokerIsolation.EXCHANGE:
             return statistics_dict.get(exchange, None)
         elif self.isolation == BrokerIsolation.ASSET:

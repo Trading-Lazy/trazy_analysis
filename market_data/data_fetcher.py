@@ -29,8 +29,8 @@ from trazy_analysis.models.candle import Candle
 class ExternalStorageFetcher:
     def __init__(
         self,
-        db_storage: DbStorage,
-        file_storage: FileStorage,
+        db_storage: DbStorage = None,
+        file_storage: FileStorage = None,
         market_cal: MarketCalendar = None,
     ):
         self.db_storage = db_storage
@@ -43,7 +43,7 @@ class ExternalStorageFetcher:
         time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-    ) -> List[Candle]:
+    ) -> list[Candle]:
         candles = self.db_storage.get_candles_in_range(
             asset=asset, time_unit=time_unit, start=start, end=end
         )
@@ -73,7 +73,7 @@ class ExternalStorageFetcher:
             return CandleDataFrame(asset=asset)
         start_date = start.date()
         end_date = end.date()
-        contents: List[CandleDataFrame] = []
+        contents: list[CandleDataFrame] = []
         for i in range(0, (end_date - start_date).days + 1):
             date = start_date + timedelta(days=i)
             date_str = date.strftime(DATE_DIR_FORMAT)
@@ -133,11 +133,11 @@ class ExternalStorageFetcher:
 class AssetDataFetcher:
     @staticmethod
     def fetch(
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
+        assets: dict[Asset, timedelta | list[timedelta]],
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-        exchanges_api_keys: Dict[str, str] = None,
-    ) -> Tuple["Feed", Dict[Asset, FeeModel]]:
+        exchanges_api_keys: dict[str, str] = None,
+    ) -> Tuple["Feed", dict[Asset, FeeModel]]:
         assets = normalize_assets(assets)
         from trazy_analysis.feed.feed import HistoricalFeed
         exchanges_api_keys = (

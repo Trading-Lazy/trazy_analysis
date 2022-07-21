@@ -18,7 +18,7 @@ class KucoinLiveDataHandler(KucoinDataHandler, LiveDataHandler):
     )
 
     @classmethod
-    def parse_ticker_latest_data(cls, asset: Asset, data: str) -> List[Candle]:
+    def parse_ticker_latest_data(cls, asset: Asset, data: str) -> list[Candle]:
         candle_df = cls.ticker_data_to_dataframe(asset, data)
         return candle_df.to_candles()
 

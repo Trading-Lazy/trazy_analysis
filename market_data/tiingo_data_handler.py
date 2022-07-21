@@ -45,7 +45,7 @@ class TiingoDataHandler(DataHandler):
         return not lists_equal(columns, cls.TICKER_DATA_RESPONSE_USED_COLUMNS)
 
     @classmethod
-    def parse_get_tickers_response(cls, tickers_response: str) -> List[str]:
+    def parse_get_tickers_response(cls, tickers_response: str) -> list[str]:
         raw_tickers = json.loads(tickers_response)
         tickers = [raw_ticker["ticker"] for raw_ticker in raw_tickers]
         return tickers

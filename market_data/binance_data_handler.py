@@ -43,7 +43,7 @@ class BinanceDataHandler(DataHandler):
         return data == "[]"
 
     @classmethod
-    def parse_get_tickers_response(cls, tickers_response: str) -> List[str]:
+    def parse_get_tickers_response(cls, tickers_response: str) -> list[str]:
         binance_exchange_info = json.loads(tickers_response)
         symbols_dicts = binance_exchange_info["symbols"]
         symbols = [symbol_dict["symbol"] for symbol_dict in symbols_dicts]

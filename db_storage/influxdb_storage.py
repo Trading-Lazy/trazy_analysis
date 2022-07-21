@@ -60,11 +60,11 @@ class InfluxDbStorage(DbStorage):
             database=database_name,
         )
 
-    def get_table_names(self) -> List[str]:
+    def get_table_names(self) -> list[str]:
         measurements = self.client.get_list_measurements()
         return [measurement.get("name") for measurement in measurements]
 
-    def get_db_names(self) -> List[str]:
+    def get_db_names(self) -> list[str]:
         dbs = self.client.get_list_database()
         return [db.get("name") for db in dbs]
 

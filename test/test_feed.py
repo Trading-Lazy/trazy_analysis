@@ -14,7 +14,6 @@ from trazy_analysis.feed.feed import (
     LiveFeed,
     PandasFeed,
 )
-from trazy_analysis.file_storage.meganz_file_storage import MegaNzFileStorage
 from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
     TiingoHistoricalDataHandler,
 )
@@ -227,8 +226,6 @@ CANDLES = np.array(
     dtype=Candle,
 )
 
-FILE_STORAGE = MegaNzFileStorage()
-
 
 def test_feed():
     events = deque()
@@ -440,122 +437,3 @@ def test_csv_feed():
 
     assert events_list[7].assets == {AAPL_ASSET, GOOGL_ASSET}
     assert isinstance(events_list[7], MarketDataEndEvent)
-
-
-@patch(
-    "trazy_analysis.file_storage.meganz_file_storage.MegaNzFileStorage.get_file_content"
-)
-def test_external_storage_feed(get_file_content_mocked):
-    DB_STORAGE.clean_all_candles()
-    for candle in CANDLES:
-        DB_STORAGE.add_candle(candle)
-
-    get_file_content_mocked.side_effect = [
-        (
-            "timestamp,open,high,low,close,volume\n"
-            "2020-05-08 14:11:00+00:00,94.15,95.15,93.74,93.84,32\n"
-            "2020-05-08 14:12:00+00:00,94.28,94.96,93.96,94.78,23\n"
-            "2020-05-08 14:13:00+00:00,94.92,95.32,94.09,94.09,11\n"
-            "2020-05-08 14:14:00+00:00,94.25,94.59,94.14,94.59,26\n"
-            "2020-05-08 14:15:00+00:00,94.22,94.26,93.95,93.98,11\n"
-        )
-    ]
-    events = deque()
-    time_unit = timedelta(minutes=1)
-    external_storage_feed = ExternalStorageFeed(
-        assets={IVV_ASSET: time_unit},
-        start=datetime.strptime("2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"),
-        end=datetime.strptime("2020-05-08 14:17:00+0000", "%Y-%m-%d %H:%M:%S%z"),
-        events=events,
-        db_storage=DB_STORAGE,
-        file_storage=FILE_STORAGE,
-    )
-    file_content_valid_candles = np.array(
-        [
-            Candle(
-                asset=IVV_ASSET,
-                open=94.28,
-                high=94.96,
-                low=93.96,
-                close=94.78,
-                volume=23,
-                timestamp=datetime.strptime(
-                    "2020-05-08 14:12:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=IVV_ASSET,
-                open=94.92,
-                high=95.32,
-                low=94.09,
-                close=94.09,
-                volume=11,
-                timestamp=datetime.strptime(
-                    "2020-05-08 14:13:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=IVV_ASSET,
-                open=94.25,
-                high=94.59,
-                low=94.14,
-                close=94.59,
-                volume=26,
-                timestamp=datetime.strptime(
-                    "2020-05-08 14:14:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-            Candle(
-                asset=IVV_ASSET,
-                open=94.22,
-                high=94.26,
-                low=93.95,
-                close=93.98,
-                volume=11,
-                timestamp=datetime.strptime(
-                    "2020-05-08 14:15:00+0000", "%Y-%m-%d %H:%M:%S%z"
-                ),
-            ),
-        ],
-        dtype=Candle,
-    )
-    candles_valid_candles_count = 1
-    for i in range(
-        0, candles_valid_candles_count + len(file_content_valid_candles) + 2
-    ):
-        external_storage_feed.update_latest_data()
-
-    events_list = list(events)
-    assert len(events_list) == 7
-
-    assert isinstance(events_list[0], MarketDataEvent)
-    assert (
-        events_list[0].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[0]
-    )
-    assert isinstance(events_list[1], MarketDataEvent)
-    assert (
-        events_list[1].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[1]
-    )
-    assert isinstance(events_list[2], MarketDataEvent)
-    assert (
-        events_list[2].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[2]
-    )
-    assert isinstance(events_list[3], MarketDataEvent)
-    assert (
-        events_list[3].candles[IVV_ASSET][time_unit][0] == file_content_valid_candles[3]
-    )
-    assert isinstance(events_list[4], MarketDataEvent)
-    print(str(events_list[4].candles[IVV_ASSET][time_unit][0]))
-    assert events_list[4].candles[IVV_ASSET][time_unit][0] == Candle(
-        asset=IVV_ASSET,
-        open=93.98,
-        high=93.98,
-        low=93.98,
-        close=93.98,
-        volume=0,
-        timestamp=datetime.strptime("2020-05-08 14:16:00+0000", "%Y-%m-%d %H:%M:%S%z"),
-    )
-    assert isinstance(events_list[5], MarketDataEvent)
-    assert events_list[5].candles[IVV_ASSET][time_unit][0] == CANDLES[0]
-    assert isinstance(events_list[6], MarketDataEndEvent)
-    assert events_list[6].assets == {IVV_ASSET}

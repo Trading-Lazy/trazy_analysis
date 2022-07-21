@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -67,10 +67,10 @@ class MongoDbStorage(DbStorage):
             DOCUMENTS_COLLECTION_NAME
         ]
 
-    def get_table_names(self) -> List[str]:
+    def get_table_names(self) -> list[str]:
         return self.db.list_collection_names()
 
-    def get_db_names(self) -> List[str]:
+    def get_db_names(self) -> list[str]:
         return list(self.client.list_database_names())
 
     def get_collection(self, collection_name: str) -> pymongo.collection.Collection:
@@ -100,7 +100,7 @@ class MongoDbStorage(DbStorage):
     def save_state(
         self,
         state_key: str,
-        content: Dict[Any, Any],
+        content: dict[Any, Any],
         timestamp: datetime = datetime.now(pytz.UTC),
     ):
         state = {
@@ -111,8 +111,8 @@ class MongoDbStorage(DbStorage):
         self.add_document(doc=state, collection_name=MARKET_STATES_COLLECTION_NAME)
 
     def get_state(
-        self, state_key: str, limit: Union[datetime, None] = None
-    ) -> Union[Dict[Any, Any], None]:
+        self, state_key: str, limit: Optional[datetime] = None
+    ) -> Optional[dict[Any, Any]]:
         query = {"state_key": state_key}
         if limit is not None:
             query["timestamp"] = {"$gte": limit}
@@ -128,7 +128,7 @@ class MongoDbStorage(DbStorage):
         collection = self.get_collection(collection_name)
         return collection.find_one(query)
 
-    def find(self, query: dict, collection_name: str) -> List[dict]:
+    def find(self, query: dict, collection_name: str) -> list[dict]:
         collection = self.get_collection(collection_name)
         return collection.find(query)
 

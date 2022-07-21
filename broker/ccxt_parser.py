@@ -14,7 +14,7 @@ class Parser(ABC):
         raise NotImplementedError("Should implement parse_price_info()")
 
     @classmethod
-    def parse_balances_info(cls, balance_info: Any) -> Dict[str, float]:
+    def parse_balances_info(cls, balance_info: Any) -> dict[str, float]:
         raise NotImplementedError("Should implement parse_balances_info()")
 
     @classmethod
@@ -42,7 +42,7 @@ class DummyParser(Parser):
         return symbol, price
 
     @classmethod
-    def parse_balances_info(cls, balance_info: Any) -> Dict[str, float]:
+    def parse_balances_info(cls, balance_info: Any) -> dict[str, float]:
         symbol = "symbol"
         balance = 1
         return {symbol: balance}
@@ -103,7 +103,7 @@ class BinanceParser(Parser):
         return CcxtBinanceParser.BINANCE_SYMBOL_TO_TRAZY_SYMBOL[symbol], price
 
     @classmethod
-    def parse_balances_info(cls, balance_info: Any) -> Dict[str, float]:
+    def parse_balances_info(cls, balance_info: Any) -> dict[str, float]:
         balances = balance_info["balances"]
         return {
             balance["asset"]: float(balance["free"])
@@ -165,7 +165,7 @@ class KucoinParser(Parser):
         return KucoinParser.KUCOIN_SYMBOL_TO_TRAZY_SYMBOL[symbol], price
 
     @classmethod
-    def parse_balances_info(cls, balance_info: Any) -> Dict[str, float]:
+    def parse_balances_info(cls, balance_info: Any) -> dict[str, float]:
         trade_accounts = [
             account for account in balance_info if account["type"] == "trade"
         ]

@@ -47,10 +47,10 @@ from trazy_analysis.statistics.statistics import Statistics
 class BacktestConfig:
     def __init__(
         self,
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
+        assets: dict[Asset, timedelta | list[timedelta]],
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-        fee_models: Optional[Union[FeeModel, Dict[Asset, FeeModel]]] = None,
+        fee_models: Optional[FeeModel | dict[Asset, FeeModel]] = None,
         initial_funds: float = 10000.0,
         market_cal: MarketCalendar = CryptoExchangeCalendar(),
         integer_size: bool = False,
@@ -63,14 +63,14 @@ class BacktestConfig:
         with_bracket=False,
         with_trailing_cover=False,
         with_trailing_bracket=False,
-        csv_filenames: Optional[Dict[Asset, Dict[timedelta, str]]] = None,
+        csv_filenames: Optional[dict[Asset, dict[timedelta, str]]] = None,
         csv_file_sep: str = None,
-        exchanges_api_keys: Dict[str, str] = None,
+        exchanges_api_keys: dict[str, str] = None,
         candle_dataframes: np.array = None,
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,
         store_medium: Optional[
-            Union[Dict[Asset, Dict[timedelta, str]], DbStorage, FileStorage]
+            dict[Asset, dict[timedelta, str]] | DbStorage | FileStorage
         ] = None,
         indicator_mode: IndicatorMode = IndicatorMode.LIVE,
         close_at_end_of_day=True,
@@ -174,10 +174,10 @@ class BacktestConfig:
 class Backtest:
     def __init__(
         self,
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
+        assets: dict[Asset, timedelta | list[timedelta]],
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-        fee_models: Optional[Union[FeeModel, Dict[Asset, FeeModel]]] = None,
+        fee_models: Optional[FeeModel | dict[Asset, FeeModel]] = None,
         initial_funds: float = 10000.0,
         market_cal: MarketCalendar = CryptoExchangeCalendar(),
         integer_size: bool = False,
@@ -190,14 +190,14 @@ class Backtest:
         with_bracket=False,
         with_trailing_cover=False,
         with_trailing_bracket=False,
-        csv_filenames: Dict[Asset, str] = None,
+        csv_filenames: dict[Asset, str] = None,
         csv_file_sep: str = None,
-        exchanges_api_keys: Dict[str, str] = {},
+        exchanges_api_keys: dict[str, str] = {},
         candle_dataframes: np.array = None,
         db_storage: DbStorage = None,
         file_storage: FileStorage = None,
         store_medium: Optional[
-            Union[Dict[Asset, Dict[timedelta, str]], DbStorage, FileStorage]
+            dict[Asset, dict[timedelta, str]] | DbStorage | FileStorage
         ] = None,
         indicator_mode: IndicatorMode = IndicatorMode.LIVE,
         close_at_end_of_day=True,
@@ -248,7 +248,7 @@ class Backtest:
 
     def run_strategies(
         self,
-        strategies_parameters: Dict[type, Dict[str, Any]],
+        strategies_parameters: dict[type, dict[str, Any]],
     ) -> pd.DataFrame:
         self.events = deque()
         self.backtest_config.feed.events = self.events
@@ -319,6 +319,6 @@ class Backtest:
         self.event_loop.plot_indicators_instances_graph()
 
     def run_strategy(
-        self, strategy: type, strategy_parameters: Dict[str, Any]
+        self, strategy: type, strategy_parameters: dict[str, Any]
     ) -> pd.DataFrame:
         self.run_strategies({strategy: strategy_parameters})

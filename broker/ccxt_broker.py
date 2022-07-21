@@ -46,7 +46,7 @@ class CcxtBroker:
         events: deque,
         ccxt_connector: CcxtConnector,
         base_currency: str = "EUR",
-        supported_currencies: List[str] = ["EUR", "USDT"],
+        supported_currencies: list[str] = ["EUR", "USDT"],
         execute_at_end_of_day=True,
     ):
         self.supported_currencies = supported_currencies
@@ -205,7 +205,7 @@ class CcxtBroker:
                 self.portfolio.update_market_value_of_symbol(asset, price, now)
             self.price_last_update = self.clock.current_time()
 
-    def update_balances(self) -> Dict[str, Dict[str, float]]:
+    def update_balances(self) -> dict[str, dict[str, float]]:
         open_balances = {}
         total_cash = 0
         for exchange in self.ccxt_connector.exchanges:
@@ -239,7 +239,7 @@ class CcxtBroker:
         self.portfolio.cash = total_cash
         return open_balances
 
-    def update_positions(self, open_balances: Dict[str, float]) -> None:
+    def update_positions(self, open_balances: dict[str, float]) -> None:
         # open positions
         portfolio = self.portfolio
         positions = portfolio.pos_handler.positions
@@ -596,16 +596,17 @@ class CcxtBroker:
         order : `Order`
             The Order instance to execute.
         """
-        if order.order_type == OrderType.LIMIT:
-            self.execute_limit_order(order)
-        elif order.order_type == OrderType.STOP:
-            self.execute_stop_order(order)
-        elif order.order_type == OrderType.TARGET:
-            self.execute_target_order(order)
-        elif order.order_type == OrderType.TRAILING_STOP:
-            self.execute_trailing_stop_order(order)
-        elif order.order_type == OrderType.MARKET:
-            self.execute_market_order(order)
+        match order.order_type:
+            case OrderType.LIMIT:
+                self.execute_limit_order(order)
+            case OrderType.STOP:
+                self.execute_stop_order(order)
+            case OrderType.TARGET:
+                self.execute_target_order(order)
+            case OrderType.TRAILING_STOP:
+                self.execute_trailing_stop_order(order)
+            case OrderType.MARKET:
+                self.execute_market_order(order)
 
     def current_price(self, asset: Asset):
         return self.last_prices[asset]

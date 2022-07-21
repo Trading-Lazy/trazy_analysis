@@ -34,7 +34,7 @@ from trazy_analysis.statistics.statistics import Statistics
 class LiveConfig:
     def __init__(
         self,
-        assets: List[Asset],
+        assets: list[Asset],
         market_cal: MarketCalendar = CryptoExchangeCalendar(),
         integer_size: bool = False,
         fixed_order_type: OrderType = OrderType.MARKET,
@@ -46,7 +46,7 @@ class LiveConfig:
         with_bracket=False,
         with_trailing_cover=False,
         with_trailing_bracket=False,
-        exchanges_api_keys: Dict[str, str] = {},
+        exchanges_api_keys: dict[str, str] = {},
         preload: bool = True,
         close_at_end_of_day=True,
         isolation: BrokerIsolation = BrokerIsolation.EXCHANGE,
@@ -122,7 +122,7 @@ class LiveConfig:
 class Live:
     def __init__(
         self,
-        assets: List[Asset],
+        assets: list[Asset],
         market_cal: MarketCalendar = CryptoExchangeCalendar(),
         integer_size: bool = False,
         fixed_order_type: OrderType = OrderType.MARKET,
@@ -134,7 +134,7 @@ class Live:
         with_bracket=False,
         with_trailing_cover=False,
         with_trailing_bracket=False,
-        exchanges_api_keys: Dict[str, str] = {},
+        exchanges_api_keys: dict[str, str] = {},
         preload: bool = True,
         close_at_end_of_day=True,
         isolation: BrokerIsolation = BrokerIsolation.EXCHANGE,
@@ -182,7 +182,7 @@ class Live:
 
     def run_strategies(
         self,
-        strategies_parameters: Dict[type, Dict[str, Any]],
+        strategies_parameters: dict[type, dict[str, Any]],
     ) -> pd.DataFrame:
         self.events = deque()
         self.live_config.feed.events = self.events
@@ -260,5 +260,5 @@ class Live:
         self.event_loop.loop()
         return self.event_loop.statistics_df
 
-    def run_strategy(self, strategy: type, strategy_parameters: Dict[str, Any]) -> None:
+    def run_strategy(self, strategy: type, strategy_parameters: dict[str, Any]) -> None:
         self.run_strategies({strategy: strategy_parameters})

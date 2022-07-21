@@ -12,18 +12,19 @@ def aggregate_returns(returns, convert_to):
     def cumulate_returns(x):
         return np.exp(np.log(1 + x).cumsum())[-1] - 1
 
-    if convert_to == "weekly":
-        return returns.groupby(
-            [lambda x: x.year, lambda x: x.month, lambda x: x.isocalendar()[1]]
-        ).apply(cumulate_returns)
-    elif convert_to == "monthly":
-        return returns.groupby([lambda x: x.year, lambda x: x.month]).apply(
-            cumulate_returns
-        )
-    elif convert_to == "yearly":
-        return returns.groupby([lambda x: x.year]).apply(cumulate_returns)
-    else:
-        ValueError("convert_to must be weekly, monthly or yearly")
+    match convert_to:
+        case "weekly":
+            return returns.groupby(
+                [lambda x: x.year, lambda x: x.month, lambda x: x.isocalendar()[1]]
+            ).apply(cumulate_returns)
+        case "monthly":
+            return returns.groupby([lambda x: x.year, lambda x: x.month]).apply(
+                cumulate_returns
+            )
+        case "yearly":
+            return returns.groupby([lambda x: x.year]).apply(cumulate_returns)
+        case _:
+            ValueError("convert_to must be weekly, monthly or yearly")
 
 
 def create_cagr(equity, periods=252):

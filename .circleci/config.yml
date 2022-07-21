@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/python:3.8.9
+      - image: cimg/python:3.10.5
     steps:
       - checkout
       - restore_cache:
@@ -21,10 +21,10 @@ jobs:
             make
             sudo make install
             cd ..
-            python3.8 -m venv venv
+            python3.10 -m venv venv
             . venv/bin/activate
-            python3.8 -m pip install --upgrade pip
-            python3.8 -m pip install -r requirements.txt
+            python3.10 -m pip install --upgrade pip
+            python3.10 -m pip install -r requirements.txt
       - save_cache:
           key: deps-{{ .Branch }}-{{ checksum "trazy_analysis/requirements.txt" }}
           paths:
@@ -38,11 +38,15 @@ jobs:
             cd ..
             mkdir -p test/data
             cp -R trazy_analysis/test/data/* test/data/
+
             rm -rf trazy_analysis/test/test_influxdb.py
+            rm -rf trazy_analysis/test/test_backtest.py
+            rm -rf trazy_analysis/test/test_rabbit_mq.py
+            
             mkdir trazy-analysis-test-reports
-            python3 -m pytest -vvs
+            python3 -m pytest -vvs &> trazy-analysis-test-reports/tests.log
       - store_artifacts:
-          path: /home/circleci/project/trazy_analysis/trazy-analysis-test-reports
+          path: /home/circleci/project/trazy-analysis-test-reports
 
 workflows:
   version: 2.1

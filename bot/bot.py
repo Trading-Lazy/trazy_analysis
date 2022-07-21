@@ -28,7 +28,7 @@ EXCHANGE = "IEX"
 
 def get_strategies_classes(
     strategies_module_path, strategies_module_fullname
-) -> List[type]:
+) -> list[type]:
     strategies_module_name = str(Path(strategies_module_path).name)
     strategies_dir = strategies_module_path
     strategies_classes: Set[type] = set()

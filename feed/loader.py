@@ -33,8 +33,8 @@ class Loader:
 class HistoricalDataLoader:
     def __init__(
         self,
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
-        historical_data_handlers: Dict[str, HistoricalDataHandler],
+        assets: dict[Asset, timedelta | list[timedelta]],
+        historical_data_handlers: dict[str, HistoricalDataHandler],
         start: datetime,
         end: datetime,
     ):
@@ -43,7 +43,7 @@ class HistoricalDataLoader:
         self.start = start
         self.end = end
         self.candles = {}
-        self.candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = {}
+        self.candle_dataframes: dict[Asset, dict[timedelta, CandleDataFrame]] = {}
 
     def load(self):
         # group assets by time_unit
@@ -76,7 +76,7 @@ class CsvLoader(Loader):
         asset: Optional[Asset] = None,
         time_unit: timedelta = timedelta(minutes=1),
         csv_filename: Optional[str] = None,
-        csv_filenames: Optional[Dict[Asset, Dict[timedelta, str]]] = None,
+        csv_filenames: Optional[dict[Asset, dict[timedelta, str]]] = None,
         sep: str = ",",
     ):
         if asset is not None:
@@ -90,7 +90,7 @@ class CsvLoader(Loader):
         self.csv_filenames = csv_filenames
         self.sep = sep
         self.candles = {}
-        self.candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = {}
+        self.candle_dataframes: dict[Asset, dict[timedelta, CandleDataFrame]] = {}
 
     def load(self):
         dtype = {
@@ -123,7 +123,7 @@ class CsvLoader(Loader):
 class ExternalStorageLoader:
     def __init__(
         self,
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
+        assets: dict[Asset, timedelta | list[timedelta]],
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
         db_storage: DbStorage = None,
@@ -142,7 +142,7 @@ class ExternalStorageLoader:
             market_cal=self.market_cal,
         )
         self.candles = {}
-        self.candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = {}
+        self.candle_dataframes: dict[Asset, dict[timedelta, CandleDataFrame]] = {}
 
     def load(self):
         for asset in self.assets:

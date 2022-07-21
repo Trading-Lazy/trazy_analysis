@@ -531,7 +531,7 @@ def test_get_candles_in_range():
     MONGODB_STORAGE.add_candle(CANDLE1)
     MONGODB_STORAGE.add_candle(CANDLE2)
     MONGODB_STORAGE.add_candle(CANDLE3)
-    candles: List[Candle] = MONGODB_STORAGE.get_candles_in_range(
+    candles: list[Candle] = MONGODB_STORAGE.get_candles_in_range(
         CANDLE1.asset,
         timedelta(minutes=1),
         CANDLE1.timestamp - timedelta(minutes=1),

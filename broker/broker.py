@@ -22,7 +22,7 @@ from trazy_analysis.models.multiple_order import (
     OcoOrder,
     SequentialOrder,
 )
-from trazy_analysis.models.order import Order
+from trazy_analysis.models.order import Order, OrderBase
 from trazy_analysis.portfolio.portfolio import Portfolio
 
 LOG = trazy_analysis.logger.get_root_logger(
@@ -52,8 +52,8 @@ class Broker:
         clock: Clock,
         events: deque,
         base_currency: str = "EUR",
-        supported_currencies: List[str] = ["EUR", "USD"],
-        fee_models: Union[FeeModel, Dict[Asset, FeeModel]] = FixedFeeModel(),
+        supported_currencies: list[str] = ["EUR", "USD"],
+        fee_models: FeeModel | dict[Asset, FeeModel] = FixedFeeModel(),
         parser=DummyParser,
         execute_at_end_of_day=True,
         exchange="universal",
@@ -148,7 +148,7 @@ class Broker:
     @abstractmethod
     def get_cash_balance(
         self, currency: str = None
-    ) -> Union[dict, float]:  # pragma: no cover
+    ) -> dict | float:  # pragma: no cover
         raise NotImplementedError("Should implement get_account_cash_balance()")
 
     def _create_initial_portfolio(self) -> str:
@@ -301,11 +301,11 @@ class Broker:
                 return
             seen_assets.add(order.asset)
 
-    def put_all_orders_in_queue(self, order: Order):
+    def put_all_orders_in_queue(self, order: OrderBase):
         seen_assets = set()
         self.put_all_orders_in_queue_recursive(order, seen_assets)
 
-    def submit_order(self, order: Order) -> None:
+    def submit_order(self, order: OrderBase) -> None:
         """
         Submit an order instance, for multiple orders, break them down into simple orders
         Parameters

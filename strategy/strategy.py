@@ -27,18 +27,18 @@ class StrategyBase:
 
     @classmethod
     @abc.abstractmethod
-    def DEFAULT_PARAMETERS(cls) -> Dict[str, Any]:  # pragma: no cover
+    def DEFAULT_PARAMETERS(cls) -> dict[str, Any]:  # pragma: no cover
         return {}
 
     @classmethod
     @abc.abstractmethod
-    def DEFAULT_PARAMETERS_SPACE(cls) -> Dict[str, Parameter]:  # pragma: no cover
+    def DEFAULT_PARAMETERS_SPACE(cls) -> dict[str, Parameter]:  # pragma: no cover
         return {}
 
     def __init__(
         self,
-        data: Union[CandleIndicator, CandleData],
-        parameters: Dict[str, Any],
+        data: CandleIndicator | CandleData,
+        parameters: dict[str, Any],
         indicators: ReactiveIndicators,
     ):
         super().__init__()
@@ -46,7 +46,7 @@ class StrategyBase:
         self.data = data
         self.parameters = parameters
         self.indicators = indicators
-        self.signals: List[SignalBase] = []
+        self.signals: list[SignalBase] = []
         self.name = self.__class__.__name__
 
     def set_context(self, context: Context):
@@ -55,11 +55,11 @@ class StrategyBase:
     def add_signal(self, signal: SignalBase):
         self.signals.append(signal)
 
-    def add_signals(self, signals: List[SignalBase]):
+    def add_signals(self, signals: list[SignalBase]):
         self.signals.extend(signals)
 
     @abc.abstractmethod
-    def current(self, candles: Union[Candle, List[Candle]]) -> None:  # pragma: no cover
+    def current(self, candles: Candle | list[Candle]) -> None:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -74,7 +74,7 @@ class Strategy(StrategyBase):
     def __init__(
         self,
         data: CandleIndicator,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         indicators: ReactiveIndicators,
     ):
         super().__init__(data, parameters, indicators)
@@ -117,13 +117,13 @@ class MultiAssetsStrategy(StrategyBase):
     def __init__(
         self,
         data: CandleData,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         indicators: ReactiveIndicators,
     ):
         super().__init__(data, parameters, indicators)
 
     @abc.abstractmethod
-    def current(self, candles: List[Candle]) -> List[SignalBase]:  # pragma: no cover
+    def current(self, candles: list[Candle]) -> list[SignalBase]:  # pragma: no cover
         raise NotImplementedError
 
     def process_context(self, context: Context, clock: Clock) -> None:

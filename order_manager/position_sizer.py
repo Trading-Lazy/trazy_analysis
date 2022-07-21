@@ -16,20 +16,14 @@ class PositionSizer:
 
     def size_single_order(self, order: Order):
         if order.is_exit_order:
-            size = self.broker_manager.get_broker(
-                exchange=order.asset.exchange
-            ).position_size(order.asset, order.direction)
+            size = self.broker_manager.get_broker(exchange=order.asset.exchange).position_size(order.asset, order.direction)
         else:
-            total_equity = self.broker_manager.get_broker(
-                exchange=order.asset.exchange
-            ).portfolio.total_equity
+            total_equity = self.broker_manager.get_broker(exchange=order.asset.exchange).portfolio.total_equity
             max_equity_risk = total_equity * PositionSizer.MAXIMUM_RISK_PER_TRADE
             size_relative_to_equity = self.broker_manager.get_broker(
-                exchange=order.asset.exchange
-            ).max_entry_order_size(order.asset, max_equity_risk)
+                exchange=order.asset.exchange).max_entry_order_size(order.asset, max_equity_risk)
             size_relative_to_cash = self.broker_manager.get_broker(
-                exchange=order.asset.exchange
-            ).max_entry_order_size(order.asset)
+                exchange=order.asset.exchange).max_entry_order_size(order.asset)
             size = min(size_relative_to_equity, size_relative_to_cash)
             if self.integer_size:
                 size = int(size)

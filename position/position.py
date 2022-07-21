@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import Any
+from typing import Any, TypeVar
 
 import pytz
 
@@ -14,6 +14,7 @@ LOG = trazy_analysis.logger.get_root_logger(
     __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
+TPosition = TypeVar("TPosition", bound="Position")
 
 class Position:
     """
@@ -70,7 +71,7 @@ class Position:
         self.last_price_update = timestamp
 
     @classmethod
-    def open_from_transaction(cls, transaction: Transaction) -> "Position":
+    def open_from_transaction(cls, transaction: Transaction) -> TPosition:
         """
         Constructs a new Position instance from the provided
         Transaction.
@@ -88,20 +89,21 @@ class Position:
         direction = transaction.direction
         timestamp = transaction.timestamp
 
-        if transaction.action == Action.BUY:
-            buy_size = transaction.size
-            sell_size = 0
-            avg_bought = current_price
-            avg_sold = 0.0
-            buy_commission = transaction.commission
-            sell_commission = 0.0
-        elif transaction.action == Action.SELL:
-            buy_size = 0
-            sell_size = transaction.size
-            avg_bought = 0.0
-            avg_sold = current_price
-            buy_commission = 0.0
-            sell_commission = transaction.commission
+        match transaction.action:
+            case Action.BUY:
+                buy_size = transaction.size
+                sell_size = 0
+                avg_bought = current_price
+                avg_sold = 0.0
+                buy_commission = transaction.commission
+                sell_commission = 0.0
+            case Action.SELL:
+                buy_size = 0
+                sell_size = transaction.size
+                avg_bought = 0.0
+                avg_sold = current_price
+                buy_commission = 0.0
+                sell_commission = transaction.commission
 
         return cls(
             asset,
@@ -370,16 +372,17 @@ class Position:
 
         # Depending upon the direction of the transaction
         # ensure the correct calculation is called
-        if transaction.action == Action.BUY:
-            self._transact_buy(
-                transaction.size, transaction.price, transaction.commission
-            )
-        elif transaction.action == Action.SELL:
-            self._transact_sell(
-                transaction.size,
-                transaction.price,
-                transaction.commission,
-            )
+        match transaction.action:
+            case Action.BUY:
+                self._transact_buy(
+                    transaction.size, transaction.price, transaction.commission
+                )
+            case Action.SELL:
+                self._transact_sell(
+                    transaction.size,
+                    transaction.price,
+                    transaction.commission,
+                )
 
         # Update the current trade information
         self.update_price(transaction.price, transaction.timestamp)

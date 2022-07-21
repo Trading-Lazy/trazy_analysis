@@ -33,7 +33,7 @@ class DataHandler(metaclass=RateLimitedSingleton):
     @property
     @classmethod
     @abc.abstractmethod
-    def TICKER_DATA_RESPONSE_USED_COLUMNS(cls) -> List[str]:  # pragma: no cover
+    def TICKER_DATA_RESPONSE_USED_COLUMNS(cls) -> list[str]:  # pragma: no cover
         pass
 
     @property
@@ -59,7 +59,7 @@ class DataHandler(metaclass=RateLimitedSingleton):
     @abc.abstractmethod
     def parse_get_tickers_response(
         cls, tickers_response: str
-    ) -> List[str]:  # pragma: no cover
+    ) -> list[str]:  # pragma: no cover
         raise NotImplementedError
 
     @classmethod

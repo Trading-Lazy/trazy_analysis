@@ -1,9 +1,10 @@
-from typing import Any, Dict
+from typing import Any, TypeVar
 
 import numpy as np
 
 rng = np.random.RandomState(None)
 
+TParameter = TypeVar("TParameter", bound="Parameter")
 
 class Parameter(object):
     """
@@ -19,7 +20,7 @@ class Parameter(object):
         self.range = range
 
     @staticmethod
-    def from_dict(parameter_dict: Dict[str, Any]) -> "Parameter":
+    def from_dict(parameter_dict: dict[str, Any]) -> TParameter:
         """
         Returns a parameter object according to the given dictionary config.
         Args:
@@ -32,26 +33,28 @@ class Parameter(object):
         Returns:
             sherpa.core.Parameter: the parameter range object.
         """
-        if parameter_dict.get("type") == "continuous":
-            return Continuous(
-                range=parameter_dict.get("range"),
-                scale=parameter_dict.get("scale", "linear"),
-            )
-        elif parameter_dict.get("type") == "discrete":
-            return Discrete(
-                range=parameter_dict.get("range"),
-                scale=parameter_dict.get("scale", "linear"),
-            )
-        elif parameter_dict.get("type") == "choice":
-            return Choice(range=parameter_dict.get("range"))
-        elif parameter_dict.get("type") == "ordinal":
-            return Ordinal(range=parameter_dict.get("range"))
-        elif parameter_dict.get("type") == "static":
-            return Static(value=parameter_dict.get("range")[0])
-        else:
-            raise ValueError(
-                "Got unexpected value for type: {}".format(parameter_dict.get("type"))
-            )
+        parameter_type = parameter_dict.get("type")
+        match parameter_type:
+            case "continuous":
+                return Continuous(
+                    range=parameter_dict.get("range"),
+                    scale=parameter_dict.get("scale", "linear"),
+                )
+            case "discrete":
+                return Discrete(
+                    range=parameter_dict.get("range"),
+                    scale=parameter_dict.get("scale", "linear"),
+                )
+            case "choice":
+                return Choice(range=parameter_dict.get("range"))
+            case "ordinal":
+                return Ordinal(range=parameter_dict.get("range"))
+            case "static":
+                return Static(value=parameter_dict.get("range")[0])
+            case _:
+                raise ValueError(
+                    "Got unexpected value for type: {}".format(parameter_dict.get("type"))
+                )
 
 
 class Continuous(Parameter):

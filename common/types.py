@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from typing import Dict, Union, List
+from typing import TypeVar
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ from trazy_analysis.common.utils import timestamp_to_utc, validate_dataframe_col
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
 
+TCandleDataFrame = TypeVar("TCandleDataFrame", bound="CandleDataFrame")
 
 class CandleDataFrame(DataFrame):
     INDEX_COLUMN = ["timestamp"]
@@ -145,7 +146,7 @@ class CandleDataFrame(DataFrame):
     @staticmethod
     def from_dataframe(
         df: DataFrame, asset: Asset, time_unit=timedelta(minutes=1)
-    ) -> "CandleDataFrame":
+    ) -> TCandleDataFrame:
         return CandleDataFrame(asset=asset, time_unit=time_unit, candles_data=df)
 
     @staticmethod
@@ -153,7 +154,7 @@ class CandleDataFrame(DataFrame):
         candle_dataframes: np.array,
         asset: Asset,
         time_unit: timedelta = timedelta(minutes=1),
-    ) -> "CandleDataFrame":
+    ) -> TCandleDataFrame:
         concatenated_candle_dataframe = pd.concat(
             candle_dataframes, verify_integrity=True
         )
@@ -167,7 +168,7 @@ class CandleDataFrame(DataFrame):
         time_unit: timedelta,
         market_cal: MarketCalendar = None,
         remove_incomplete_head=True,
-    ) -> "CandleDataFrame":
+    ) -> TCandleDataFrame:
         if self.empty:
             return CandleDataFrame(asset=self.asset, time_unit=time_unit)
         start = self.index[0]
@@ -193,20 +194,20 @@ class CandleDataFrame(DataFrame):
         time_unit: timedelta,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-        exchanges_api_keys: Dict[str, str] = None,
-    ) -> "CandleDataFrame":
+        exchanges_api_keys: dict[str, str] = None,
+    ) -> TCandleDataFrame:
         from trazy_analysis.market_data.data_fetcher import AssetDataFetcher
 
-        feed, _ = AssetDataFetcher.fetch({asset: time_unit}, start=start, end=end)
+        feed, _ = AssetDataFetcher.fetch({asset: time_unit}, start=start, end=end, exchanges_api_keys=exchanges_api_keys)
         return feed.candle_dataframes[asset][time_unit]
 
     @staticmethod
     def multi_fetch(
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
+        assets: dict[Asset, timedelta | list[timedelta]],
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-        exchanges_api_keys: Dict[str, str] = None,
-    ) -> Dict[Asset, Dict[timedelta, "CandleDataFrame"]]:
+        exchanges_api_keys: dict[str, str] = None,
+    ) -> dict[Asset, dict[timedelta, TCandleDataFrame]]:
         from trazy_analysis.market_data.data_fetcher import AssetDataFetcher
         from trazy_analysis.common.helper import normalize_assets
 

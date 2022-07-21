@@ -27,7 +27,7 @@ class CcxtLiveDataHandler(CcxtDataHandler):
 
     def request_ticker_lastest_candles(
         self, ticker: Asset, nb_candles: int = 1
-    ) -> List[Candle]:
+    ) -> list[Candle]:
         exchange_to_lower = ticker.exchange.lower()
         exchange_instance = self.ccxt_connector.get_exchange_instance(exchange_to_lower)
         try:

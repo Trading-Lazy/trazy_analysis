@@ -23,7 +23,7 @@ class SmaCrossoverStrategy(Strategy):
     def __init__(
         self,
         data: CandleIndicator,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         indicators: ReactiveIndicators,
     ):
         super().__init__(data, parameters, indicators)

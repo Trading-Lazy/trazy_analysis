@@ -25,7 +25,7 @@ class Context:
 
     def __init__(
         self,
-        assets: Dict[Asset, List[timedelta]],
+        assets: dict[Asset, list[timedelta]],
         order_manager: OrderManager,
         broker_manager: BrokerManager,
         events: deque,
@@ -33,14 +33,14 @@ class Context:
         """
         It creates a dictionary of dictionaries of deques
 
-        :param assets: Dict[Asset, List[timedelta]]
-        :type assets: Dict[Asset, List[timedelta]]
+        :param assets: dict[Asset, list[timedelta]]
+        :type assets: dict[Asset, list[timedelta]]
         """
-        self.candles: Dict[Asset, Dict[timedelta, deque]] = {
+        self.candles: dict[Asset, dict[timedelta, deque]] = {
             asset: {time_unit: deque() for time_unit in assets[asset]}
             for asset in assets
         }
-        self.last_candles: Dict[Asset, Dict[timedelta, Candle]] = {}
+        self.last_candles: dict[Asset, dict[timedelta, Candle]] = {}
         self.order_manager = order_manager
         self.broker_manager = broker_manager
         self.events = events
@@ -59,7 +59,7 @@ class Context:
         self.candles[candle.asset][candle.time_unit].append(candle)
         self.current_timestamp = min(self.current_timestamp, candle.timestamp)
 
-    def get_last_candles(self) -> List[Candle]:
+    def get_last_candles(self) -> list[Candle]:
         """
         It returns a list of all the last candles for all assets and time units
         :return: A list of candles.

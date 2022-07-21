@@ -1,7 +1,7 @@
 import os
 from abc import ABC
 from datetime import datetime, timedelta
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Tuple, TypeVar
 import uuid
 
 import pytz
@@ -25,6 +25,7 @@ LOG = trazy_analysis.logger.get_root_logger(
     __name__, filename=os.path.join(trazy_analysis.settings.ROOT_PATH, "output.log")
 )
 
+TOrder = TypeVar("TOrder", bound="Order")
 
 class OrderBase(ABC):
     def __init__(
@@ -37,8 +38,8 @@ class OrderBase(ABC):
         self.generation_time = generation_time
         self.time_in_force = time_in_force
         self.submission_time = None
-        self.on_complete_callbacks: Tuple[List[Callable], List[Any]] = []
-        self.on_cancel_callbacks: Tuple[List[Callable], List[Any]] = []
+        self.on_complete_callbacks: Tuple[list[Callable], list[Any]] = []
+        self.on_cancel_callbacks: Tuple[list[Callable], list[Any]] = []
 
     def add_on_complete_callback(self, callback: Callable, *args):
         self.on_complete_callbacks.append((callback, args))
@@ -133,7 +134,7 @@ class Order(OrderBase):
         return is_closed_position(self.action, self.direction)
 
     @staticmethod
-    def from_serializable_dict(order_dict: dict) -> "Order":
+    def from_serializable_dict(order_dict: dict) -> TOrder:
         order: Order = Order(
             asset=Asset.from_dict(order_dict["asset"]),
             time_unit=parse_timedelta_str(order_dict["time_unit"]),

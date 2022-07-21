@@ -26,11 +26,11 @@ class DbStorage:
             )
 
     @abc.abstractmethod
-    def get_table_names(self) -> List[str]:  # pragma: no cover
+    def get_table_names(self) -> list[str]:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_db_names(self) -> List[str]:  # pragma: no cover
+    def get_db_names(self) -> list[str]:  # pragma: no cover
         raise NotImplementedError
 
     def check_table(self, table_name: str) -> None:
@@ -46,7 +46,7 @@ class DbStorage:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_all_candles(self) -> List[Candle]:  # pragma: no cover
+    def get_all_candles(self) -> list[Candle]:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -64,7 +64,7 @@ class DbStorage:
     @abc.abstractmethod
     def get_candles_in_range(
         self, asset: Asset, time_unit: timedelta, start: datetime, end: datetime
-    ) -> List[Candle]:  # pragma: no cover
+    ) -> list[Candle]:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -82,7 +82,7 @@ class DbStorage:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_all_signals(self) -> List[Order]:  # pragma: no cover
+    def get_all_signals(self) -> list[Order]:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -100,7 +100,7 @@ class DbStorage:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_all_orders(self) -> List[Order]:  # pragma: no cover
+    def get_all_orders(self) -> list[Order]:  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod

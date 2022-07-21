@@ -44,18 +44,18 @@ class Feed:
     def __init__(
         self,
         events: deque = None,
-        candles: Dict[Asset, Dict[timedelta, np.array]] = None,
-        candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = None,
+        candles: dict[Asset, dict[timedelta, np.array]] = None,
+        candle_dataframes: dict[Asset, dict[timedelta, CandleDataFrame]] = None,
     ):
         """
         :param events: A deque of events that will be processed by the backtest
         :type events: deque
         :param candles: A dictionary of dictionaries of numpy arrays. The first key is the asset, the second key is the time
         unit, and the value is a numpy array of candles
-        :type candles: Dict[Asset, Dict[timedelta, np.array]]
+        :type candles: dict[Asset, dict[timedelta, np.array]]
         :param candle_dataframes: A dictionary of dictionaries of CandleDataFrames. The first key is the asset, the second
         key is the time_unit
-        :type candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]]
+        :type candle_dataframes: dict[Asset, dict[timedelta, CandleDataFrame]]
         """
         self.assets = {asset: list(time_units.keys()) for asset, time_units in candles.items()}
         self.events = events if events is not None else deque()
@@ -136,11 +136,11 @@ class Feed:
 class LiveFeed(Feed):
     def __init__(
         self,
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
-        live_data_handlers: Dict[str, LiveDataHandler],
+        assets: dict[Asset, timedelta | list[timedelta]],
+        live_data_handlers: dict[str, LiveDataHandler],
         events: deque = deque(),
-        candles: Dict[Asset, Dict[timedelta, np.array]] = {},
-        candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = {},
+        candles: dict[Asset, dict[timedelta, np.array]] = {},
+        candle_dataframes: dict[Asset, dict[timedelta, CandleDataFrame]] = {},
     ):
         super().__init__(
             events=events, candles=candles, candle_dataframes=candle_dataframes
@@ -182,7 +182,7 @@ class LiveFeed(Feed):
 class ExternalStorageFeed(Feed):
     def __init__(
         self,
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
+        assets: dict[Asset, timedelta | list[timedelta]],
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
         events: deque = deque(),
@@ -195,8 +195,8 @@ class ExternalStorageFeed(Feed):
         an end date, a deque of events, a database storage object, a file storage object, and a market calendar object, and
         then loads the data from the external storage.
 
-        :param assets: Dict[Asset, Union[timedelta, List[timedelta]]]
-        :type assets: Dict[Asset, Union[timedelta, List[timedelta]]]
+        :param assets: dict[Asset, timedelta | list[timedelta]]
+        :type assets: dict[Asset, timedelta | list[timedelta]]
         :param start: The start date of the backtest
         :type start: datetime
         :param end: datetime = datetime.now(pytz.UTC),
@@ -228,8 +228,8 @@ class ExternalStorageFeed(Feed):
 class HistoricalFeed(Feed):
     def __init__(
         self,
-        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
-        historical_data_handlers: Dict[str, HistoricalDataHandler],
+        assets: dict[Asset, timedelta | list[timedelta]],
+        historical_data_handlers: dict[str, HistoricalDataHandler],
         start: datetime,
         end: datetime,
         events: deque = deque(),
@@ -240,9 +240,9 @@ class HistoricalFeed(Feed):
         loads the historical data for the assets
 
         :param assets: A dictionary of assets and their corresponding timeframes
-        :type assets: Dict[Asset, Union[timedelta, List[timedelta]]]
+        :type assets: dict[Asset, timedelta | list[timedelta]]
         :param historical_data_handlers: A dictionary of historical data handlers
-        :type historical_data_handlers: Dict[str, HistoricalDataHandler]
+        :type historical_data_handlers: dict[str, HistoricalDataHandler]
         :param start: The start date of the backtest
         :type start: datetime
         :param end: The end date of the backtest
@@ -293,7 +293,7 @@ class CsvFeed(Feed):
         asset: Optional[Asset] = None,
         time_unit: Optional[timedelta] = timedelta(minutes=1),
         csv_filename: Optional[str] = None,
-        csv_filenames: Optional[Dict[Asset, Dict[timedelta, str]]] = None,
+        csv_filenames: Optional[dict[Asset, dict[timedelta, str]]] = None,
         events: deque = deque(),
         sep: str = ",",
     ):
@@ -309,7 +309,7 @@ class CsvFeed(Feed):
         :type csv_filename: Optional[str]
         :param csv_filenames: A dictionary of dictionaries. The outer dictionary is keyed by asset, and the inner dictionary
         is keyed by time_unit. The value of the inner dictionary is the filename of the CSV file
-        :type csv_filenames: Optional[Dict[Asset, Dict[timedelta, str]]]
+        :type csv_filenames: Optional[dict[Asset, dict[timedelta, str]]]
         :param events: deque = deque()
         :type events: deque
         :param sep: str = ",",, defaults to ,

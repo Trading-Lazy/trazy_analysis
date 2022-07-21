@@ -12,7 +12,7 @@ class Optimization:
         self,
         backtest: Backtest,
         optimizer: Optimizer,
-        parameters_spaces: Dict[type, Dict[str, Parameter]] = {},
+        parameters_spaces: dict[type, dict[str, Parameter]] = {},
         nb_iter: int = 54,
         max_evals: int = 1,
     ):

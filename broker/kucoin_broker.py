@@ -48,7 +48,7 @@ class KucoinBroker(Broker):
         clock: Clock,
         events: deque,
         base_currency: str = "USDT",
-        supported_currencies: List[str] = ["EUR", "USDT"],
+        supported_currencies: list[str] = ["EUR", "USDT"],
     ):
         fee_model = KucoinFeeModel()
         parser = KucoinParser
@@ -131,7 +131,7 @@ class KucoinBroker(Broker):
             self.portfolio.update_market_value_of_symbol(asset, price, now)
         self.price_last_update = self.clock.current_time()
 
-    def update_balances(self) -> Dict[str, float]:
+    def update_balances(self) -> dict[str, float]:
         try:
             accounts = self.user_client.get_account_list()
         except Exception as e:
@@ -153,7 +153,7 @@ class KucoinBroker(Broker):
         self.portfolio.cash = self.cash_balances[self.base_currency]
         return balances
 
-    def update_positions(self, open_balances: Dict[str, float]) -> None:
+    def update_positions(self, open_balances: dict[str, float]) -> None:
         # open positions
         portfolio = self.portfolio
         positions = portfolio.pos_handler.positions
@@ -479,16 +479,17 @@ class KucoinBroker(Broker):
         order : `Order`
             The Order instance to execute.
         """
-        if order.order_type == OrderType.LIMIT:
-            self.execute_limit_order(order)
-        elif order.order_type == OrderType.STOP:
-            self.execute_stop_order(order)
-        elif order.order_type == OrderType.TARGET:
-            self.execute_target_order(order)
-        elif order.order_type == OrderType.TRAILING_STOP:
-            self.execute_trailing_stop_order(order)
-        elif order.order_type == OrderType.MARKET:
-            self.execute_market_order(order)
+        match order.order_type:
+            case OrderType.LIMIT:
+                self.execute_limit_order(order)
+            case OrderType.STOP:
+                self.execute_stop_order(order)
+            case OrderType.TARGET:
+                self.execute_target_order(order)
+            case OrderType.TRAILING_STOP:
+                self.execute_trailing_stop_order(order)
+            case OrderType.MARKET:
+                self.execute_market_order(order)
 
     def synchronize(self) -> None:
         self.update_price()

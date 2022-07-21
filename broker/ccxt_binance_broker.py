@@ -33,7 +33,7 @@ class CcxtBinanceBroker(CcxtBroker):
         events: deque,
         ccxt_connector: CcxtConnector,
         base_currency: str = "EUR",
-        supported_currencies: List[str] = ["EUR", "USDT"],
+        supported_currencies: list[str] = ["EUR", "USDT"],
         execute_at_end_of_day=True,
     ):
         super().__init__(
@@ -59,8 +59,8 @@ class CcxtBinanceBroker(CcxtBroker):
         price = float(price_info["last"])
         return price
 
-    def parse_balances_info(self, balance_info: Any) -> Dict[str, float]:
+    def parse_balances_info(self, balance_info: Any) -> dict[str, float]:
         raise NotImplementedError("Should implement parse_balances_info()")
 
-    def parse_trade_info(self, trade_info: Any) -> Dict[str, float]:
+    def parse_trade_info(self, trade_info: Any) -> dict[str, float]:
         raise NotImplementedError("Should implement parse_trade_info()")

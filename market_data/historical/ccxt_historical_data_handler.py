@@ -29,7 +29,7 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
 
     @classmethod
     def group_ticker_data_by_date(
-        cls, asset: Asset, raw_candles: List[List[Union[float, int]]]
+        cls, asset: Asset, raw_candles: list[list[float | int]]
     ) -> DataFrameGroupBy:
         df = cls.ticker_data_to_dataframe(asset, raw_candles)
         return df.groupby(lambda ind: ind.strftime("%Y%m%d"))
@@ -58,7 +58,7 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
         ticker: Asset,
         start: datetime,
         end: datetime = datetime.now(pytz.UTC),
-    ) -> Tuple[CandleDataFrame, List[Tuple[date, date]], List[str]]:
+    ) -> Tuple[CandleDataFrame, list[Tuple[date, date]], list[str]]:
         start = datetime(
             year=start.year,
             month=start.month,

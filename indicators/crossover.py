@@ -35,27 +35,30 @@ class Crossover(Indicator):
     def handle_data(self, data: float) -> None:
         Crossover.count += 1
         new_state = get_state(data)
-        if (
-            self.state == CrossoverState.NEG
-            or self.state == CrossoverState.IDLE_NEG_TREND
-        ) and (new_state == CrossoverState.POS or new_state == CrossoverState.IDLE):
-            self.state = CrossoverState.POS
-        elif (
-            self.state == CrossoverState.NEG
-            or self.state == CrossoverState.IDLE_NEG_TREND
-            or self.state == CrossoverState.IDLE
-        ) and new_state == CrossoverState.NEG:
-            self.state = CrossoverState.IDLE_NEG_TREND
-        elif (
-            self.state == CrossoverState.POS
-            or self.state == CrossoverState.IDLE_POS_TREND
-            or self.state == CrossoverState.IDLE
-        ) and (new_state == CrossoverState.IDLE or new_state == CrossoverState.POS):
-            self.state = CrossoverState.IDLE_POS_TREND
-        elif (
-            self.state == CrossoverState.POS
-            or self.state == CrossoverState.IDLE_POS_TREND
-        ) and new_state == CrossoverState.NEG:
-            self.state = CrossoverState.NEG
+        match (self.state, new_state):
+            case (
+                CrossoverState.NEG | CrossoverState.IDLE_NEG_TREND,
+                CrossoverState.POS | CrossoverState.IDLE,
+            ):
+                self.state = CrossoverState.POS
+            case (
+                CrossoverState.NEG
+                | CrossoverState.IDLE_NEG_TREND
+                | CrossoverState.IDLE,
+                CrossoverState.NEG,
+            ):
+                self.state = CrossoverState.IDLE_NEG_TREND
+            case (
+                CrossoverState.POS
+                | CrossoverState.IDLE_POS_TREND
+                | CrossoverState.IDLE,
+                CrossoverState.IDLE | CrossoverState.POS,
+            ):
+                self.state = CrossoverState.IDLE_POS_TREND
+            case (
+                CrossoverState.POS | CrossoverState.IDLE_POS_TREND,
+                CrossoverState.NEG,
+            ):
+                self.state = CrossoverState.NEG
         self.data = round(self.state.value)
         self.next(self.data)

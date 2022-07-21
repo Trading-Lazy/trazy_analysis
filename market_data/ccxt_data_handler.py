@@ -44,12 +44,12 @@ class CcxtDataHandler:
         self.ccxt_connector = ccxt_connector
 
     @classmethod
-    def ticker_data_is_none(cls, raw_candles: List[List[Union[float, int]]]) -> bool:
+    def ticker_data_is_none(cls, raw_candles: list[list[float | int]]) -> bool:
         return raw_candles == []
 
     @classmethod
     def ticker_data_to_dataframe(
-        cls, asset: Asset, raw_candles: List[List[Union[float, int]]]
+        cls, asset: Asset, raw_candles: list[list[float | int]]
     ) -> CandleDataFrame:
         candles = np.array(
             [

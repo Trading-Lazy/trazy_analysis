@@ -1,11 +1,13 @@
 import json
 from datetime import datetime, timedelta
+from typing import TypeVar
 
 import pytz
 
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.enums import CandleDirection
 
+TCandle = TypeVar("TCandle", bound="Candle")
 
 class Candle:
     def __init__(
@@ -58,7 +60,7 @@ class Candle:
             return CandleDirection.DOJI
 
     @staticmethod
-    def from_serializable_dict(candle_dict: dict) -> "Candle":
+    def from_serializable_dict(candle_dict: dict) -> TCandle:
         from trazy_analysis.common.utils import timestamp_to_utc
         from trazy_analysis.common.helper import parse_timedelta_str
 
@@ -76,7 +78,7 @@ class Candle:
         return candle
 
     @staticmethod
-    def from_dict(candle_dict: dict) -> "Candle":
+    def from_dict(candle_dict: dict) -> TCandle:
         candle: Candle = Candle(
             asset=candle_dict["asset"],
             open=candle_dict["open"],
@@ -89,7 +91,7 @@ class Candle:
         return candle
 
     @staticmethod
-    def from_json(candle_json: str) -> "Candle":
+    def from_json(candle_json: str) -> TCandle:
         candle_dict = json.loads(candle_json)
         candle_dict["timestamp"] = datetime.strptime(
             candle_dict["timestamp"], "%Y-%m-%d %H:%M:%S%z"
@@ -113,7 +115,7 @@ class Candle:
         )
         return json.dumps(candle_dict)
 
-    def copy(self) -> "Candle":
+    def copy(self) -> TCandle:
         return Candle.from_dict(self.__dict__)
 
     def __hash__(self):
