@@ -1,22 +1,32 @@
 import io
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Dict, Union, Tuple
 
+import ccxt
 import pandas as pd
 import pytz
 from memoization import CachingAlgorithmFlag, cached
 from pandas_market_calendars import MarketCalendar
 
-from trazy_analysis.common.constants import DATE_DIR_FORMAT
+from trazy_analysis.broker.fee_model import FeeModel
+from trazy_analysis.common.ccxt_connector import CcxtConnector
+from trazy_analysis.common.constants import DATE_DIR_FORMAT, NONE_API_KEYS
+from trazy_analysis.common.helper import normalize_assets
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.db_storage.db_storage import DbStorage
 from trazy_analysis.file_storage.common import DATASETS_DIR, DONE_DIR
 from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.market_data.historical.ccxt_historical_data_handler import (
+    CcxtHistoricalDataHandler,
+)
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
+    TiingoHistoricalDataHandler,
+)
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
 
 
-class CandleFetcher:
+class ExternalStorageFetcher:
     def __init__(
         self,
         db_storage: DbStorage,
@@ -118,3 +128,73 @@ class CandleFetcher:
             if not historical_df.empty:
                 df = CandleDataFrame.concat([historical_df, df], asset)
         return df
+
+
+class AssetDataFetcher:
+    @staticmethod
+    def fetch(
+        assets: Dict[Asset, Union[timedelta, List[timedelta]]],
+        start: datetime,
+        end: datetime = datetime.now(pytz.UTC),
+        exchanges_api_keys: Dict[str, str] = None,
+    ) -> Tuple["Feed", Dict[Asset, FeeModel]]:
+        assets = normalize_assets(assets)
+        from trazy_analysis.feed.feed import HistoricalFeed
+        exchanges_api_keys = (
+            exchanges_api_keys if exchanges_api_keys is not None else {}
+        )
+        exchanges = {asset.exchange.lower() for asset in assets}
+        fee_models = {}
+        historical_data_handlers = {}
+        exchanges_api_keys = {
+            exchange.lower(): api_key
+            for exchange, api_key in exchanges_api_keys.items()
+        }
+
+        # Crypto currency exchanges
+        ccxt_exchanges_api_keys = {}
+        ccxt_exchanges = ccxt.exchanges
+        other_exchanges = []
+        for exchange in exchanges:
+            if exchange in ccxt_exchanges:
+                if exchange in exchanges_api_keys:
+                    ccxt_exchanges_api_keys[exchange] = exchanges_api_keys[exchange]
+                else:
+                    ccxt_exchanges_api_keys[exchange] = NONE_API_KEYS
+            else:
+                other_exchanges.append(exchange)
+        if len(ccxt_exchanges_api_keys) != 0:
+            ccxt_connector = CcxtConnector(exchanges_api_keys=ccxt_exchanges_api_keys)
+            ccxt_historical_data_handler = CcxtHistoricalDataHandler(ccxt_connector)
+            for exchange in ccxt_exchanges_api_keys:
+                historical_data_handlers[exchange] = ccxt_historical_data_handler
+
+            ccxt_assets = [
+                asset for asset in assets if asset.exchange in ccxt_exchanges
+            ]
+            fetched_exchanges = set()
+            for asset in ccxt_assets:
+                if asset.exchange in fetched_exchanges:
+                    continue
+                fetched_exchanges.add(asset.exchange)
+                fee_models.update(ccxt_connector.fetch_fees(asset.exchange))
+
+        # Other exchanges
+        for exchange in other_exchanges:
+            if exchange == "iex":
+                historical_data_handlers["iex"] = TiingoHistoricalDataHandler()
+            else:
+                all_exchanges = ccxt_exchanges
+                all_exchanges.append("iex")
+                raise Exception(
+                    f"Exchange {exchange} is not supported for now. The list of supported exchanges is: {all_exchanges}"
+                )
+
+        feed = HistoricalFeed(
+            assets=assets,
+            historical_data_handlers=historical_data_handlers,
+            start=start,
+            end=end,
+        )
+
+        return feed, fee_models

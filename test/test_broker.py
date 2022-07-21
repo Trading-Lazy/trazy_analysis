@@ -9,7 +9,7 @@ from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import CsvFeed, Feed
 from trazy_analysis.models.asset import Asset
-from trazy_analysis.models.enums import Action, Direction, OrderStatus, ExecutionMode
+from trazy_analysis.models.enums import Action, Direction, OrderStatus, IndicatorMode
 from trazy_analysis.models.multiple_order import MultipleOrder, SequentialOrder
 from trazy_analysis.models.order import Order
 from trazy_analysis.order_manager.order_creator import OrderCreator
@@ -260,7 +260,7 @@ def test_close_all_open_positions_at_end_of_day():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10016.415
@@ -297,7 +297,7 @@ def test_close_all_open_positions_at_end_of_feed_data():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10014.35

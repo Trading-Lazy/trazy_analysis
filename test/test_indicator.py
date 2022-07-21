@@ -4,9 +4,9 @@ import pytest
 
 from trazy_analysis.common.meta import IndicatorMemoization
 from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
-from trazy_analysis.models.enums import ExecutionMode
+from trazy_analysis.models.enums import IndicatorMode
 
-indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
+indicators = ReactiveIndicators(memoize=False, mode=IndicatorMode.LIVE)
 
 
 def test_handle_data_default_transform():
@@ -181,7 +181,7 @@ def test_binary_operation_other_indicator_type_not_in_allowed_types():
         )
 
 
-def test_binary_operation_rolling_window():
+def test_binary_operation_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
     binary_operation_result = indicator.binary_operation(
@@ -231,7 +231,7 @@ def test_lt_data():
     assert not (indicator < 5)
 
 
-def test_lt_rolling_window():
+def test_lt_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -261,7 +261,7 @@ def test_le_data():
     assert not (indicator <= 5)
 
 
-def test_le_rolling_window():
+def test_le_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -288,7 +288,7 @@ def test_eq_data():
     assert indicator == 5
 
 
-def test_eq_rolling_window():
+def test_eq_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -311,7 +311,7 @@ def test_ne_data():
     assert not (indicator != 5)
 
 
-def test_ne_rolling_window():
+def test_ne_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -337,7 +337,7 @@ def test_ge_data():
     assert indicator >= 5
 
 
-def test_ge_rolling_window():
+def test_ge_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -367,7 +367,7 @@ def test_gt_data():
     assert indicator > 5
 
 
-def test_gt_rolling_window():
+def test_gt_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -394,7 +394,7 @@ def test_add_data():
     assert (indicator + 5) == 10
 
 
-def test_add_rolling_window():
+def test_add_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -418,7 +418,7 @@ def test_sub_data():
     assert (indicator - 5) == 0
 
 
-def test_sub_rolling_window():
+def test_sub_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator - other_indicator
@@ -443,7 +443,7 @@ def test_mul_data():
     assert (indicator * 5) == -25
 
 
-def test_mul_rolling_window():
+def test_mul_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -466,7 +466,7 @@ def test_truediv_data():
     assert (indicator / 5) == -1.0
 
 
-def test_truediv_rolling_window():
+def test_truediv_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -492,7 +492,7 @@ def test_floordiv_data():
     assert (indicator // 5) == -3
 
 
-def test_floordiv_rolling_window():
+def test_floordiv_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -537,7 +537,7 @@ def test_and_data():
     assert (indicator & False) == False
 
 
-def test_and_rolling_window():
+def test_and_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -574,7 +574,7 @@ def test_or_data():
     assert (indicator | False) == False
 
 
-def test_or_rolling_window():
+def test_or_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
 
@@ -680,7 +680,7 @@ def test_indicator_binary_operation_other_indicator_type_not_in_allowed_types():
         )
 
 
-def test_indicator_binary_operation_rolling_window():
+def test_indicator_binary_operation_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.indicator_binary_operation(
@@ -723,7 +723,7 @@ def test_indicator_lt_data():
     assert derived_indicator.data == False
 
 
-def test_indicator_lt_rolling_window():
+def test_indicator_lt_indicator():
     indicator = indicators.Indicator(size=1)
     other_indicator = indicators.Indicator(size=1)
     derived_indicator = indicator.lt(other_indicator)

@@ -248,7 +248,7 @@ def resample_candle_data(
         first_timestamp = candle_dataframe.get_candle(0).timestamp
     candle_dataframe = fill_missing_datetimes(df=candle_dataframe, time_unit=time_unit)
     candle_dataframe = CandleDataFrame.from_dataframe(
-        candle_dataframe, Asset(symbol=asset.symbol, exchange=asset.exchange)
+        candle_dataframe, Asset(symbol=asset.symbol, exchange=asset.exchange), time_unit=time_unit
     )
 
     if market_cal_df is None or initial_time_unit == time_unit:
@@ -268,7 +268,7 @@ def resample_candle_data(
         """
         df_resampled = sqldf(s, locals())
         df_resampled = CandleDataFrame.from_dataframe(
-            df_resampled, Asset(symbol=asset.symbol, exchange=asset.exchange)
+            df_resampled, Asset(symbol=asset.symbol, exchange=asset.exchange), time_unit=time_unit
         )
     if (
         remove_incomplete_head
@@ -372,6 +372,7 @@ def normalize_assets(
     for asset in assets_to_normalize:
         assets_copy[asset] = [assets_copy[asset]]
     return assets_copy
+
 
 
 def all_subclasses(cls: type):

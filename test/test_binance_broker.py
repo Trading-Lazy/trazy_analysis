@@ -1420,6 +1420,6 @@ def test_max_order_entry_size(
     binance_broker = BinanceBroker(clock=clock, events=events)
 
     assert (
-        binance_broker.max_entry_order_size(asset=ASSET2, direction=Direction.LONG)
-        == 130.4863423021991
+            binance_broker.max_entry_order_size(asset=ASSET2)
+            == 130.4863423021991
     )

@@ -196,7 +196,7 @@ class Live:
                     clock,
                     self.events,
                     initial_funds=self.simulation_initial_funds,
-                    fee_model=self.simulation_fee_model,
+                    fee_models=self.simulation_fee_model,
                 )
                 brokers[exchange].subscribe_funds_to_portfolio(
                     self.simulation_initial_funds

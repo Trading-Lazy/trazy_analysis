@@ -2091,7 +2091,7 @@ def test_max_order_entry_size(
         }
     }
     parsers = {"binance": CcxtBinanceParser}
-    fee_models = {"binance": BinanceFeeModel()}
+    fee_models = {ASSET2: BinanceFeeModel()}
     ccxt_connector = CcxtConnector(
         exchanges_api_keys=exchanges_api_keys, parsers=parsers, fee_models=fee_models
     )

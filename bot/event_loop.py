@@ -13,7 +13,7 @@ import trazy_analysis.settings
 from trazy_analysis.common.constants import MAX_TIMESTAMP
 from trazy_analysis.common.helper import get_or_create_nested_dict, normalize_assets
 from trazy_analysis.common.types import CandleDataFrame
-from trazy_analysis.feed.feed import Feed, LiveFeed
+from trazy_analysis.feed.feed import Feed
 from trazy_analysis.indicators.indicator import CandleData
 from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
 from trazy_analysis.models.asset import Asset
@@ -24,7 +24,8 @@ from trazy_analysis.models.enums import (
     EventType,
     BrokerIsolation,
     StrategyParametersIsolation,
-    ExecutionMode,
+    IndicatorMode,
+    EventLoopMode,
 )
 from trazy_analysis.models.event import (
     AssetSpecificEvent,
@@ -421,11 +422,11 @@ class EventLoop:
         assets: Dict[Asset, Union[timedelta, List[timedelta]]],
         feed: Feed,
         order_manager: OrderManager,
-        strategies_parameters: Dict[type, Dict[str, Any]] = {},
-        mode: ExecutionMode = ExecutionMode.BATCH,
+        strategies_parameters: Dict[type, Dict[str, Any]] = None,
+        indicator_mode: IndicatorMode = IndicatorMode.BATCH,
+        mode: EventLoopMode = EventLoopMode.BATCH,
         close_at_end_of_day=True,
         close_at_end_of_data=True,
-        strategy_parameters_isolation=StrategyParametersIsolation.STRATEGY,
         broker_isolation=BrokerIsolation.EXCHANGE,
         statistics_class: type = None,
         real_time_plotting=False,
@@ -435,12 +436,12 @@ class EventLoop:
         self.delayed_events = []
         self.assets = normalize_assets(assets)
         self.feed = feed
-        self.indicators = ReactiveIndicators(mode=mode, memoize=True)
+        self.indicators = ReactiveIndicators(mode=indicator_mode, memoize=True)
         self.data = CandleData(candles=feed.candles, indicators=self.indicators)
         self.order_manager = order_manager
         self.broker_manager = self.order_manager.broker_manager
         self.clock = self.order_manager.clock
-        self.strategies_parameters = strategies_parameters
+        self.strategies_parameters = strategies_parameters if strategies_parameters is not None else {}
         self.strategy_instances: List[StrategyBase] = []
         self.context = Context(
             assets=self.assets,
@@ -448,6 +449,7 @@ class EventLoop:
             broker_manager=self.broker_manager,
             events=self.events,
         )
+        self.indicator_mode = indicator_mode
         self.mode = mode
         self._init_strategy_instances()
         self.seen_candles = {}
@@ -457,7 +459,6 @@ class EventLoop:
         self.last_update = None
         self.signals_and_orders_last_update = None
         self.current_timestamp = MAX_TIMESTAMP
-        self.strategy_parameters_isolation = strategy_parameters_isolation
         self.broker_isolation = broker_isolation
         self.statistics_manager = StatisticsManager(isolation=self.broker_isolation)
         self.statistics_class = statistics_class
@@ -479,9 +480,8 @@ class EventLoop:
         The function loops through the events queue and processes each event
         """
         data_to_process = True
-        live = self.mode == ExecutionMode.LIVE and isinstance(self.feed, LiveFeed)
         while data_to_process:
-            if live:
+            if self.mode == EventLoopMode.LIVE:
                 # tasks to be done regularly
                 for exchange in self.broker_manager.brokers:
                     self.broker_manager.get_broker(exchange).synchronize()
@@ -564,7 +564,10 @@ class EventLoop:
                         for candle in last_candles:
                             LOG.info("Process new candle: %s", candle.to_json())
                             self.data(candle.asset, candle.time_unit).push(candle)
-                            if live and self.real_time_plotting:
+                            if (
+                                self.mode == EventLoopMode.LIVE
+                                and self.real_time_plotting
+                            ):
                                 self.real_time_plot(candle.asset, candle.time_unit)
                             self.broker_manager.get_broker(
                                 candle.asset.exchange
@@ -576,7 +579,7 @@ class EventLoop:
                             ).execute_open_orders()
                     if len(eod_assets) != 0:
                         bars_delay = 0
-                        if not live:
+                        if self.mode != EventLoopMode.LIVE:
                             bars_delay = 1
                         timestamp = min([self.clock.current_time() for _ in eod_assets])
                         self.events.append(

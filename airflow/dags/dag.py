@@ -455,7 +455,7 @@ def ccxt_arbitrage_strategy(**kwargs):
         clock,
         events,
         initial_funds=initial_funds,
-        fee_model=exchange1_fee_model,
+        fee_models=exchange1_fee_model,
         exchange=exchange1,
     )
     exchange1_broker.subscribe_funds_to_portfolio(initial_funds)
@@ -466,18 +466,14 @@ def ccxt_arbitrage_strategy(**kwargs):
         clock,
         events,
         initial_funds=initial_funds,
-        fee_model=exchange2_fee_model,
+        fee_models=exchange2_fee_model,
         exchange=exchange2,
     )
     # exchange2_broker.subscribe_funds_to_portfolio(initial_funds)
     exchange2_first_candle = exchange2_candle_dataframe.get_candle(0)
     exchange2_broker.update_price(exchange2_first_candle)
-    max_size_exchange1 = exchange1_broker.max_entry_order_size(
-        assets_dict[exchange1], Direction.LONG, initial_funds
-    )
-    max_size_exchange2 = exchange2_broker.max_entry_order_size(
-        assets_dict[exchange2], Direction.LONG, initial_funds
-    )
+    max_size_exchange1 = exchange1_broker.max_entry_order_size(assets_dict[exchange1], initial_funds)
+    max_size_exchange2 = exchange2_broker.max_entry_order_size(assets_dict[exchange2], initial_funds)
     initial_size = max_size_exchange2
 
     # exchange 2

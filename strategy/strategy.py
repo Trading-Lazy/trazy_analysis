@@ -2,6 +2,8 @@ import abc
 import os
 from typing import Dict, List, Union, Any
 
+import telegram_send
+
 import trazy_analysis.logger
 import trazy_analysis.settings
 from trazy_analysis.common.clock import Clock
@@ -102,6 +104,10 @@ class Strategy(StrategyBase):
                 )
             if self.signals:
                 self.context.add_event(SignalEvent(self.signals))
+
+    @staticmethod
+    def send_notification(*messages):
+        telegram_send.send(messages=list(messages))
 
 
 # It's a strategy that can trade multiple assets

@@ -39,9 +39,9 @@ class ArbitrageStrategy(MultiAssetsStrategy):
                     continue
                 diff = abs(candle1.close - candle2.close)
                 broker1 = self.context.broker_manager.get_broker(candle1.asset.exchange)
-                commission1 = broker1.fee_model.commission_pct
+                commission1 = broker1.fee_models[candle1.asset].commission_pct
                 broker2 = self.context.broker_manager.get_broker(candle2.asset.exchange)
-                commission2 = broker2.fee_model.commission_pct
+                commission2 = broker2.fee_models[candle2.asset].commission_pct
                 fee1 = candle1.close * commission1
                 fee2 = candle2.close * commission2
                 total_fee = fee1 + fee2
@@ -52,10 +52,18 @@ class ArbitrageStrategy(MultiAssetsStrategy):
                     candle1_is_greater = candle1.close > candle2.close
                     action1 = Action.SELL if candle1_is_greater else Action.BUY
                     action2 = Action.BUY if candle1_is_greater else Action.SELL
-                    signal1 = Signal(asset=candle1.asset, time_unit=candle1.time_unit, action=action1,
-                                     direction=Direction.LONG)
-                    signal2 = Signal(asset=candle2.asset, time_unit=candle2.time_unit, action=action2,
-                                     direction=Direction.LONG)
+                    signal1 = Signal(
+                        asset=candle1.asset,
+                        time_unit=candle1.time_unit,
+                        action=action1,
+                        direction=Direction.LONG,
+                    )
+                    signal2 = Signal(
+                        asset=candle2.asset,
+                        time_unit=candle2.time_unit,
+                        action=action2,
+                        direction=Direction.LONG,
+                    )
                     signal1_is_buy_signal = signal1.action == Action.BUY
                     buy_signal = signal1 if signal1_is_buy_signal else signal2
                     sell_signal = signal2 if signal1_is_buy_signal else signal1

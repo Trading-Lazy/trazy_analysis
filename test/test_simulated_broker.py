@@ -11,7 +11,7 @@ from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import CsvFeed, Feed
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import Action, Direction, OrderType, ExecutionMode
+from trazy_analysis.models.enums import Action, Direction, OrderType, IndicatorMode
 from trazy_analysis.models.order import Order
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
@@ -39,7 +39,7 @@ def test_initial_settings_for_default_simulated_broker():
 
     assert sb1.base_currency == "EUR"
     assert sb1.cash_balances["USD"] == 0.0
-    assert type(sb1.fee_model) == FixedFeeModel
+    assert type(sb1.fee_models.default_fee_model) == FixedFeeModel
 
     tcb1 = {"EUR": float("0.0"), "USD": float("0.0")}
     portfolio1 = Portfolio(timestamp=start_timestamp, currency=sb1.base_currency)
@@ -55,12 +55,12 @@ def test_initial_settings_for_default_simulated_broker():
         events=events,
         base_currency="EUR",
         initial_funds=1e6,
-        fee_model=FixedFeeModel(),
+        fee_models=FixedFeeModel(),
     )
 
     assert sb2.base_currency == "EUR"
     assert sb2.cash_balances["EUR"] == 1e6
-    assert type(sb2.fee_model) == FixedFeeModel
+    assert type(sb2.fee_models.default_fee_model) == FixedFeeModel
 
     tcb2 = {"EUR": 1000000.0, "USD": float("0.0")}
     portfolio2 = Portfolio(
@@ -108,18 +108,18 @@ def test_all_cases_of_set_broker_commission():
     clock = SimulatedClock()
     events = deque()
     sb1 = SimulatedBroker(clock=clock, events=events)
-    assert sb1.fee_model.__class__.__name__ == "FixedFeeModel"
+    assert sb1.fee_models.default_fee_model.__class__.__name__ == "FixedFeeModel"
 
     # Broker commission is specified as a subclass
     # of FeeModel abstract base class
     bc2 = FixedFeeModel()
-    sb2 = SimulatedBroker(clock=clock, events=events, fee_model=bc2)
-    assert sb2.fee_model.__class__.__name__ == "FixedFeeModel"
+    sb2 = SimulatedBroker(clock=clock, events=events, fee_models=bc2)
+    assert sb2.fee_models.default_fee_model.__class__.__name__ == "FixedFeeModel"
 
     # FeeModel is mis-specified and thus
-    # raises a TypeError
-    with pytest.raises(TypeError):
-        SimulatedBroker(clock=clock, events=events, fee_model="bad_fee_model")
+    # return None
+    sb3 = SimulatedBroker(clock=clock, events=events, fee_models="bad_fee_models")
+    assert sb2.fee_models.default_fee_model
 
 
 def test_set_cash_balances():
@@ -459,7 +459,7 @@ def test_execute_limit_order():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
 
     event_loop.loop()
 
@@ -498,7 +498,7 @@ def test_execute_stop_order():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
 
     event_loop.loop()
 
@@ -537,7 +537,7 @@ def test_execute_target_order():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
 
     event_loop.loop()
 
@@ -578,7 +578,7 @@ def test_execute_trailing_stop_order():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
 
     event_loop.loop()
 
@@ -617,7 +617,7 @@ def test_execute_cover_order():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
 
     event_loop.loop()
 
@@ -654,7 +654,7 @@ def test_execute_bracket_order():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
 
     event_loop.loop()
 

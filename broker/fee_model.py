@@ -1,4 +1,7 @@
 from abc import ABCMeta, abstractmethod
+from typing import Union, Dict
+
+from trazy_analysis.models.asset import Asset
 
 
 class FeeModel:
@@ -64,3 +67,29 @@ class FeeModel:
             The maximum order size
         """
         raise NotImplementedError("Should implement calc_max_size_for_cash()")
+
+
+class FeeModelManager:
+    def __init__(self, fee_models: Union[FeeModel, Dict[Asset, FeeModel]]):
+        if issubclass(type(fee_models), FeeModel):
+            self.default_fee_model = fee_models
+            self.fee_models: Dict[Asset, FeeModel] = {}
+        elif isinstance(fee_models, dict):
+            self.default_fee_model = None
+            self.fee_models: Dict[Asset, FeeModel] = fee_models
+        else:
+            self.default_fee_model = self.fee_models = None
+
+    def update(self, asset: Asset, fee_model: FeeModel):
+        self.fee_models[asset] = fee_model
+
+    def multi_update(self, fee_models: Dict[Asset, FeeModel]):
+        self.fee_models.update(fee_models)
+
+    def __getitem__(self, asset: Asset) -> FeeModel:
+        if self.fee_models is None or asset not in self.fee_models:
+            return self.default_fee_model
+        return self.fee_models.get(asset, None)
+
+    def __contains__(self, asset: Asset):
+        return asset in self.fee_models

@@ -21,7 +21,7 @@ from trazy_analysis.common.utils import timestamp_to_utc
 from trazy_analysis.indicators.common import PriceType
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import ExecutionMode
+from trazy_analysis.models.enums import IndicatorMode
 
 
 def get_price_selector_function(price_type: PriceType) -> Callable[[Candle], float]:
@@ -65,7 +65,7 @@ class Indicator:
         self.dtype = dtype
         self.source_dtype: Optional[type] = None
         self.memoize: Optional[bool] = None
-        self.mode: Optional[ExecutionMode] = None
+        self.mode: Optional[IndicatorMode] = None
         self.indicators: "ReactiveIndicators" = None
         self.window: Optional[np.array] = None
         self.input_window = None
@@ -151,7 +151,7 @@ class Indicator:
             self.transform = (
                 (lambda data: data) if self.transform is None else self.transform
             )
-            if self.mode == ExecutionMode.BATCH:
+            if self.mode == IndicatorMode.BATCH:
                 self.initialize_batch()
             else:
                 self.initialize_stream()
@@ -197,7 +197,7 @@ class Indicator:
             self.window = ma.masked_array(window, dtype=self.source_dtype, mask=False)
         self.insert = 0
         self.index = -1
-        self.data = None if self.mode == ExecutionMode.BATCH else self.window[-1]
+        self.data = None if self.mode == IndicatorMode.BATCH else self.window[-1]
 
     def subscribe(self, callback: Callable, subscriber: "Indicator"):
         self.callbacks.append(callback)
@@ -249,9 +249,9 @@ class Indicator:
             if self.size is None:
                 self.size = 1
             self.window = ma.masked_array([0] * self.size, mask=True, dtype=self.dtype)
-        if self.mode == ExecutionMode.LIVE:
+        if self.mode == IndicatorMode.LIVE:
             self.handle_stream_data(data)
-        elif self.mode == ExecutionMode.BATCH:
+        elif self.mode == IndicatorMode.BATCH:
             self.handle_batch_data()
 
     def push(self, data: Any = None):
@@ -295,7 +295,7 @@ class Indicator:
         return self.window[real_key]
 
     def __getitem__(self, key) -> Any:
-        if self.mode == ExecutionMode.BATCH:
+        if self.mode == IndicatorMode.BATCH:
             size = self.index + 1
         else:
             size = self.size
@@ -321,15 +321,15 @@ class Indicator:
         return x, y
 
     def map(self, func: Callable, size: Optional[int] = None) -> "Indicator":
-        rolling_window_stream = self.indicators.Indicator(
+        indicator_stream = self.indicators.Indicator(
             source=self,
             transform=func,
             source_minimal_size=self.source_minimal_size,
             size=self.size if size is None else size,
         )
         if self.filled():
-            rolling_window_stream.fill(self.window.tolist())
-        return rolling_window_stream
+            indicator_stream.fill(self.window.tolist())
+        return indicator_stream
 
     def observe(self, indicator_data: "Indicator"):
         self.ignore()
@@ -682,7 +682,7 @@ class TimeFramedCandleIndicator(Indicator):
         return aggregated_df.get_candle(0)
 
     def handle_data(self, data: Candle) -> None:
-        if self.mode == ExecutionMode.LIVE:
+        if self.mode == IndicatorMode.LIVE:
             if self.time_unit == data.time_unit:
                 super().handle_stream_data(data)
                 return
@@ -718,7 +718,7 @@ class CandleData:
     ):
         self.indicators = indicators
         self.mode = self.indicators.mode
-        if self.mode == ExecutionMode.BATCH and candles is None:
+        if self.mode == IndicatorMode.BATCH and candles is None:
             raise Exception(
                 "When execution mode is BATCH, you should provide candle data for batch processing"
             )
@@ -729,7 +729,7 @@ class CandleData:
                     asset=asset,
                     time_unit=time_unit,
                     source=self.candles[asset][time_unit]
-                    if self.mode == ExecutionMode.BATCH
+                    if self.mode == IndicatorMode.BATCH
                     else None,
                     size=self.candles[asset][time_unit].size,
                 )

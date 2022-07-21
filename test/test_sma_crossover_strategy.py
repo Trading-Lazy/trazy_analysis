@@ -7,7 +7,7 @@ from trazy_analysis.broker.simulated_broker import SimulatedBroker
 from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import CsvFeed, Feed
 from trazy_analysis.models.asset import Asset
-from trazy_analysis.models.enums import ExecutionMode
+from trazy_analysis.models.enums import IndicatorMode
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -46,7 +46,7 @@ def test_sma_crossover_strategy():
         clock=clock,
     )
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE)
     event_loop.loop()
 
     assert broker.get_portfolio_cash_balance() == 10010.955

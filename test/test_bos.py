@@ -9,7 +9,7 @@ from trazy_analysis.indicators.indicator import Indicator
 from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import CandleDirection, ExecutionMode
+from trazy_analysis.models.enums import CandleDirection, IndicatorMode
 
 BIG_DATA = [
     56281.78,
@@ -65,7 +65,7 @@ BIG_DATA = [
 ]
 
 ASSET = Asset(symbol="BTCUSDT", exchange="Binance")
-indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
+indicators = ReactiveIndicators(memoize=False, mode=IndicatorMode.LIVE)
 
 
 @pytest.mark.parametrize(

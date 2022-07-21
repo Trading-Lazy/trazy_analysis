@@ -2,13 +2,17 @@ from collections import deque
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Union
 
+import ccxt
 import numpy as np
 import pytz
+from pandas import DataFrame
 from pandas_market_calendars import MarketCalendar
 from pandas_market_calendars.exchange_calendar_iex import IEXExchangeCalendar
 from sortedcontainers import SortedSet
 
-from trazy_analysis.common.constants import MAX_TIMESTAMP
+from trazy_analysis.common.ccxt_connector import CcxtConnector
+from trazy_analysis.common.constants import MAX_TIMESTAMP, NONE_API_KEYS
+from trazy_analysis.common.crypto_exchange_calendar import CryptoExchangeCalendar
 from trazy_analysis.common.helper import get_or_create_nested_dict, normalize_assets
 from trazy_analysis.common.types import CandleDataFrame
 from trazy_analysis.db_storage.db_storage import DbStorage
@@ -18,8 +22,14 @@ from trazy_analysis.feed.loader import (
     HistoricalDataLoader,
 )
 from trazy_analysis.file_storage.file_storage import FileStorage
+from trazy_analysis.market_data.historical.ccxt_historical_data_handler import (
+    CcxtHistoricalDataHandler,
+)
 from trazy_analysis.market_data.historical.historical_data_handler import (
     HistoricalDataHandler,
+)
+from trazy_analysis.market_data.historical.tiingo_historical_data_handler import (
+    TiingoHistoricalDataHandler,
 )
 from trazy_analysis.market_data.live.live_data_handler import LiveDataHandler
 from trazy_analysis.models.asset import Asset
@@ -33,9 +43,9 @@ from trazy_analysis.models.event import (
 class Feed:
     def __init__(
         self,
-        events: deque = deque(),
-        candles: Dict[Asset, Dict[timedelta, np.array]] = {},
-        candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = {},
+        events: deque = None,
+        candles: Dict[Asset, Dict[timedelta, np.array]] = None,
+        candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]] = None,
     ):
         """
         :param events: A deque of events that will be processed by the backtest
@@ -47,12 +57,14 @@ class Feed:
         key is the time_unit
         :type candle_dataframes: Dict[Asset, Dict[timedelta, CandleDataFrame]]
         """
-        self.assets = list(candles.keys())
-        self.events = events
-        self.candles = candles
+        self.assets = {asset: list(time_units.keys()) for asset, time_units in candles.items()}
+        self.events = events if events is not None else deque()
+        self.candles = candles if candles is not None else {}
+        self.candle_dataframes = (
+            candle_dataframes if candle_dataframes is not None else {}
+        )
         self.indexes = {}
         self.completed = False
-        self.candle_dataframes = candle_dataframes
         current_timestamp = MAX_TIMESTAMP
         for asset in self.candles:
             get_or_create_nested_dict(self.indexes, asset)

@@ -91,17 +91,21 @@ class ExtremaChange(Indicator):
         self.order = order
         self.method = method
         self.current_extrema = None
-        self.previous_extrema = PreviousExtrema(
+        self.previous_extrema = None
+        super().__init__(source=source, size=size)
+
+    def setup(self, indicators: "ReactiveIndicators"):
+        self.previous_extrema = indicators.PreviousExtrema(
             comparator=self.comparator,
             order=self.order,
             method=self.method,
-            source=source,
-            size=size,
+            source=self.source,
+            size=self.size,
         )
-        self.input_window = self.previous_extrema.input_window
-        super().__init__(source=self.input_window, size=size)
+        super().setup(indicators)
 
     def handle_stream_data(self, data: Any):
+        extrema_change = False
         if self.previous_extrema.count() != 0:
             if self.current_extrema != self.previous_extrema.data:
                 self.current_extrema = self.previous_extrema.data
@@ -441,7 +445,7 @@ class PoiTouch(Indicator):
         time_to_buy = False
         for interval in self.poi_touchs[low:high]:
             LOG.info("we reached and interesting poi %s", data.time_unit)
-            begin, end, data = interval
+            begin, end, _ = interval
             if (end - low) / (end - begin) >= 0.3:
                 time_to_buy = True
                 break

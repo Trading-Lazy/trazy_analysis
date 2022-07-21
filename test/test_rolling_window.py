@@ -12,7 +12,7 @@ from trazy_analysis.indicators.indicator import (
 from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import ExecutionMode
+from trazy_analysis.models.enums import IndicatorMode
 
 SYMBOL1 = "IVV"
 SYMBOL2 = "AAPL"
@@ -81,7 +81,7 @@ CANDLE7 = Candle(
 )
 
 MARKET_CAL = EUREXExchangeCalendar()
-indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
+indicators = ReactiveIndicators(memoize=False, mode=IndicatorMode.LIVE)
 
 
 def test_get_price_selector_function():
@@ -93,199 +93,199 @@ def test_get_price_selector_function():
         assert get_price_selector_function(PriceType.LAST)(CANDLE1) == CANDLE1.close
 
 
-def test_rolling_window_init():
-    rolling_window = indicators.Indicator(size=5, dtype=float)
-    assert rolling_window.size == 5
-    assert rolling_window.window.size == 5
-    assert rolling_window.source_dtype is None
-    assert rolling_window.count() == 0
+def test_indicator_init():
+    indicator = indicators.Indicator(size=5, dtype=float)
+    assert indicator.size == 5
+    assert indicator.window.size == 5
+    assert indicator.source_dtype is None
+    assert indicator.count() == 0
 
 
-def test_rolling_window_init_prefill():
-    rolling_window = indicators.Indicator(size=5)
-    rolling_window.fill(array=[2, 3, 4])
+def test_indicator_init_prefill():
+    indicator = indicators.Indicator(size=5)
+    indicator.fill(array=[2, 3, 4])
     expected_array = ma.masked_array([0] * 5, mask=True)
     expected_array[-3:] = [2, 3, 4]
-    assert rolling_window.insert == 0
-    assert rolling_window.count() == 3
-    assert (rolling_window.window[-3:] == expected_array[-3:]).all()
+    assert indicator.insert == 0
+    assert indicator.count() == 3
+    assert (indicator.window[-3:] == expected_array[-3:]).all()
 
-    rolling_window = indicators.Indicator(size=5)
-    rolling_window.fill(array=[2, 3, 4, 5, 6, 7, 8])
-    assert rolling_window.insert == 0
+    indicator = indicators.Indicator(size=5)
+    indicator.fill(array=[2, 3, 4, 5, 6, 7, 8])
+    assert indicator.insert == 0
     expected_array = np.array([4, 5, 6, 7, 8], dtype=int)
-    assert rolling_window.count() == 5
-    assert (rolling_window.window == expected_array).all()
+    assert indicator.count() == 5
+    assert (indicator.window == expected_array).all()
 
 
-def test_rolling_window_push():
-    rolling_window = indicators.Indicator(size=3)
-    assert rolling_window.count() == 0
-    assert rolling_window.insert == 0
+def test_indicator_push():
+    indicator = indicators.Indicator(size=3)
+    assert indicator.count() == 0
+    assert indicator.insert == 0
 
-    rolling_window.push(1)
-    assert rolling_window.count() == 1
-    assert rolling_window.insert == 1
+    indicator.push(1)
+    assert indicator.count() == 1
+    assert indicator.insert == 1
     expected_array = np.empty(shape=3, dtype=int)
     expected_array[0] = 1
-    assert rolling_window.window[0] == expected_array[0]
+    assert indicator.window[0] == expected_array[0]
 
-    rolling_window.push(2)
-    assert rolling_window.count() == 2
-    assert rolling_window.insert == 2
+    indicator.push(2)
+    assert indicator.count() == 2
+    assert indicator.insert == 2
     expected_array = np.empty(shape=3, dtype=int)
     expected_array[0:2] = [1, 2]
-    assert (rolling_window.window[0:1] == expected_array[0:1]).all()
+    assert (indicator.window[0:1] == expected_array[0:1]).all()
 
-    rolling_window.push(3)
-    assert rolling_window.count() == 3
-    assert rolling_window.insert == 0
+    indicator.push(3)
+    assert indicator.count() == 3
+    assert indicator.insert == 0
     expected_array = np.empty(shape=3, dtype=int)
     expected_array[0:] = [1, 2, 3]
-    assert (rolling_window.window[0:] == expected_array[0:]).all()
+    assert (indicator.window[0:] == expected_array[0:]).all()
 
 
-def test_rolling_window_filled():
+def test_indicator_filled():
     stream_data = indicators.Indicator(size=1)
-    rolling_window = indicators.Indicator(source=stream_data, size=3)
+    indicator = indicators.Indicator(source=stream_data, size=3)
     stream_data.next(1)
-    assert not rolling_window.filled()
+    assert not indicator.filled()
     stream_data.next(2)
-    assert not rolling_window.filled()
+    assert not indicator.filled()
     stream_data.next(3)
-    assert rolling_window.filled()
+    assert indicator.filled()
 
 
-def test_rolling_window_map():
+def test_indicator_map():
     stream_data = indicators.Indicator(size=1)
-    rolling_window = indicators.Indicator(source=stream_data, size=5)
-    rolling_window.fill(array=[1, 2, 3, 4, 5])
-    assert rolling_window.count() == 5
-    assert rolling_window.insert == 0
+    indicator = indicators.Indicator(source=stream_data, size=5)
+    indicator.fill(array=[1, 2, 3, 4, 5])
+    assert indicator.count() == 5
+    assert indicator.insert == 0
 
-    mapped_rolling_window = rolling_window.map(lambda x: 2 * x)
-    assert mapped_rolling_window.count() == 5
-    assert mapped_rolling_window.insert == 0
-    assert (mapped_rolling_window.window == np.array([2, 4, 6, 8, 10], dtype=int)).all()
+    mapped_indicator = indicator.map(lambda x: 2 * x)
+    assert mapped_indicator.count() == 5
+    assert mapped_indicator.insert == 0
+    assert (mapped_indicator.window == np.array([2, 4, 6, 8, 10], dtype=int)).all()
 
     stream_data.next(11)
-    assert mapped_rolling_window.count() == 5
-    assert mapped_rolling_window.insert == 1
+    assert mapped_indicator.count() == 5
+    assert mapped_indicator.insert == 1
     assert (
-        mapped_rolling_window.window == np.array([22, 4, 6, 8, 10], dtype=int)
+        mapped_indicator.window == np.array([22, 4, 6, 8, 10], dtype=int)
     ).all()
 
-    rolling_window = indicators.Indicator(
+    indicator = indicators.Indicator(
         source=stream_data, transform=lambda x: 2 * x + 1, size=5
     )
-    rolling_window.fill(array=[1, 2, 3, 4, 5])
-    assert rolling_window.count() == 5
-    assert rolling_window.insert == 0
+    indicator.fill(array=[1, 2, 3, 4, 5])
+    assert indicator.count() == 5
+    assert indicator.insert == 0
 
-    mapped_rolling_window = rolling_window.map(lambda x: x - 5)
-    assert mapped_rolling_window.count() == 5
-    assert mapped_rolling_window.insert == 0
-    assert (mapped_rolling_window.window == np.array([-2, 0, 2, 4, 6], dtype=int)).all()
+    mapped_indicator = indicator.map(lambda x: x - 5)
+    assert mapped_indicator.count() == 5
+    assert mapped_indicator.insert == 0
+    assert (mapped_indicator.window == np.array([-2, 0, 2, 4, 6], dtype=int)).all()
 
     stream_data.next(11)
-    assert mapped_rolling_window.count() == 5
-    assert mapped_rolling_window.insert == 1
-    assert (mapped_rolling_window.window == np.array([18, 0, 2, 4, 6], dtype=int)).all()
+    assert mapped_indicator.count() == 5
+    assert mapped_indicator.insert == 1
+    assert (mapped_indicator.window == np.array([18, 0, 2, 4, 6], dtype=int)).all()
 
 
-def test_rolling_window_get_item_live():
+def test_indicator_get_item_live():
     # live
-    rolling_window = indicators.Indicator(size=10)
-    rolling_window.fill(array=[i for i in range(0, 10)])
+    indicator = indicators.Indicator(size=10)
+    indicator.fill(array=[i for i in range(0, 10)])
 
     # positive integers
     with pytest.raises(Exception):
-        rolling_window[1]
-    assert rolling_window[0] == 9
-    assert rolling_window[-5] == 4
+        indicator[1]
+    assert indicator[0] == 9
+    assert indicator[-5] == 4
 
     # slices
     assert (
-        rolling_window[-8:-1] == np.array([i for i in range(1, 8)], dtype=int)
+        indicator[-8:-1] == np.array([i for i in range(1, 8)], dtype=int)
     ).all()
     with pytest.raises(Exception):
-        rolling_window[-3:2]
+        indicator[-3:2]
     with pytest.raises(Exception):
-        rolling_window[1:-5]
-    assert (rolling_window[-9:-1:2] == np.array([0, 2, 4, 6], dtype=int)).all()
+        indicator[1:-5]
+    assert (indicator[-9:-1:2] == np.array([0, 2, 4, 6], dtype=int)).all()
 
     # invalid tuple type
     with pytest.raises(Exception):
-        rolling_window[(1, 3)]
+        indicator[(1, 3)]
 
     # add new element to make the insert section change
-    rolling_window.push(10)
-    rolling_window.push(11)
+    indicator.push(10)
+    indicator.push(11)
     assert (
-        rolling_window[-8:-1] == np.array([3, 4, 5, 6, 7, 8, 9, 10], dtype=int)
+        indicator[-8:-1] == np.array([3, 4, 5, 6, 7, 8, 9, 10], dtype=int)
     ).all()
 
 
-def test_rolling_window_get_item_not_live():
-    indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.BATCH)
-    rolling_window = indicators.Indicator(size=10)
-    rolling_window.fill(array=[i for i in range(0, 10)])
+def test_indicator_get_item_not_live():
+    indicators = ReactiveIndicators(memoize=False, mode=IndicatorMode.BATCH)
+    indicator = indicators.Indicator(size=10)
+    indicator.fill(array=[i for i in range(0, 10)])
 
     # positive integers
     with pytest.raises(Exception):
-        rolling_window[0]
+        indicator[0]
 
-    rolling_window.push()
-    assert rolling_window[0] == 9
+    indicator.push()
+    assert indicator[0] == 9
 
     with pytest.raises(Exception):
-        assert rolling_window[-5] == 4
+        assert indicator[-5] == 4
 
     for i in range(0, 6):
-        rolling_window.push()
-    assert rolling_window[-5] == 4
+        indicator.push()
+    assert indicator[-5] == 4
 
     for i in range(0, 3):
-        rolling_window.push()
+        indicator.push()
 
     # slices
     assert (
-        rolling_window[-8:-1] == np.array([i for i in range(1, 8)], dtype=int)
+        indicator[-8:-1] == np.array([i for i in range(1, 8)], dtype=int)
     ).all()
     with pytest.raises(Exception):
-        rolling_window[-3:2]
+        indicator[-3:2]
     with pytest.raises(Exception):
-        rolling_window[1:-5]
-    assert (rolling_window[-9:-1:2] == np.array([0, 2, 4, 6], dtype=int)).all()
+        indicator[1:-5]
+    assert (indicator[-9:-1:2] == np.array([0, 2, 4, 6], dtype=int)).all()
 
     # invalid tuple type
     with pytest.raises(Exception):
-        rolling_window[(1, 3)]
+        indicator[(1, 3)]
 
 
-def test_time_framed_candle_rolling_window_handle_data_1_minute_data():
-    rolling_window = indicators.TimeFramedCandleIndicator(
+def test_time_framed_candle_indicator_handle_data_1_minute_data():
+    indicator = indicators.TimeFramedCandleIndicator(
         time_unit=timedelta(minutes=1), market_cal=MARKET_CAL, size=2
     )
-    rolling_window.push(CANDLE1)
-    assert rolling_window.data == CANDLE1
-    rolling_window.push(CANDLE2)
-    assert rolling_window.data == CANDLE2
-    rolling_window.push(CANDLE3)
-    assert rolling_window.data == CANDLE3
+    indicator.push(CANDLE1)
+    assert indicator.data == CANDLE1
+    indicator.push(CANDLE2)
+    assert indicator.data == CANDLE2
+    indicator.push(CANDLE3)
+    assert indicator.data == CANDLE3
 
 
-def test_time_framed_candle_rolling_window_handle_data_5_minute_data():
-    rolling_window = indicators.TimeFramedCandleIndicator(
+def test_time_framed_candle_indicator_handle_data_5_minute_data():
+    indicator = indicators.TimeFramedCandleIndicator(
         time_unit=timedelta(minutes=5), market_cal=MARKET_CAL, size=2
     )
-    rolling_window.push(CANDLE1)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE2)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE3)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE4)
+    indicator.push(CANDLE1)
+    assert indicator.data is None
+    indicator.push(CANDLE2)
+    assert indicator.data is None
+    indicator.push(CANDLE3)
+    assert indicator.data is None
+    indicator.push(CANDLE4)
     expected_candle1 = Candle(
         asset=Asset(symbol="IVV", exchange="IEX"),
         open=323.81,
@@ -293,46 +293,50 @@ def test_time_framed_candle_rolling_window_handle_data_5_minute_data():
         low=323.81,
         close=323.94,
         volume=1350,
+        time_unit=timedelta(minutes=5),
         timestamp=datetime.strptime("2020-05-07 14:25:00+00:00", "%Y-%m-%d %H:%M:%S%z"),
     )
-    assert rolling_window.data == expected_candle1
-    rolling_window.push(CANDLE5)
-    assert rolling_window.data == expected_candle1
-    rolling_window.push(CANDLE6)
-    assert rolling_window.data == Candle(
+    assert indicator.data == expected_candle1
+    indicator.push(CANDLE5)
+    assert indicator.data == expected_candle1
+    indicator.push(CANDLE6)
+    assert indicator.data == Candle(
         asset=Asset(symbol="IVV", exchange="IEX"),
         open=323.93,
         high=323.95,
         low=323.83,
         close=323.88,
         volume=300,
+        time_unit=timedelta(minutes=5),
         timestamp=datetime.strptime("2020-05-07 14:30:00+00:00", "%Y-%m-%d %H:%M:%S%z"),
     )
 
 
-def test_time_framed_candle_rolling_window_handle_data_1_day_data():
-    rolling_window = indicators.TimeFramedCandleIndicator(
+def test_time_framed_candle_indicator_handle_data_1_day_data():
+    indicator = indicators.TimeFramedCandleIndicator(
         time_unit=timedelta(days=1), market_cal=MARKET_CAL, size=2
     )
-    rolling_window.push(CANDLE1)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE2)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE3)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE4)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE5)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE6)
-    assert rolling_window.data is None
-    rolling_window.push(CANDLE7)
-    assert rolling_window.data == Candle(
+    indicator.push(CANDLE1)
+    assert indicator.data is None
+    indicator.push(CANDLE2)
+    assert indicator.data is None
+    indicator.push(CANDLE3)
+    assert indicator.data is None
+    indicator.push(CANDLE4)
+    assert indicator.data is None
+    indicator.push(CANDLE5)
+    assert indicator.data is None
+    indicator.push(CANDLE6)
+    assert indicator.data is None
+    indicator.push(CANDLE7)
+    print(str(indicator.data))
+    assert indicator.data == Candle(
         asset=Asset(symbol="IVV", exchange="IEX"),
         open=323.81,
         high=324.21,
         low=323.75,
         close=323.79,
         volume=1850,
+        time_unit=timedelta(days=1),
         timestamp=datetime.strptime("2020-05-07 00:00:00+00:00", "%Y-%m-%d %H:%M:%S%z"),
     )

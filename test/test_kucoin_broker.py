@@ -1073,6 +1073,6 @@ def test_max_order_entry_size(
     kucoin_broker = KucoinBroker(clock=clock, events=events)
 
     assert (
-        kucoin_broker.max_entry_order_size(asset=ASSET2, direction=Direction.LONG)
-        == 57.851077493934646
+            kucoin_broker.max_entry_order_size(asset=ASSET2)
+            == 57.851077493934646
     )

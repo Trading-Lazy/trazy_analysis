@@ -57,7 +57,7 @@ class BinanceBroker(Broker):
             events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
-            fee_model=fee_model,
+            fee_models=fee_model,
             parser=parser,
             execute_at_end_of_day=False,
             exchange=exchange,
@@ -312,13 +312,11 @@ class BinanceBroker(Broker):
             )
         return self.cash_balances[currency]
 
-    def max_entry_order_size(
-        self, asset: Asset, direction: Direction, cash: float = None
-    ) -> int:
+    def max_entry_order_size(self, asset: Asset, cash: float = None) -> float:
         if cash is None:
             cash = self.portfolio.cash
         price = self.current_price(asset)
-        return self.fee_model.calc_max_size_for_cash(cash=cash, price=price)
+        return self.fee_models[asset].calc_max_size_for_cash(cash=cash, price=price)
 
     def position_size(self, asset: Asset, direction: Direction) -> int:
         return super().position_size(asset, direction)

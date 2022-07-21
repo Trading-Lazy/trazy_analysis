@@ -33,7 +33,7 @@ class Sma(Indicator):
         self.oldest = self.input_window[-self.period + 1]
 
     @staticmethod
-    def compute(data: Union[np.ndarray, pd.DataFrame], period: int) -> np.ndarray:
+    def compute(data: Union[np.ndarray, pd.DataFrame, pd.Series], period: int) -> np.ndarray:
         return talib.SMA(data, timeperiod=period)
 
     @staticmethod

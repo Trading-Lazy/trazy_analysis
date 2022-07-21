@@ -63,6 +63,10 @@ class StrategyParametersIsolation(Enum):
     STRATEGY_AND_TIME_UNIT = ("STRATEGY_AND_TIME_UNIT",)
 
 
-class ExecutionMode(Enum):
+class IndicatorMode(Enum):
+    LIVE = ("LIVE",)
+    BATCH = ("BATCH",)
+
+class EventLoopMode(Enum):
     LIVE = ("LIVE",)
     BATCH = ("BATCH",)

@@ -48,7 +48,12 @@ def create_sharpe_ratio(returns, periods=252):
     returns - A pandas Series representing period percentage returns.
     periods - Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc.
     """
-    return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
+    std = np.std(returns)
+    if std == 0:
+        return float("inf")
+    sqrt = np.sqrt(periods)
+    mean = np.mean(returns)
+    return sqrt * mean / std
 
 
 def create_sortino_ratio(returns, periods=252):

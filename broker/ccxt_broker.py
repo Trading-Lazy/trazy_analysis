@@ -422,11 +422,11 @@ class CcxtBroker:
 
     def max_entry_order_size(
         self, asset: Asset, direction: Direction, cash: float = None
-    ) -> int:
+    ) -> float:
         if cash is None:
             cash = self.cash_balances[asset.exchange][self.base_currency]
         price = self.current_price(asset)
-        fee_model = self.ccxt_connector.get_fee_model(asset.exchange.lower())
+        fee_model = self.ccxt_connector.get_fee_model(asset)
         return fee_model.calc_max_size_for_cash(cash=cash, price=price)
 
     def position_size(self, asset: Asset, direction: Direction) -> int:

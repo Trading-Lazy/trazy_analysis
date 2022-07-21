@@ -29,9 +29,9 @@ class CcxtHistoricalDataHandler(CcxtDataHandler):
 
     @classmethod
     def group_ticker_data_by_date(
-        cls, symbol: str, raw_candles: List[List[Union[float, int]]]
+        cls, asset: Asset, raw_candles: List[List[Union[float, int]]]
     ) -> DataFrameGroupBy:
-        df = cls.ticker_data_to_dataframe(symbol, raw_candles)
+        df = cls.ticker_data_to_dataframe(asset, raw_candles)
         return df.groupby(lambda ind: ind.strftime("%Y%m%d"))
 
     def is_well_formed(self, candle_dataframe: CandleDataFrame):

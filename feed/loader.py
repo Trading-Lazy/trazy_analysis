@@ -19,7 +19,7 @@ from trazy_analysis.market_data.historical.historical_data_handler import (
 )
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.strategy.candlefetcher import CandleFetcher
+from trazy_analysis.market_data.data_fetcher import ExternalStorageFetcher
 
 
 class Loader:
@@ -136,7 +136,7 @@ class ExternalStorageLoader:
         self.db_storage = db_storage
         self.file_storage = file_storage
         self.market_cal = market_cal
-        self.candle_fetcher = CandleFetcher(
+        self.candle_fetcher = ExternalStorageFetcher(
             db_storage=self.db_storage,
             file_storage=self.file_storage,
             market_cal=self.market_cal,

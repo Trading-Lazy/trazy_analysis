@@ -31,9 +31,9 @@ class SimulatedBroker(Broker):
         The currency denomination of the brokerage account.
     initial_funds : `float`, optional
         An initial amount of cash to add to the broker account.
-    fee_model : `FeeModel`, optional
-        The commission/fee model used to simulate fees/taxes.
-        Defaults to the ZeroFeeModel.
+    fee_models : Dictionary of the `FeeModel` for each asset, optional
+        The FeeModel is the commission/fee model used to simulate fees/taxes.
+        Defaults to the FixedFeeModel.
     """
 
     def __init__(
@@ -43,7 +43,7 @@ class SimulatedBroker(Broker):
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
         initial_funds: float = 0.0,
-        fee_model: FeeModel = FixedFeeModel(),
+        fee_models: Union[FeeModel, Dict[Asset, FeeModel]] = FixedFeeModel(),
         exchange: str = "universal",
     ) -> None:
         self._check_initial_funds(initial_funds)
@@ -52,11 +52,10 @@ class SimulatedBroker(Broker):
             events=events,
             base_currency=base_currency,
             supported_currencies=supported_currencies,
-            fee_model=fee_model,
+            fee_models=fee_models,
             exchange=exchange,
         )
         self._set_cash_balances(initial_funds)
-        self.fee_model = self._set_fee_model(fee_model)
         self.open_orders_bars_delay = 1
 
         LOG.info("Initialising simulated broker...")
@@ -95,28 +94,6 @@ class SimulatedBroker(Broker):
         """
         if initial_funds > 0.0:
             self.cash_balances[self.base_currency] = initial_funds
-
-    def _set_fee_model(self, fee_model: FeeModel) -> FeeModel:
-        """
-        Check and set the FeeModel instance for the broker.
-        The class default is no commission (ZeroFeeModel).
-        Parameters
-        ----------
-        fee_model : `FeeModel` (class)
-            The commission/fee model class provided to the Broker.
-        Returns
-        -------
-        `FeeModel` (instance)
-            The instantiated FeeModel class.
-        """
-        if issubclass(fee_model.__class__, FeeModel):
-            return fee_model
-        else:
-            raise TypeError(
-                "Provided fee model '%s' in SimulatedBroker is not a "
-                "FeeModel subclass, so could not create the "
-                "Broker entity." % fee_model.__class__
-            )
 
     def has_opened_position(self, asset: Asset, direction: Direction) -> bool:
         portfolio = self.portfolio
@@ -211,7 +188,7 @@ class SimulatedBroker(Broker):
         """
         price = self.current_price(order.asset)
         consideration = price * order.size
-        total_commission = self.fee_model.calc_total_cost(
+        total_commission = self.fee_models[order.asset].calc_total_cost(
             order.asset, order.size, consideration, self
         )
 

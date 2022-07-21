@@ -12,7 +12,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from trazy_analysis.indicators.indicator import Indicator
-from trazy_analysis.models.enums import ExecutionMode
+from trazy_analysis.models.enums import IndicatorMode
 
 
 def get_module_classes(module_name: str, module_path: str) -> Set[type]:
@@ -42,7 +42,7 @@ indicators_classes = get_module_classes(MODULE_NAME, str(module_path))
 
 
 class ReactiveIndicators:
-    def __init__(self, memoize: bool = True, mode: ExecutionMode = ExecutionMode.LIVE):
+    def __init__(self, memoize: bool = True, mode: IndicatorMode = IndicatorMode.LIVE):
         self.memoize = memoize
         self.mode = mode
         self.instances = set()
@@ -50,7 +50,6 @@ class ReactiveIndicators:
         self.input_edges = []
 
         for class_to_enrich in indicators_classes:
-
             def indicator_call(
                 indicator_class: type,
             ) -> Callable:
@@ -160,7 +159,7 @@ class ReactiveIndicators:
                 "size": node.size,
                 "dtype": node.dtype,
                 "memoize": node.memoize,
-                "mode": node.mode.name,
+                "mode": node.indicator_mode.name,
             }
             node_attr.update(instances_graph.nodes[node])
             text = "\n".join(f"{k}: {v}" for k, v in node_attr.items())
@@ -204,9 +203,9 @@ for indicators_class in indicators_classes:
                 raise Exception("There should be a data parameter for the indicator.")
             elif not isinstance(data, np.ndarray) and not isinstance(
                 data, pd.DataFrame
-            ):
-                raise Exception("data should be a numpy array or a pandas dataframe")
-            if isinstance(data, pd.DataFrame):
+            ) and not isinstance(data, pd.Series):
+                raise Exception("data should be a numpy array, a pandas dataframe or a pandas series")
+            if isinstance(data, pd.DataFrame) or isinstance(data, pd.Series):
                 data = data.to_numpy()
                 shape = list(data.shape)
                 while len(shape) > 1 and shape[-1] == 1:

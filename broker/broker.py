@@ -3,13 +3,13 @@ import queue
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from datetime import timedelta
-from typing import List, Union
+from typing import List, Union, Dict, Tuple
 
 import numpy as np
 
 import trazy_analysis.settings
 from trazy_analysis.broker.ccxt_parser import DummyParser
-from trazy_analysis.broker.fee_model import FeeModel
+from trazy_analysis.broker.fee_model import FeeModel, FeeModelManager
 from trazy_analysis.broker.fixed_fee_model import FixedFeeModel
 from trazy_analysis.common.clock import Clock
 from trazy_analysis.common.helper import get_or_create_nested_dict
@@ -53,13 +53,14 @@ class Broker:
         events: deque,
         base_currency: str = "EUR",
         supported_currencies: List[str] = ["EUR", "USD"],
-        fee_model: FeeModel = FixedFeeModel(),
+        fee_models: Union[FeeModel, Dict[Asset, FeeModel]] = FixedFeeModel(),
         parser=DummyParser,
         execute_at_end_of_day=True,
         exchange="universal",
     ):
         self.supported_currencies = supported_currencies
-        self.fee_model = fee_model
+
+        self.fee_models = FeeModelManager(fee_models)
         self.parser = parser
         self.execute_at_end_of_day = execute_at_end_of_day
         self.exchange = exchange
@@ -324,14 +325,10 @@ class Broker:
         else:
             LOG.info("Submitted order: %s, qty: %s", order.asset, order.size)
 
-    def max_entry_order_size(
-        self, asset: str, direction: Direction, cash: float = None
-    ) -> int:
+    def max_entry_order_size(self, asset: Asset, cash: float = None) -> float:
         if cash is None:
             cash = self.portfolio.cash
-        return self.fee_model.calc_max_size_for_cash(
-            cash=cash, price=self.current_price(asset)
-        )
+        return self.fee_models[asset].calc_max_size_for_cash(cash=cash, price=self.current_price(asset))
 
     def position_size(self, asset: Asset, direction: Direction) -> int:
         return self.portfolio.pos_handler.position_size(asset, direction)

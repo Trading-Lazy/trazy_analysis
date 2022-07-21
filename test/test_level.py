@@ -8,7 +8,7 @@ from trazy_analysis.indicators.indicators_managers import ReactiveIndicators
 from trazy_analysis.indicators.level import Peak, ResistanceLevels, TightTradingRange
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import ExecutionMode
+from trazy_analysis.models.enums import IndicatorMode
 
 BIG_DATA = [
     56281.78,
@@ -155,7 +155,7 @@ TTR_CANDLES = [
         timestamp=datetime.strptime("2021-12-04 21:11:00+0000", "%Y-%m-%d %H:%M:%S%z"),
     ),
 ]
-indicators = ReactiveIndicators(memoize=False, mode=ExecutionMode.LIVE)
+indicators = ReactiveIndicators(memoize=False, mode=IndicatorMode.LIVE)
 
 
 def test_peak_stream_handle_data_source_is_indicator_data():
@@ -175,40 +175,40 @@ def test_peak_stream_handle_data_source_is_indicator_data():
     assert peak.data is True
 
 
-def test_peak_stream_handle_data_source_is_rolling_window_stream():
-    rolling_window_stream = indicators.Indicator(size=3)
-    peak = indicators.Peak(comparator=np.greater, order=2, size=1, source=rolling_window_stream)
-    rolling_window_stream.push(7.2)
+def test_peak_stream_handle_data_source_is_indicator_stream():
+    indicator_stream = indicators.Indicator(size=3)
+    peak = indicators.Peak(comparator=np.greater, order=2, size=1, source=indicator_stream)
+    indicator_stream.push(7.2)
     assert peak.data is False
-    rolling_window_stream.push(6.1)
+    indicator_stream.push(6.1)
     assert peak.data is False
-    rolling_window_stream.push(6.3)
+    indicator_stream.push(6.3)
     assert peak.data is False
-    rolling_window_stream.push(7.2)
+    indicator_stream.push(7.2)
     assert peak.data is False
-    rolling_window_stream.push(6.9)
+    indicator_stream.push(6.9)
     assert peak.data is False
-    rolling_window_stream.push(6.8)
+    indicator_stream.push(6.8)
     assert peak.data is True
 
 
 def test_peak_stream_handle_data_source_is_filled_small_data():
     indicator_data = indicators.Indicator(size=1)
-    rolling_window_stream = indicators.Indicator(source=indicator_data, size=3)
-    rolling_window_stream.fill(array=[7.2, 7.5, 2.3])
-    peak = indicators.Peak(comparator=np.greater, order=1, size=1, source=rolling_window_stream)
+    indicator_stream = indicators.Indicator(source=indicator_data, size=3)
+    indicator_stream.fill(array=[7.2, 7.5, 2.3])
+    peak = indicators.Peak(comparator=np.greater, order=1, size=1, source=indicator_stream)
     assert peak.data == True
 
 
 def test_peak_stream_handle_data_source_is_filled_big_data():
     order = 2
-    rolling_window_stream = indicators.Indicator(size=len(BIG_DATA))
-    rolling_window_stream.fill(array=BIG_DATA)
+    indicator_stream = indicators.Indicator(size=len(BIG_DATA))
+    indicator_stream.fill(array=BIG_DATA)
     peak = indicators.Peak(
         comparator=np.greater_equal,
         order=order,
         size=len(BIG_DATA),
-        source=rolling_window_stream,
+        source=indicator_stream,
     )
     peaks = list(peak.window[order:])
     peaks_indexes = []
@@ -265,10 +265,10 @@ def test_tight_trading_range():
         events=events,
     )
     df = feed.candle_dataframes[exchange_asset][timedelta(minutes=1)]
-    rolling_window_stream = indicators.Indicator(size=len(TTR_CANDLES))
-    t = TightTradingRange(size=10, min_overlaps=10, source=rolling_window_stream)
+    indicator_stream = indicators.Indicator(size=len(TTR_CANDLES))
+    t = TightTradingRange(size=10, min_overlaps=10, source=indicator_stream)
 
     for candle in TTR_CANDLES:
-        rolling_window_stream.push(candle)
+        indicator_stream.push(candle)
     for interval in t.trading_ranges:
         data = interval.data

@@ -12,7 +12,7 @@ from trazy_analysis.common.clock import SimulatedClock
 from trazy_analysis.feed.feed import CsvFeed, Feed
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
-from trazy_analysis.models.enums import Action, Direction, OrderType, ExecutionMode
+from trazy_analysis.models.enums import Action, Direction, OrderType, IndicatorMode
 from trazy_analysis.models.order import Order
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
@@ -47,7 +47,7 @@ def test_arbitrage_strategy():
         clock,
         events,
         initial_funds=initial_funds,
-        fee_model=binance_fee_model,
+        fee_models=binance_fee_model,
         exchange=BINANCE_EXCHANGE,
     )
     binance_broker.subscribe_funds_to_portfolio(initial_funds)
@@ -62,7 +62,7 @@ def test_arbitrage_strategy():
         clock,
         events,
         initial_funds=initial_funds,
-        fee_model=kucoin_fee_model,
+        fee_models=kucoin_fee_model,
         exchange=KUCOIN_EXCHANGE,
     )
     kucoin_broker.subscribe_funds_to_portfolio(initial_funds)
@@ -110,7 +110,7 @@ def test_arbitrage_strategy():
     strategies_parameters = {ArbitrageStrategy: {"margin_factor": 1}}
     assets = {BINANCE_ASSET: time_unit, KUCOIN_ASSET: time_unit}
     event_loop = EventLoop(events=events, assets=assets, feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies_parameters, mode=ExecutionMode.BATCH,
+                           strategies_parameters=strategies_parameters, indicator_mode=IndicatorMode.BATCH,
                            close_at_end_of_day=False, close_at_end_of_data=False)
     event_loop.loop()
 

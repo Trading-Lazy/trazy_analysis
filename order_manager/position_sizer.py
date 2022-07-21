@@ -26,10 +26,10 @@ class PositionSizer:
             max_equity_risk = total_equity * PositionSizer.MAXIMUM_RISK_PER_TRADE
             size_relative_to_equity = self.broker_manager.get_broker(
                 exchange=order.asset.exchange
-            ).max_entry_order_size(order.asset, order.direction, max_equity_risk)
+            ).max_entry_order_size(order.asset, max_equity_risk)
             size_relative_to_cash = self.broker_manager.get_broker(
                 exchange=order.asset.exchange
-            ).max_entry_order_size(order.asset, order.direction)
+            ).max_entry_order_size(order.asset)
             size = min(size_relative_to_equity, size_relative_to_cash)
             if self.integer_size:
                 size = int(size)

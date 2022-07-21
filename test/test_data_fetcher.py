@@ -3,6 +3,7 @@ from unittest.mock import call, patch
 
 import numpy as np
 import pandas as pd
+import pytz
 from pandas_market_calendars.exchange_calendar_eurex import EUREXExchangeCalendar
 
 from trazy_analysis.common.constants import DATE_FORMAT
@@ -13,7 +14,7 @@ from trazy_analysis.file_storage.meganz_file_storage import MegaNzFileStorage
 from trazy_analysis.models.asset import Asset
 from trazy_analysis.models.candle import Candle
 from trazy_analysis.settings import DATABASE_NAME
-from trazy_analysis.strategy.candlefetcher import CandleFetcher
+from trazy_analysis.market_data.data_fetcher import ExternalStorageFetcher
 from trazy_analysis.test.tools.tools import compare_candles_list
 
 SYMBOL = "IVV"
@@ -94,7 +95,7 @@ CANDLES = np.array(
 DB_STORAGE = MongoDbStorage(DATABASE_NAME)
 FILE_STORAGE = MegaNzFileStorage()
 MARKET_CAL = EUREXExchangeCalendar()
-CANDLE_FETCHER = CandleFetcher(DB_STORAGE, FILE_STORAGE, MARKET_CAL)
+CANDLE_FETCHER = ExternalStorageFetcher(DB_STORAGE, FILE_STORAGE, MARKET_CAL)
 
 
 def test_query_candles():
@@ -126,29 +127,29 @@ def test_fetch_candle_db_data():
             "2020-05-08 14:41:58+00:00",
         ],
         "open": [
-            "94.12",
-            "94.07",
-            "94.07",
-            "94.17",
-            "94.19",
-            "94.19",
+            94.12,
+            94.07,
+            94.07,
+            94.17,
+            94.19,
+            94.19,
         ],
         "high": [
-            "94.15",
-            "94.1",
-            "94.1",
-            "94.18",
-            "94.22",
-            "94.22",
+            94.15,
+            94.1,
+            94.1,
+            94.18,
+            94.22,
+            94.22,
         ],
-        "low": ["94.0", "93.95", "93.95", "94.05", "94.07", "94.07"],
+        "low": [94.0, 93.95, 93.95, 94.05, 94.07, 94.07],
         "close": [
-            "94.13",
-            "94.08",
-            "94.08",
-            "94.18",
-            "94.2",
-            "94.2",
+            94.13,
+            94.08,
+            94.08,
+            94.18,
+            94.2,
+            94.2,
         ],
         "volume": [7, 91, 30, 23, 21, 7],
     }
@@ -198,10 +199,10 @@ def test_fetch_historical_data(get_file_content_mocked):
             "2020-06-19 09:31:00+00:00",
             "2020-06-19 09:32:00+00:00",
         ],
-        "open": ["354.25", "354.22", "355.15", "354.28", "354.92"],
-        "high": ["354.59", "354.26", "355.15", "354.96", "355.32"],
-        "low": ["354.14", "353.95", "353.74", "353.96", "354.09"],
-        "close": ["354.59", "353.98", "353.84", "354.78", "354.09"],
+        "open": [354.25, 354.22, 355.15, 354.28, 354.92],
+        "high": [354.59, 354.26, 355.15, 354.96, 355.32],
+        "low": [354.14, 353.95, 353.74, 353.96, 354.09],
+        "close": [354.59, 353.98, 353.84, 354.78, 354.09],
         "volume": [2613, 1186, 3254, 2324, 1123],
     }
     expected_df = pd.DataFrame(
@@ -573,7 +574,7 @@ def test_fetch_1_day_offset(get_file_content_mocked):
 
 
 def test_fetch_none_db_storage_none_file_storage():
-    candle_fetcher = CandleFetcher(
+    candle_fetcher = ExternalStorageFetcher(
         db_storage=None, file_storage=None, market_cal=MARKET_CAL
     )
 
@@ -588,3 +589,13 @@ def test_fetch_none_db_storage_none_file_storage():
         asset=IVV_ASSET, candles=np.array([], dtype=Candle)
     )
     assert (df == expected_df).all(axis=None)
+
+
+def test_data_fetcher_multi_fetch():
+    start = datetime(2022, 6, 8, 0, 0, 0, 0, tzinfo=pytz.UTC)
+    end = datetime(2022, 6, 9, 0, 0, 0, 0, tzinfo=pytz.UTC)
+    btc = Asset(symbol="BTCUSDT", exchange="BINANCE")
+    timeframe = timedelta(minutes=1)
+    c = CandleDataFrame.multi_fetch(
+        {btc: timeframe, btc: timedelta(minutes=5)}, start, end
+    )

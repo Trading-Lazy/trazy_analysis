@@ -14,7 +14,7 @@ from trazy_analysis.feed.feed import Feed, LiveFeed
 from trazy_analysis.market_data.live.binance_live_data_handler import (
     BinanceLiveDataHandler,
 )
-from trazy_analysis.models.enums import ExecutionMode
+from trazy_analysis.models.enums import IndicatorMode
 from trazy_analysis.order_manager.order_creator import OrderCreator
 from trazy_analysis.order_manager.order_manager import OrderManager
 from trazy_analysis.order_manager.position_sizer import PositionSizer
@@ -80,5 +80,5 @@ if __name__ == "__main__":
         filter_at_end_of_day=False,
     )
     event_loop = EventLoop(events=events, assets=[], feed=feed, order_manager=order_manager,
-                           strategies_parameters=strategies, mode=ExecutionMode.LIVE, close_at_end_of_day=False)
+                           strategies_parameters=strategies, indicator_mode=IndicatorMode.LIVE, close_at_end_of_day=False)
     event_loop.loop()
